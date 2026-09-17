@@ -8,7 +8,7 @@ data class CachedExpiringInventory(
     val lastSyncedAtEpochMillis: Long,
 )
 
-/** Local storage for the last successful BQ2 result; repository tests replace it with a fake. */
+/** Local storage for the last successful BQ2 result; the repository depends on this interface. */
 interface ExpiringInventoryCache {
 
     /** Returns null when no successful sync has been stored. */

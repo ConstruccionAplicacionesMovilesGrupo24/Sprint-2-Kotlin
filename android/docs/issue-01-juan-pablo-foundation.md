@@ -5,7 +5,7 @@
 Issue #1 bootstraps the native CampusMeal Android project and the shared architecture that later issues build on. The work is split between two people:
 
 - **Person A, Juan Pablo:** the build foundation (Gradle, AGP, Kotlin plugins, version catalog, dependencies) and the infrastructure boundaries for network, persistence and repositories.
-- **Person B, Natalia:** the app shell (activity, root composable, theme, navigation, UI state, initial `AppContainer`, permissions, smoke tests and visual validation).
+- **Person B, Natalia:** the app shell (activity, root composable, theme, navigation, UI state, initial `AppContainer`, permissions and visual validation).
 
 This document covers Person A's part only. Most of it was delivered in commit `4ac50796dced1f45678c7c243c7c36407effe682`. A follow-up audit on 2026-09-15 closed the remaining gaps, which are listed below.
 
@@ -21,10 +21,7 @@ This document covers Person A's part only. Most of it was delivered in commit `4
 - [x] **Retrofit, Kotlin Serialization and OkHttp.** *Already satisfied.*
 - [x] **Room, DataStore, WorkManager and KSP.** The Room compiler runs through `ksp(...)` and the schema is exported to `app/schemas/`. *Already satisfied.*
 - [x] **Initial network, database and repository boundaries.** *Network and database were already satisfied. The repository boundary was completed in this run:* the new `ApiResult`/`apiCall` in the network package keeps Retrofit and OkHttp exceptions out of repositories.
-- [x] **Build, test and lint commands documented.** *Already satisfied. This run also fixed two README gaps: the Android SDK location needed for command-line builds, and the instrumented Room test.*
-- [x] **Unit tests for the infrastructure.**
-  - `ApiClientFactoryTest` already existed.
-  - `ApiResultTest` (JVM) and `CampusMealDatabaseTest` (instrumented) were added in this run.
+- [x] **Build and lint commands documented.** *Already satisfied. This run also fixed a README gap: the Android SDK location needed for command-line builds.*
 
 ## Main files and components
 
@@ -46,10 +43,7 @@ This document covers Person A's part only. Most of it was delivered in commit `4
 | [`core/datastore/CampusMealPreferences.kt`](../app/src/main/java/com/campusmeal/android/core/datastore/CampusMealPreferences.kt) | `CampusMealPreferences.dataStore(context)` | The single Preferences DataStore instance, for non-sensitive settings only. | DataStore boundary |
 | [`core/session/SessionStorage.kt`](../app/src/main/java/com/campusmeal/android/core/session/SessionStorage.kt) | `SessionStorage`, `InMemorySessionStorage`, `SessionTokens` | The only place tokens may be stored. The interim implementation keeps them in memory only. `SessionTokens.toString()` hides the token values. | Session boundary, future Keystore storage |
 | [`core/session/SessionRepository.kt`](../app/src/main/java/com/campusmeal/android/core/session/SessionRepository.kt) | `SessionRepository.isAuthenticated`, `signOut()` | Example of the repository pattern: it receives a `SessionStorage` interface through its constructor and gives consumers session state without exposing raw tokens. | Repository boundary |
-| [`test/.../ApiClientFactoryTest.kt`](../app/src/test/java/com/campusmeal/android/core/network/ApiClientFactoryTest.kt) | 3 JVM tests | With MockWebServer: no logging interceptor when logging is off; header values and bodies never appear in debug logs; Retrofit uses the configured base URL. | Infrastructure tests |
-| [`test/.../ApiResultTest.kt`](../app/src/test/java/com/campusmeal/android/core/network/ApiResultTest.kt) | 5 JVM tests | With MockWebServer: success (unknown fields ignored), 401, 503 (status code only), unreachable server, undecodable body. **Created in this run.** | Infrastructure tests |
-| [`androidTest/.../CampusMealDatabaseTest.kt`](../app/src/androidTest/java/com/campusmeal/android/core/database/CampusMealDatabaseTest.kt) | 1 instrumented test | Runs the DAO against an in-memory Room database: upsert replaces the row, `clear()` removes it. **Created in this run.** | Infrastructure tests |
-| [`README.md`](../README.md) | Requirements, build and test commands | Setup and command reference. **Modified in this run:** SDK location for command-line builds, `ApiResult` in the structure, instrumented Room test, link to `docs/`. | Documented commands |
+| [`README.md`](../README.md) | Requirements, build and lint commands | Setup and command reference. **Modified in this run:** SDK location for command-line builds, `ApiResult` in the structure, link to `docs/`. | Documented commands |
 
 ## How the foundation works
 
@@ -69,7 +63,7 @@ This document covers Person A's part only. Most of it was delivered in commit `4
    - a repository interface and its implementation, which receive the service and a DAO through the constructor;
    - wiring in `AppContainer`.
 
-   The implementation wraps remote calls in `apiCall {}`. It uses `CacheMetadataDao` to decide when cached data is stale. It turns `ApiResult` into the shared `UiState`, for example `NetworkUnavailable` plus cached data becomes `OfflineWithCache`, and `Unauthorized` becomes `Unauthorized`. Tests replace the service with MockWebServer or a fake, and the DAO with an in-memory database. No generic `BaseRepository` is provided on purpose.
+   The implementation wraps remote calls in `apiCall {}`. It uses `CacheMetadataDao` to decide when cached data is stale. It turns `ApiResult` into the shared `UiState`, for example `NetworkUnavailable` plus cached data becomes `OfflineWithCache`, and `Unauthorized` becomes `Unauthorized`. No generic `BaseRepository` is provided on purpose.
 
 ## Security decisions
 
@@ -80,7 +74,7 @@ This document covers Person A's part only. Most of it was delivered in commit `4
 - **Network logs:**
   - Only debug builds install `HttpLoggingInterceptor`, at `HEADERS` level. `Authorization`, `Proxy-Authorization`, `Cookie`, `Set-Cookie` and `X-Refresh-Token` are redacted.
   - Bodies are never logged, and `ApiResult.HttpError` drops error bodies.
-  - Release builds have no logging interceptor. `ApiClientFactoryTest` checks both cases.
+  - Release builds have no logging interceptor.
 - **Session storage:**
   - Tokens may only go through `SessionStorage`. `InMemorySessionStorage` never writes them to disk.
   - Room and DataStore are plaintext and must not store tokens.
@@ -91,6 +85,19 @@ This document covers Person A's part only. Most of it was delivered in commit `4
   - Debug cleartext HTTP is limited to `10.0.2.2`, `localhost` and `127.0.0.1`.
 - **Location:** only `ACCESS_COARSE_LOCATION` and `ACCESS_FINE_LOCATION` are declared. `ACCESS_BACKGROUND_LOCATION` is absent.
 - **Excluded libraries:** Firebase Authentication and Hilt are absent.
+
+## Prototype validation
+
+This project currently prioritizes rapid prototype development. Automated unit,
+instrumented and Compose tests are not included. Validation is performed through:
+
+- Successful debug compilation.
+- Android lint.
+- Manual execution of the main application flows on an emulator or device.
+
+The verification table below records the commands run when this issue was delivered.
+The unit and instrumented test runs it originally listed no longer apply: those test
+source sets and their dependencies were removed afterwards.
 
 ## Build and verification
 
@@ -104,10 +111,7 @@ Run on 2026-09-15 from `android/` on Windows 11, with no environment overrides:
 | `./gradlew --version` | Exit 0. Gradle 9.5.0; daemon JVM "Compatible with Java 17" from `gradle/gradle-daemon-jvm.properties`. |
 | `./gradlew wrapper --gradle-version 9.5.0 --distribution-type bin --gradle-distribution-sha256-sum 553c78f5…b746` | BUILD SUCCESSFUL. Jar SHA-256 `497c8c2a…a9c7` matches the official `gradle-9.5.0-wrapper.jar.sha256`. The previous jar matched the 9.0.0 wrapper. |
 | `./gradlew :app:assembleDebug` | BUILD SUCCESSFUL. |
-| `./gradlew :app:testDebugUnitTest` | BUILD SUCCESSFUL. 11 tests, 0 failures, 0 skipped: `FoundationSmokeTest` 3, `ApiClientFactoryTest` 3, `ApiResultTest` 5. |
 | `./gradlew :app:lintDebug` | BUILD SUCCESSFUL. 0 errors, 6 warnings. Five report newer versions than the pinned ones and one is `OldTargetApi` for the pinned targetSdk 36. All are intentional. |
-| `./gradlew :app:assembleDebugAndroidTest` | BUILD SUCCESSFUL. |
-| `./gradlew :app:connectedDebugAndroidTest` | BUILD SUCCESSFUL on the `Tusky_API_36` emulator (API 36). 2 tests, 0 failures: `CampusMealAppTest.appShellShowsFoundationPlaceholder` and `CampusMealDatabaseTest.upsertReplacesCacheMetadataAndClearRemovesIt`. |
 
 Static checks:
 - Gradle files and the catalog contain no `org.jetbrains.kotlin.android`, `kotlin-kapt` or `kapt(...)`. The word "kapt" appears only in a catalog comment saying it is excluded.
@@ -118,7 +122,7 @@ Static checks:
 
 ## Coordination with Person B
 
-- **No changes to Natalia's files in this run:** `MainActivity`, `CampusMealApp`, the theme, navigation, `UiState`, `AppContainer`, `AndroidManifest.xml`, `FoundationSmokeTest` and `CampusMealAppTest`.
+- **No changes to Natalia's files in this run:** `MainActivity`, `CampusMealApp`, the theme, navigation, `UiState`, `AppContainer` and `AndroidManifest.xml`.
 - **Git authorship:** `4ac5079` is the only commit touching `android/` and is authored by Juan Pablo Bedoya. It also includes the Person B files listed above, so git history alone cannot separate the two contributions. Natalia should review those files, and adopt or adjust them, as her part of issue #1.
 - **`AppContainer`:**
   - It already exposes what the infrastructure needs: `networkConfig`, `okHttpClient`, `retrofit`, `database`, `preferences`, `sessionStorage` and `sessionRepository`.
@@ -126,8 +130,7 @@ Static checks:
   - Wire new repositories here and pass them to ViewModels through constructors.
 - **`UiState`:** when Natalia's `UiState` changes, check that `ApiResult` still maps onto it: `NetworkUnavailable` to `OfflineWithCache` or `Error`, `Unauthorized` to `Unauthorized`.
 - **Manifest (`4ac5079`):** Natalia owns the permissions. Please review the network security config, `allowBackup="false"` and the backup and data-extraction rules together with them.
-- **README:** the requirements, project structure and build/test sections were edited in this run. Please review them.
-- **`androidTest`:** it now contains `CampusMealDatabaseTest` next to `CampusMealAppTest`. `connectedDebugAndroidTest` runs both.
+- **README:** the requirements, project structure and build sections were edited in this run. Please review them.
 - **Clean-checkout validation:** `gradlew` is now executable and has LF line endings. Validating from a clean checkout on another machine is still Natalia's task.
 
 ## Remaining work

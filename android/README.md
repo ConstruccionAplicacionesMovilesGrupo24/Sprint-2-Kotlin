@@ -66,26 +66,31 @@ android/
         │   │   ├── network/    NetworkConfig, ApiClientFactory (OkHttp + Retrofit), ApiResult/apiCall
         │   │   └── session/    SessionStorage boundary and SessionRepository
         │   └── navigation/     Type-safe route contract and NavHost
-        ├── debug/res/xml/      Debug-only network security config (local cleartext)
-        ├── test/               JVM unit tests
-        └── androidTest/        Compose UI and Room instrumented tests
+        └── debug/res/xml/      Debug-only network security config (local cleartext)
 ```
 
 Contribution notes for individual issues live in [`docs/`](docs/).
 
 Feature packages (`feature/auth`, `feature/inventory`, `feature/context`, `feature/restaurants`, `feature/decision`, `feature/profile`) are created along with their first real source files. Empty placeholder packages are not kept.
 
-## Build and test
+## Build and validate
 
 Run all commands from the `android/` directory. On Windows, use `gradlew.bat` or `.\gradlew`.
 
 ```bash
 ./gradlew --version                         # confirm Gradle 9.5.0 and a JDK 17 daemon
 ./gradlew :app:assembleDebug                # build the debug APK
-./gradlew :app:testDebugUnitTest            # JVM unit tests
 ./gradlew :app:lintDebug                    # Android lint
-./gradlew :app:connectedDebugAndroidTest    # instrumented tests: Compose UI, Room (needs a device or emulator)
 ```
+
+## Prototype validation
+
+This project currently prioritizes rapid prototype development. Automated unit,
+instrumented and Compose tests are not included. Validation is performed through:
+
+- Successful debug compilation.
+- Android lint.
+- Manual execution of the main application flows on an emulator or device.
 
 ## Backend URL configuration
 
@@ -120,10 +125,9 @@ For a physical device over USB, run `adb reverse tcp:3000 tcp:3000` and use the 
 
 Debug builds allow cleartext HTTP only to `10.0.2.2`, `localhost` and `127.0.0.1` (see `app/src/debug/res/xml/network_security_config.xml`). Every other host requires HTTPS.
 
-### CI and tests
+### CI
 
 - **Debug builds in CI:** set `CAMPUSMEAL_API_BASE_URL` in the pipeline environment.
-- **Unit tests:** they need no backend. Network tests use MockWebServer.
 
 ### Production (future)
 
@@ -140,7 +144,6 @@ Release builds require `campusmeal.releaseApiBaseUrl` or `CAMPUSMEAL_RELEASE_API
 | Location | Play Services Location 21.4.0 | Fused provider; foreground permissions only |
 | Persistence | Room 2.8.5 (compiler via **KSP**), DataStore Preferences 1.2.1, WorkManager 2.11.2 | Offline cache, preferences, future background sync |
 | Images | Coil 3.6.2 (compose, network-okhttp) | Compose-native image loading on the shared OkHttp stack |
-| Tests | JUnit 4.13.2, AndroidX Test ext JUnit 1.3.0, Espresso 3.7.0, Compose UI test (BOM), coroutines-test 1.11.0, MockWebServer 4.12.0 | |
 
 The project intentionally does **not** include Hilt, Firebase Authentication, Google Maps, CameraX, ML Kit or kapt.
 
@@ -154,13 +157,13 @@ AGP 9 compiles Kotlin itself. The `org.jetbrains.kotlin.android` plugin is there
 
 - adds no annotation processing or build time
 - is easy for the whole team to read
-- keeps dependencies swappable in tests
+- keeps dependencies swappable behind small interfaces
 
 Features should receive dependencies through constructors, not by reaching into the container. Moving to Hilt later then only changes the wiring. Revisit this choice when the dependency graph or the module count grows.
 
 ## Security notes
 
-- **HTTP logging:** debug builds only, at `HEADERS` level. `Authorization`, `Proxy-Authorization`, `Cookie`, `Set-Cookie` and `X-Refresh-Token` are redacted. Bodies are never logged because they can contain credentials, JWTs or refresh tokens. Release builds install no logging interceptor. `ApiClientFactoryTest` covers both cases.
+- **HTTP logging:** debug builds only, at `HEADERS` level. `Authorization`, `Proxy-Authorization`, `Cookie`, `Set-Cookie` and `X-Refresh-Token` are redacted. Bodies are never logged because they can contain credentials, JWTs or refresh tokens. Release builds install no logging interceptor.
 - **Backups:** disabled (`android:allowBackup="false"`). `backup_rules.xml` and `data_extraction_rules.xml` also exclude all app data from backup and device transfer.
 - **Location:** foreground only; `ACCESS_BACKGROUND_LOCATION` is not requested.
 - **Secrets:** no API keys or secrets are committed. `local.properties`, keystores and build outputs are gitignored.
