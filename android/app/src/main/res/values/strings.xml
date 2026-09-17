@@ -2,4 +2,36 @@
     <string name="app_name">CampusMeal</string>
     <string name="foundation_ready">CampusMeal Android foundation ready</string>
     <string name="route_placeholder">%1$s route pending implementation</string>
+
+    <!-- BQ4 context: device location and manual campus fallback. Copy follows screens 04, 13 and 14
+         of the CampusMeal UI Figma file. -->
+    <string name="context_open_action">Set my lunch context</string>
+    <string name="context_back">‹</string>
+    <string name="context_location_appbar">Location</string>
+    <string name="context_location_appbar_with">Context with location</string>
+    <string name="context_location_appbar_without">Context without location</string>
+
+    <string name="context_location_title">Better results with your location</string>
+    <string name="context_location_rationale">We use your approximate location only to calculate walking times to nearby restaurants. Analytics store your campus zone, never your exact coordinates.</string>
+    <string name="context_location_use_my_location">Enable location</string>
+    <string name="context_location_choose_campus">Choose campus manually</string>
+    <string name="context_location_loading">Finding your approximate location…</string>
+    <string name="context_location_retry">Try again</string>
+
+    <string name="context_banner_enabled_label">LOCATION ENABLED</string>
+    <string name="context_banner_enabled_body">%1$s · approximate accuracy of %2$d m. We only store the campus zone.</string>
+    <string name="context_banner_enabled_body_no_accuracy">%1$s. We only store the campus zone.</string>
+    <string name="context_banner_denied_label">NO LOCATION ACCESS</string>
+    <string name="context_banner_denied_body">Choose your campus manually. Walking times will be estimated and less accurate.</string>
+    <string name="context_banner_unavailable_label">LOCATION UNAVAILABLE</string>
+    <string name="context_banner_unavailable_body">Location services are off, or no position could be obtained. Choose your campus to continue.</string>
+
+    <string name="context_location_section">Location</string>
+    <string name="context_location_detected">Detected by GPS a moment ago</string>
+    <string name="context_location_no_campus_title">Your current location</string>
+    <string name="context_action_change">Change</string>
+    <string name="context_campus_none_title">Select your campus</string>
+    <string name="context_campus_none_subtitle">None selected</string>
+    <string name="context_campus_manual_subtitle">Chosen manually</string>
+    <string name="context_campus_option_selected">✓ %1$s</string>
 </resources>
