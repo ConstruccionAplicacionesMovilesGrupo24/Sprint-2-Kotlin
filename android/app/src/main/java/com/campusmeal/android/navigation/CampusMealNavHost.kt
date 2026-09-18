@@ -23,6 +23,8 @@ import com.campusmeal.android.R
 import com.campusmeal.android.app.CampusMealApplication
 import com.campusmeal.android.feature.context.LocationContextScreen
 import com.campusmeal.android.feature.context.LocationContextViewModel
+import com.campusmeal.android.feature.inventory.presentation.InventoryRoute
+import com.campusmeal.android.feature.inventory.presentation.InventoryViewModel
 
 /**
  * Registers every route in [CampusMealRoute]. Feature screens replace the placeholders
@@ -40,10 +42,22 @@ fun CampusMealNavHost(
         modifier = modifier,
     ) {
         composable<CampusMealRoute.Home> {
-            HomePlaceholder(onOpenContext = { navController.navigate(CampusMealRoute.Context) })
+            HomePlaceholder(onOpenInventory = {
+                navController.navigate(CampusMealRoute.Inventory)
+            },
+                onOpenContext = { navController.navigate(CampusMealRoute.Context) })
         }
         composable<CampusMealRoute.Auth> { RoutePlaceholder("Auth") }
-        composable<CampusMealRoute.Inventory> { RoutePlaceholder("Inventory") }
+        composable<CampusMealRoute.Inventory> {
+            val container =
+                (LocalContext.current.applicationContext as CampusMealApplication).container
+
+            InventoryRoute(
+                viewModel = viewModel(
+                    factory = InventoryViewModel.factory(container),
+                ),
+            )
+        }
         // Hosts the BQ4 location section on its own until the Set Context screen exists.
         composable<CampusMealRoute.Context> {
             val container = (LocalContext.current.applicationContext as CampusMealApplication).container
@@ -60,7 +74,10 @@ fun CampusMealNavHost(
 
 /** Temporary entry point so the BQ4 context flow can be reached and validated by hand. */
 @Composable
-private fun HomePlaceholder(onOpenContext: () -> Unit) {
+private fun HomePlaceholder(
+    onOpenInventory: () -> Unit,
+    onOpenContext: () -> Unit,
+) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -69,14 +86,21 @@ private fun HomePlaceholder(onOpenContext: () -> Unit) {
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(
                 text = stringResource(R.string.foundation_ready),
                 style = MaterialTheme.typography.headlineMedium,
                 textAlign = TextAlign.Center,
             )
-            Button(onClick = onOpenContext) { Text(stringResource(R.string.context_open_action)) }
+
+            Button(onClick = onOpenInventory) {
+                Text("Inventory")
+            }
+
+            Button(onClick = onOpenContext) {
+                Text(stringResource(R.string.context_open_action))
+            }
         }
     }
 }
