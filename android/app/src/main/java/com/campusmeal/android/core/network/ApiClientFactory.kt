@@ -2,6 +2,7 @@ package com.campusmeal.android.core.network
 
 import java.util.concurrent.TimeUnit
 import kotlinx.serialization.json.Json
+import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -27,14 +28,18 @@ object ApiClientFactory {
     /**
      * Builds the shared OkHttp client. Logging is only installed when [NetworkConfig.httpLoggingEnabled]
      * is true, which the app sets from BuildConfig.DEBUG, so release builds carry no logging interceptor.
+     * [interceptors] run before logging, so what they change is what gets logged.
      */
     fun createOkHttpClient(
         config: NetworkConfig,
+        interceptors: List<Interceptor> = emptyList(),
+        // Last, so callers can pass it as a trailing lambda.
         logger: HttpLoggingInterceptor.Logger = HttpLoggingInterceptor.Logger.DEFAULT,
     ): OkHttpClient =
         OkHttpClient.Builder()
             .connectTimeout(config.connectTimeoutSeconds, TimeUnit.SECONDS)
             .readTimeout(config.readTimeoutSeconds, TimeUnit.SECONDS)
+            .apply { interceptors.forEach(::addInterceptor) }
             .apply { if (config.httpLoggingEnabled) addInterceptor(createLoggingInterceptor(logger)) }
             .build()
 
