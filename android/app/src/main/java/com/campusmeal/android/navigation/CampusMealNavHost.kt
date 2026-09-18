@@ -23,11 +23,14 @@ import androidx.navigation.compose.composable
 import com.campusmeal.android.R
 import com.campusmeal.android.app.AppContainer
 import com.campusmeal.android.app.CampusMealApplication
+import com.campusmeal.android.feature.auth.AuthViewModel
+import com.campusmeal.android.feature.auth.LoginScreen
+import com.campusmeal.android.feature.auth.RegistrationScreen
+import com.campusmeal.android.feature.context.ContextViewModel
 import com.campusmeal.android.feature.context.LocationContextViewModel
+import com.campusmeal.android.feature.context.SetContextScreen
 import com.campusmeal.android.feature.inventory.presentation.InventoryRoute
 import com.campusmeal.android.feature.inventory.presentation.InventoryViewModel
-import com.campusmeal.android.feature.context.ContextViewModel
-import com.campusmeal.android.feature.context.SetContextScreen
 
 /**
  * The signed-out graph: Login and Registration. A successful login or registration changes the
@@ -90,7 +93,7 @@ fun CampusMealNavHost(
                 ),
             )
         }
-        // Hosts the BQ4 location section on its own until the Set Context screen exists.
+        // BQ4 Set Context: Natalia's form with the location section embedded.
         composable<CampusMealRoute.Context> {
             val container =
                 (LocalContext.current.applicationContext

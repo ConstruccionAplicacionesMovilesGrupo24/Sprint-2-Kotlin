@@ -80,8 +80,7 @@ messages are a live region. The terms row toggles as a whole, so its label belon
 
 ## Validation
 
-No automated tests (prototype rules). `assembleDebug` and `lintDebug` pass with 0 errors; the test
-sources re-added in the branch still compile.
+No automated tests (prototype rules). `assembleDebug` and `lintDebug` pass with 0 errors.
 
 Checked by hand on the `Tusky_API_36` emulator against a throwaway local stub of the five
 endpoints (not part of the repository):
@@ -102,5 +101,5 @@ endpoints (not part of the repository):
 
 ## Pending
 
-- `CampusMealAppTest` (instrumented, re-added in this branch) expects Home on launch. With
-  protected navigation the app now opens Login, so that test needs updating by whoever keeps it.
+- Natalia's part: refresh, Keystore storage, session restoration at start and `GET me`.
+- "Forgot password?" once the backend offers a reset contract.
