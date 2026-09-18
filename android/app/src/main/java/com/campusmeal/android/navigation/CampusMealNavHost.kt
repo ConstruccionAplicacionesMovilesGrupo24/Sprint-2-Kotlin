@@ -26,6 +26,12 @@ import com.campusmeal.android.feature.inventory.presentation.InventoryRoute
 import com.campusmeal.android.feature.inventory.presentation.InventoryViewModel
 import com.campusmeal.android.feature.context.ContextViewModel
 import com.campusmeal.android.feature.context.SetContextScreen
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.campusmeal.android.feature.context.RestaurantResultsPrototypeScreen
+import com.campusmeal.android.feature.context.data.remote.RestaurantSearchRequestDto
 
 /**
  * Registers every route in [CampusMealRoute]. Feature screens replace the placeholders
@@ -37,6 +43,9 @@ fun CampusMealNavHost(
     modifier: Modifier = Modifier,
     startDestination: CampusMealRoute = CampusMealRoute.Home,
 ) {
+    var lastRestaurantSearchRequest by remember {
+        mutableStateOf<RestaurantSearchRequestDto?>(null)
+    }
     NavHost(
         navController = navController,
         startDestination = startDestination,
@@ -83,18 +92,28 @@ fun CampusMealNavHost(
                 onBack = {
                     navController.popBackStack()
                 },
-                onSearchReady = {
-                    /*
-                     * The request is already validated and built here.
-                     * Restaurant results are the next integration step.
-                     */
+                onSearchReady = { request ->
+                    lastRestaurantSearchRequest = request
+
                     navController.navigate(
                         CampusMealRoute.Restaurants,
                     )
                 },
             )
         }
-        composable<CampusMealRoute.Restaurants> { RoutePlaceholder("Restaurants") }
+        composable<CampusMealRoute.Restaurants> {
+            RestaurantResultsPrototypeScreen(
+                request = lastRestaurantSearchRequest,
+                onBack = {
+                    navController.popBackStack()
+                },
+                onChooseRestaurant = {
+                    navController.navigate(
+                        CampusMealRoute.Decision,
+                    )
+                },
+            )
+        }
         composable<CampusMealRoute.Decision> { RoutePlaceholder("Decision") }
         composable<CampusMealRoute.Profile> { RoutePlaceholder("Profile") }
     }
