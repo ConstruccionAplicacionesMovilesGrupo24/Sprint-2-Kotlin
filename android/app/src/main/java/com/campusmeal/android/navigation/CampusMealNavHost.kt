@@ -23,13 +23,11 @@ import androidx.navigation.compose.composable
 import com.campusmeal.android.R
 import com.campusmeal.android.app.AppContainer
 import com.campusmeal.android.app.CampusMealApplication
-import com.campusmeal.android.feature.auth.AuthViewModel
-import com.campusmeal.android.feature.auth.LoginScreen
-import com.campusmeal.android.feature.auth.RegistrationScreen
-import com.campusmeal.android.feature.context.LocationContextScreen
 import com.campusmeal.android.feature.context.LocationContextViewModel
 import com.campusmeal.android.feature.inventory.presentation.InventoryRoute
 import com.campusmeal.android.feature.inventory.presentation.InventoryViewModel
+import com.campusmeal.android.feature.context.ContextViewModel
+import com.campusmeal.android.feature.context.SetContextScreen
 
 /**
  * The signed-out graph: Login and Registration. A successful login or registration changes the
@@ -94,10 +92,37 @@ fun CampusMealNavHost(
         }
         // Hosts the BQ4 location section on its own until the Set Context screen exists.
         composable<CampusMealRoute.Context> {
-            val container = (LocalContext.current.applicationContext as CampusMealApplication).container
-            LocationContextScreen(
-                viewModel = viewModel(factory = LocationContextViewModel.factory(container)),
-                onBack = { navController.popBackStack() },
+            val container =
+                (LocalContext.current.applicationContext
+                        as CampusMealApplication).container
+
+            val locationViewModel:
+                    LocationContextViewModel =
+                viewModel(
+                    factory =
+                        LocationContextViewModel
+                            .factory(container),
+                )
+
+            val contextViewModel:
+                    ContextViewModel =
+                viewModel()
+
+            SetContextScreen(
+                contextViewModel = contextViewModel,
+                locationViewModel = locationViewModel,
+                onBack = {
+                    navController.popBackStack()
+                },
+                onSearchReady = {
+                    /*
+                     * The request is already validated and built here.
+                     * Restaurant results are the next integration step.
+                     */
+                    navController.navigate(
+                        CampusMealRoute.Restaurants,
+                    )
+                },
             )
         }
         composable<CampusMealRoute.Restaurants> { RoutePlaceholder("Restaurants") }
