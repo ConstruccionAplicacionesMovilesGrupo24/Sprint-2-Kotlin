@@ -26,6 +26,9 @@ import com.campusmeal.android.feature.decision.data.repository.MealDecisionRepos
 import com.campusmeal.android.feature.decision.data.repository.NetworkMealDecisionRepository
 import com.campusmeal.android.feature.decision.domain.CompareMealOptionsUseCase
 import com.campusmeal.android.feature.inventory.data.local.RoomInventoryCache
+import com.campusmeal.android.feature.restaurants.data.NetworkRestaurantRepository
+import com.campusmeal.android.feature.restaurants.data.RestaurantApi
+import com.campusmeal.android.feature.restaurants.data.RestaurantRepository
 import com.campusmeal.android.feature.inventory.data.remote.InventoryApi
 import com.campusmeal.android.feature.inventory.data.repository.OfflineFirstInventoryRepository
 import com.campusmeal.android.feature.inventory.domain.repository.InventoryRepository
@@ -51,6 +54,7 @@ interface AppContainer {
     val inventoryRepository: InventoryRepository
     val mealDecisionRepository: MealDecisionRepository
     val compareMealOptions: CompareMealOptionsUseCase
+    val restaurantRepository: RestaurantRepository
 }
 
 class DefaultAppContainer(context: Context) : AppContainer {
@@ -113,5 +117,13 @@ class DefaultAppContainer(context: Context) : AppContainer {
 
     override val compareMealOptions: CompareMealOptionsUseCase by lazy {
         CompareMealOptionsUseCase(mealDecisionRepository)
+    }
+
+    override val restaurantRepository: RestaurantRepository by lazy {
+        NetworkRestaurantRepository(
+            api = retrofit.create(RestaurantApi::class.java),
+            authorizationHeaderProvider = authorizationHeaderProvider,
+            preferences = preferences,
+        )
     }
 }
