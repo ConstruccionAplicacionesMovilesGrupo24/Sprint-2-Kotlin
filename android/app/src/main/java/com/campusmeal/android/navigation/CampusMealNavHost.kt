@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,19 +21,52 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.campusmeal.android.R
+import com.campusmeal.android.app.AppContainer
 import com.campusmeal.android.app.CampusMealApplication
+import com.campusmeal.android.feature.auth.AuthViewModel
+import com.campusmeal.android.feature.auth.LoginScreen
+import com.campusmeal.android.feature.auth.RegistrationScreen
 import com.campusmeal.android.feature.context.LocationContextScreen
 import com.campusmeal.android.feature.context.LocationContextViewModel
 import com.campusmeal.android.feature.inventory.presentation.InventoryRoute
 import com.campusmeal.android.feature.inventory.presentation.InventoryViewModel
 
 /**
- * Registers every route in [CampusMealRoute]. Feature screens replace the placeholders
- * as they are implemented.
+ * The signed-out graph: Login and Registration. A successful login or registration changes the
+ * session status, and `CampusMealApp` swaps this graph for the protected one.
+ */
+@Composable
+fun AuthNavHost(
+    navController: NavHostController,
+    container: AppContainer,
+    showSessionExpired: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    NavHost(navController = navController, startDestination = CampusMealRoute.Auth, modifier = modifier) {
+        composable<CampusMealRoute.Auth> {
+            LoginScreen(
+                viewModel = viewModel(factory = AuthViewModel.factory(container)),
+                onCreateAccount = { navController.navigate(CampusMealRoute.Register) },
+                showSessionExpired = showSessionExpired,
+            )
+        }
+        composable<CampusMealRoute.Register> {
+            RegistrationScreen(
+                viewModel = viewModel(factory = AuthViewModel.factory(container)),
+                onBack = { navController.popBackStack() },
+            )
+        }
+    }
+}
+
+/**
+ * The protected graph. `CampusMealApp` only composes it while a session exists. Feature screens
+ * replace the placeholders as they are implemented.
  */
 @Composable
 fun CampusMealNavHost(
     navController: NavHostController,
+    onLogout: () -> Unit,
     modifier: Modifier = Modifier,
     startDestination: CampusMealRoute = CampusMealRoute.Home,
 ) {
@@ -45,9 +79,9 @@ fun CampusMealNavHost(
             HomePlaceholder(onOpenInventory = {
                 navController.navigate(CampusMealRoute.Inventory)
             },
-                onOpenContext = { navController.navigate(CampusMealRoute.Context) })
+                onOpenContext = { navController.navigate(CampusMealRoute.Context) },
+                onLogout = onLogout)
         }
-        composable<CampusMealRoute.Auth> { RoutePlaceholder("Auth") }
         composable<CampusMealRoute.Inventory> {
             val container =
                 (LocalContext.current.applicationContext as CampusMealApplication).container
@@ -77,6 +111,7 @@ fun CampusMealNavHost(
 private fun HomePlaceholder(
     onOpenInventory: () -> Unit,
     onOpenContext: () -> Unit,
+    onLogout: () -> Unit,
 ) {
     Box(
         modifier = Modifier
@@ -100,6 +135,11 @@ private fun HomePlaceholder(
 
             Button(onClick = onOpenContext) {
                 Text(stringResource(R.string.context_open_action))
+            }
+
+            // Temporary, until the Profile screen hosts it.
+            TextButton(onClick = onLogout) {
+                Text(stringResource(R.string.auth_logout_action))
             }
         }
     }

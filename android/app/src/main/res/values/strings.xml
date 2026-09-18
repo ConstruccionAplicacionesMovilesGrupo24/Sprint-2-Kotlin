@@ -34,4 +34,35 @@
     <string name="context_campus_none_subtitle">None selected</string>
     <string name="context_campus_manual_subtitle">Chosen manually</string>
     <string name="context_campus_option_selected">✓ %1$s</string>
+
+    <!-- Issue #5 authentication. Copy follows screens 01, 02 and 20 of the CampusMeal UI Figma file. -->
+    <string name="auth_app_mark">CM</string>
+    <string name="auth_login_title">Welcome back</string>
+    <string name="auth_login_subtitle">Decide what to eat today in under a minute.</string>
+    <string name="auth_login_action">Log in</string>
+    <string name="auth_login_no_account">Don\'t have an account?</string>
+    <string name="auth_login_create_account">Create account</string>
+    <string name="auth_register_title">Create account</string>
+    <string name="auth_register_subtitle">Use your institutional email to activate recommendations for your campus.</string>
+    <string name="auth_register_action">Create account</string>
+    <string name="auth_field_full_name">Full name</string>
+    <string name="auth_field_email">Institutional email</string>
+    <string name="auth_field_password">Password</string>
+    <string name="auth_field_confirm_password">Confirm password</string>
+    <string name="auth_password_hint">At least 8 characters, with letters and numbers.</string>
+    <string name="auth_terms">I agree to the Terms of Use and Privacy Policy.</string>
+    <string name="auth_field_error_required">This field is required.</string>
+    <string name="auth_field_error_email">Enter a valid email address.</string>
+    <string name="auth_field_error_password_short">Use at least 8 characters.</string>
+    <string name="auth_field_error_password_mix">Use both letters and numbers.</string>
+    <string name="auth_field_error_mismatch">Passwords do not match.</string>
+    <string name="auth_field_error_terms">Accept the terms to create an account.</string>
+    <string name="auth_error_invalid_credentials">The email or password is incorrect.</string>
+    <string name="auth_error_email_taken">An account with this email already exists. Log in instead.</string>
+    <string name="auth_error_rejected_input">Some details were not accepted. Check them and try again.</string>
+    <string name="auth_error_connection">We could not reach CampusMeal. Check your connection and try again.</string>
+    <string name="auth_error_session_expired">Your session expired. Log in again to continue.</string>
+    <string name="auth_expired_title">Your session expired</string>
+    <string name="auth_expired_body">For security, we signed you out after a period of inactivity. Log back in to pick up where you left off.</string>
+    <string name="auth_logout_action">Log out</string>
 </resources>

@@ -6,8 +6,12 @@ import kotlinx.serialization.Serializable
 @Serializable
 sealed interface CampusMealRoute {
 
+    /** Login. Lives in the signed-out graph, together with [Register]. */
     @Serializable
     data object Auth : CampusMealRoute
+
+    @Serializable
+    data object Register : CampusMealRoute
 
     @Serializable
     data object Home : CampusMealRoute
