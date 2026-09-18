@@ -17,11 +17,18 @@ import com.campusmeal.android.core.session.InMemorySessionStorage
 import com.campusmeal.android.core.session.SessionAuthorizationHeaderProvider
 import com.campusmeal.android.core.session.SessionRepository
 import com.campusmeal.android.core.session.SessionStorage
+import com.campusmeal.android.feature.auth.data.AuthApi
+import com.campusmeal.android.feature.auth.data.NetworkAuthRepository
+import com.campusmeal.android.feature.auth.data.SessionExpiryInterceptor
+import com.campusmeal.android.feature.auth.domain.AuthRepository
 import com.campusmeal.android.feature.decision.data.remote.MealDecisionApi
 import com.campusmeal.android.feature.decision.data.repository.MealDecisionRepository
 import com.campusmeal.android.feature.decision.data.repository.NetworkMealDecisionRepository
 import com.campusmeal.android.feature.decision.domain.CompareMealOptionsUseCase
 import com.campusmeal.android.feature.inventory.data.local.RoomInventoryCache
+import com.campusmeal.android.feature.restaurants.data.NetworkRestaurantRepository
+import com.campusmeal.android.feature.restaurants.data.RestaurantApi
+import com.campusmeal.android.feature.restaurants.data.RestaurantRepository
 import com.campusmeal.android.feature.inventory.data.remote.InventoryApi
 import com.campusmeal.android.feature.inventory.data.repository.OfflineFirstInventoryRepository
 import com.campusmeal.android.feature.inventory.domain.repository.InventoryRepository
@@ -40,12 +47,14 @@ interface AppContainer {
     val preferences: DataStore<Preferences>
     val sessionStorage: SessionStorage
     val sessionRepository: SessionRepository
+    val authRepository: AuthRepository
     val locationProvider: LocationProvider
     val analyticsTracker: AnalyticsTracker
     val authorizationHeaderProvider: AuthorizationHeaderProvider
     val inventoryRepository: InventoryRepository
     val mealDecisionRepository: MealDecisionRepository
     val compareMealOptions: CompareMealOptionsUseCase
+    val restaurantRepository: RestaurantRepository
 }
 
 class DefaultAppContainer(context: Context) : AppContainer {
@@ -59,7 +68,13 @@ class DefaultAppContainer(context: Context) : AppContainer {
         )
     }
 
-    override val okHttpClient: OkHttpClient by lazy { ApiClientFactory.createOkHttpClient(networkConfig) }
+    // The interceptor reaches authRepository lazily, only when a 401 arrives, so there is no init cycle.
+    override val okHttpClient: OkHttpClient by lazy {
+        ApiClientFactory.createOkHttpClient(
+            config = networkConfig,
+            interceptors = listOf(SessionExpiryInterceptor { authRepository.expireSession() }),
+        )
+    }
 
     override val retrofit: Retrofit by lazy { ApiClientFactory.createRetrofit(networkConfig, okHttpClient) }
 
@@ -71,6 +86,11 @@ class DefaultAppContainer(context: Context) : AppContainer {
     override val sessionStorage: SessionStorage by lazy { InMemorySessionStorage() }
 
     override val sessionRepository: SessionRepository by lazy { SessionRepository(sessionStorage) }
+
+    // INTERIM: replaced by the full authentication data layer behind the same interface.
+    override val authRepository: AuthRepository by lazy {
+        NetworkAuthRepository(retrofit.create(AuthApi::class.java), sessionStorage)
+    }
 
     override val locationProvider: LocationProvider by lazy { FusedLocationProvider(appContext) }
 
@@ -97,5 +117,13 @@ class DefaultAppContainer(context: Context) : AppContainer {
 
     override val compareMealOptions: CompareMealOptionsUseCase by lazy {
         CompareMealOptionsUseCase(mealDecisionRepository)
+    }
+
+    override val restaurantRepository: RestaurantRepository by lazy {
+        NetworkRestaurantRepository(
+            api = retrofit.create(RestaurantApi::class.java),
+            authorizationHeaderProvider = authorizationHeaderProvider,
+            preferences = preferences,
+        )
     }
 }
