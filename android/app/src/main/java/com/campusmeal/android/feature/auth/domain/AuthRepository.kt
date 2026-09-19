@@ -21,6 +21,15 @@ interface AuthRepository {
     suspend fun logout()
 
     /**
+     * Attempts to recover an authenticated session after HTTP 401.
+     *
+     * Returns true only when fresh tokens were obtained.
+     */
+    suspend fun refreshSession(
+        rejectedAccessToken: String? = null,
+    ): Boolean
+
+    /**
      * Ends a session the backend rejected and could not be recovered — after the single refresh
      * attempt fails. Moves [sessionStatus] to [SessionStatus.EXPIRED].
      */

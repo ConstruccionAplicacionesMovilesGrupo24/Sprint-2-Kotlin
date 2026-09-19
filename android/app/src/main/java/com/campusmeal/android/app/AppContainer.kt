@@ -12,14 +12,14 @@ import com.campusmeal.android.core.location.FusedLocationProvider
 import com.campusmeal.android.core.location.LocationProvider
 import com.campusmeal.android.core.network.ApiClientFactory
 import com.campusmeal.android.core.network.NetworkConfig
+import com.campusmeal.android.core.session.KeystoreSessionStorage
 import com.campusmeal.android.core.session.AuthorizationHeaderProvider
-import com.campusmeal.android.core.session.InMemorySessionStorage
 import com.campusmeal.android.core.session.SessionAuthorizationHeaderProvider
 import com.campusmeal.android.core.session.SessionRepository
 import com.campusmeal.android.core.session.SessionStorage
+import com.campusmeal.android.core.session.SessionRefreshInterceptor
 import com.campusmeal.android.feature.auth.data.AuthApi
 import com.campusmeal.android.feature.auth.data.NetworkAuthRepository
-import com.campusmeal.android.feature.auth.data.SessionExpiryInterceptor
 import com.campusmeal.android.feature.auth.domain.AuthRepository
 import com.campusmeal.android.feature.decision.data.remote.MealDecisionApi
 import com.campusmeal.android.feature.decision.data.repository.MealDecisionRepository
@@ -72,7 +72,16 @@ class DefaultAppContainer(context: Context) : AppContainer {
     override val okHttpClient: OkHttpClient by lazy {
         ApiClientFactory.createOkHttpClient(
             config = networkConfig,
-            interceptors = listOf(SessionExpiryInterceptor { authRepository.expireSession() }),
+            interceptors = listOf(
+                SessionRefreshInterceptor(
+                    authRepository = {
+                        authRepository
+                    },
+                    authorizationHeaderProvider = {
+                        authorizationHeaderProvider
+                    },
+                ),
+            ),
         )
     }
 
@@ -83,8 +92,9 @@ class DefaultAppContainer(context: Context) : AppContainer {
     override val preferences: DataStore<Preferences> by lazy { CampusMealPreferences.dataStore(appContext) }
 
     // PENDING: replace with an Android Keystore-backed implementation before real login ships.
-    override val sessionStorage: SessionStorage by lazy { InMemorySessionStorage() }
-
+    override val sessionStorage: SessionStorage by lazy {
+        KeystoreSessionStorage(appContext)
+    }
     override val sessionRepository: SessionRepository by lazy { SessionRepository(sessionStorage) }
 
     // INTERIM: replaced by the full authentication data layer behind the same interface.
