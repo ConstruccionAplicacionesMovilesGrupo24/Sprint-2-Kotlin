@@ -32,16 +32,18 @@ import com.campusmeal.android.feature.auth.LoginScreen
 import com.campusmeal.android.feature.auth.RegistrationScreen
 import com.campusmeal.android.feature.context.ContextViewModel
 import com.campusmeal.android.feature.context.LocationContextViewModel
-import com.campusmeal.android.feature.context.RestaurantResultsPrototypeScreen
 import com.campusmeal.android.feature.context.SetContextScreen
 import com.campusmeal.android.feature.context.data.remote.RestaurantSearchRequestDto
 import com.campusmeal.android.feature.inventory.presentation.InventoryRoute
 import com.campusmeal.android.feature.inventory.presentation.InventoryViewModel
+import com.campusmeal.android.feature.restaurants.presentation.RestaurantResultsRoute
+import com.campusmeal.android.feature.restaurants.presentation.RestaurantResultsViewModel
+import androidx.navigation.toRoute
+import com.campusmeal.android.feature.restaurants.presentation.RestaurantDetailRoute
+import com.campusmeal.android.feature.restaurants.presentation.RestaurantDetailViewModel
 
 /**
- * The signed-out graph: Login and Registration.
- * A successful login or registration changes the session status,
- * and CampusMealApp swaps this graph for the protected one.
+ * Signed-out graph.
  */
 @Composable
 fun AuthNavHost(
@@ -83,8 +85,7 @@ fun AuthNavHost(
 }
 
 /**
- * Protected graph.
- * CampusMealApp only composes it while a session exists.
+ * Protected application graph.
  */
 @Composable
 fun CampusMealNavHost(
@@ -93,10 +94,12 @@ fun CampusMealNavHost(
     modifier: Modifier = Modifier,
     startDestination: CampusMealRoute = CampusMealRoute.Home,
 ) {
+
     /*
-     * Prototype-only state:
-     * stores the last validated BQ4 request so the restaurant-results
-     * screen can display mock results using the selected context.
+     * Holds the last validated contextual search.
+     *
+     * It is kept only in memory and is not persisted, so precise
+     * location information is not stored locally.
      */
     var lastRestaurantSearchRequest by remember {
         mutableStateOf<RestaurantSearchRequestDto?>(null)
@@ -125,6 +128,7 @@ fun CampusMealNavHost(
         }
 
         composable<CampusMealRoute.Inventory> {
+
             val container =
                 (
                         LocalContext.current.applicationContext
@@ -133,18 +137,20 @@ fun CampusMealNavHost(
 
             InventoryRoute(
                 viewModel = viewModel(
-                    factory = InventoryViewModel.factory(
-                        container,
-                    ),
+                    factory =
+                        InventoryViewModel.factory(
+                            container,
+                        ),
                 ),
             )
         }
 
         /*
-         * BQ4 Set Context:
-         * combines Juan's location flow with Natalia's context form.
+         * BQ4:
+         * contextual information + location.
          */
         composable<CampusMealRoute.Context> {
+
             val container =
                 (
                         LocalContext.current.applicationContext
@@ -164,13 +170,17 @@ fun CampusMealNavHost(
                 viewModel()
 
             SetContextScreen(
-                contextViewModel = contextViewModel,
-                locationViewModel = locationViewModel,
+                contextViewModel =
+                    contextViewModel,
+                locationViewModel =
+                    locationViewModel,
                 onBack = {
                     navController.popBackStack()
                 },
                 onSearchReady = { request ->
-                    lastRestaurantSearchRequest = request
+
+                    lastRestaurantSearchRequest =
+                        request
 
                     navController.navigate(
                         CampusMealRoute.Restaurants,
@@ -180,35 +190,99 @@ fun CampusMealNavHost(
         }
 
         /*
-         * Prototype results for BQ4.
-         * Uses the validated request built in SetContextScreen.
+         * Issue #6:
+         * real restaurant results using RestaurantRepository.
          */
         composable<CampusMealRoute.Restaurants> {
-            RestaurantResultsPrototypeScreen(
-                request = lastRestaurantSearchRequest,
+
+            val container =
+                (
+                        LocalContext.current.applicationContext
+                                as CampusMealApplication
+                        ).container
+
+            val resultsViewModel:
+                    RestaurantResultsViewModel =
+                viewModel(
+                    factory =
+                        RestaurantResultsViewModel
+                            .factory(container),
+                )
+
+            RestaurantResultsRoute(
+                viewModel = resultsViewModel,
+                request =
+                    lastRestaurantSearchRequest,
                 onBack = {
                     navController.popBackStack()
                 },
-                onChooseRestaurant = {
+                onChangeContext = {
+                    /*
+                     * Restaurants are reached directly from Context,
+                     * so returning one destination brings the user
+                     * back to the context form.
+                     */
+                    navController.popBackStack()
+                },
+                onRestaurantSelected = { restaurantId ->
                     navController.navigate(
-                        CampusMealRoute.Decision,
+                        CampusMealRoute.RestaurantDetail(
+                            restaurantId = restaurantId,
+                        ),
                     )
+                },
+            )
+        }
+        composable<CampusMealRoute.RestaurantDetail> { backStackEntry ->
+
+            val route =
+                backStackEntry
+                    .toRoute<
+                            CampusMealRoute.RestaurantDetail
+                            >()
+
+            val container =
+                (
+                        LocalContext.current.applicationContext
+                                as CampusMealApplication
+                        ).container
+
+            val detailViewModel:
+                    RestaurantDetailViewModel =
+                viewModel(
+                    factory =
+                        RestaurantDetailViewModel
+                            .factory(
+                                container = container,
+                                restaurantId =
+                                    route.restaurantId,
+                            ),
+                )
+
+            RestaurantDetailRoute(
+                viewModel = detailViewModel,
+                onBack = {
+                    navController.popBackStack()
                 },
             )
         }
 
         composable<CampusMealRoute.Decision> {
-            RoutePlaceholder("Decision")
+            RoutePlaceholder(
+                "Decision",
+            )
         }
 
         composable<CampusMealRoute.Profile> {
-            RoutePlaceholder("Profile")
+            RoutePlaceholder(
+                "Profile",
+            )
         }
     }
 }
 
 /**
- * Temporary Home screen while the final navigation UI is not implemented.
+ * Temporary Home while the final navigation UI is not implemented.
  */
 @Composable
 private fun HomePlaceholder(
@@ -220,32 +294,43 @@ private fun HomePlaceholder(
         modifier = Modifier
             .fillMaxSize()
             .padding(24.dp),
-        contentAlignment = Alignment.Center,
+        contentAlignment =
+            Alignment.Center,
     ) {
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalAlignment =
+                Alignment.CenterHorizontally,
+            verticalArrangement =
+                Arrangement.spacedBy(
+                    16.dp,
+                ),
         ) {
 
             Text(
-                text = stringResource(
-                    R.string.foundation_ready,
-                ),
+                text =
+                    stringResource(
+                        R.string.foundation_ready,
+                    ),
                 style =
                     MaterialTheme
                         .typography
                         .headlineMedium,
-                textAlign = TextAlign.Center,
+                textAlign =
+                    TextAlign.Center,
             )
 
             Button(
-                onClick = onOpenInventory,
+                onClick =
+                    onOpenInventory,
             ) {
-                Text("Inventory")
+                Text(
+                    "Inventory",
+                )
             }
 
             Button(
-                onClick = onOpenContext,
+                onClick =
+                    onOpenContext,
             ) {
                 Text(
                     stringResource(
@@ -254,11 +339,9 @@ private fun HomePlaceholder(
                 )
             }
 
-            /*
-             * Temporary until Profile owns the logout action.
-             */
             TextButton(
-                onClick = onLogout,
+                onClick =
+                    onLogout,
             ) {
                 Text(
                     stringResource(
@@ -290,7 +373,8 @@ private fun PlaceholderMessage(
         modifier = Modifier
             .fillMaxSize()
             .padding(24.dp),
-        contentAlignment = Alignment.Center,
+        contentAlignment =
+            Alignment.Center,
     ) {
         Text(
             text = text,
@@ -298,7 +382,8 @@ private fun PlaceholderMessage(
                 MaterialTheme
                     .typography
                     .headlineMedium,
-            textAlign = TextAlign.Center,
+            textAlign =
+                TextAlign.Center,
         )
     }
 }
