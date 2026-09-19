@@ -2,11 +2,9 @@ package com.campusmeal.android.navigation
 
 import kotlinx.serialization.Serializable
 
-/** Type-safe navigation contract for the top-level CampusMeal destinations. */
 @Serializable
 sealed interface CampusMealRoute {
 
-    /** Login. Lives in the signed-out graph, together with [Register]. */
     @Serializable
     data object Auth : CampusMealRoute
 
@@ -24,6 +22,11 @@ sealed interface CampusMealRoute {
 
     @Serializable
     data object Restaurants : CampusMealRoute
+
+    @Serializable
+    data class RestaurantDetail(
+        val restaurantId: String,
+    ) : CampusMealRoute
 
     /** Cook / Walk / Order decision flow. */
     @Serializable
