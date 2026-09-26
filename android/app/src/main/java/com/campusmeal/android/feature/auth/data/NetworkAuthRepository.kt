@@ -78,6 +78,11 @@ data class TokenResponseDto(
 class NetworkAuthRepository(
     private val api: AuthApi,
     private val storage: SessionStorage,
+    /**
+     * Deletes per-user cached data. Runs when a session ends and before a new one is stored, so
+     * the next account never sees the previous account's cache, even offline.
+     */
+    private val onSessionEnded: suspend () -> Unit = {},
 ) : AuthRepository {
 
     private val expired =
@@ -159,6 +164,7 @@ class NetworkAuthRepository(
         }
 
         storage.clear()
+        onSessionEnded()
         expired.value = false
     }
 
@@ -224,10 +230,25 @@ class NetworkAuthRepository(
                     }
                 }
 
+                /*
+                 * No connection or a server error says nothing about the
+                 * session: keep it, so the user is not signed out offline.
+                 */
+                is ApiResult.NetworkUnavailable -> false
+
+                is ApiResult.HttpError ->
+                    if (result.code in 500..599) {
+                        false
+                    } else {
+                        invalidateSession()
+                        false
+                    }
+
                 else -> {
                     /*
-                     * A failed refresh means the local session can
-                     * no longer be trusted.
+                     * The backend rejected the refresh token (401) or
+                     * answered nonsense: the local session can no
+                     * longer be trusted.
                      */
                     invalidateSession()
                     false
@@ -252,6 +273,7 @@ class NetworkAuthRepository(
 
     private suspend fun invalidateSession() {
         storage.clear()
+        onSessionEnded()
         expired.value = true
     }
 
@@ -276,6 +298,9 @@ class NetworkAuthRepository(
                         null,
                     )
                 } else {
+                    // A new sign-in may be a different account.
+                    onSessionEnded()
+
                     storage.save(
                         SessionTokens(
                             accessToken =

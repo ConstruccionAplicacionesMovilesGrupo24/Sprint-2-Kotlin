@@ -1,5 +1,9 @@
 package com.campusmeal.android.feature.decision.data.mapper
 
+import com.campusmeal.android.feature.context.data.remote.RestaurantSearchRequestDto
+import com.campusmeal.android.feature.context.domain.CampusCatalog
+import com.campusmeal.android.feature.context.domain.Coordinates
+import com.campusmeal.android.feature.context.domain.MealLocation
 import com.campusmeal.android.feature.decision.data.remote.CompareMealOptionsRequestDto
 import com.campusmeal.android.feature.decision.data.remote.CompareMealOptionsResponseDto
 import com.campusmeal.android.feature.decision.data.remote.ExpiringIngredientDto
@@ -7,6 +11,7 @@ import com.campusmeal.android.feature.decision.data.remote.LocationDto
 import com.campusmeal.android.feature.decision.data.remote.MealAlternativeDto
 import com.campusmeal.android.feature.decision.data.remote.RestaurantDto
 import com.campusmeal.android.feature.decision.domain.model.DecisionContext
+import com.campusmeal.android.feature.decision.domain.model.DietaryPreference
 import com.campusmeal.android.feature.decision.domain.model.ExpiringIngredient
 import com.campusmeal.android.feature.decision.domain.model.MealAlternative
 import com.campusmeal.android.feature.decision.domain.model.MealDecision
@@ -29,6 +34,23 @@ fun DecisionContext.toRequestDto(requestedAtEpochMillis: Long) = CompareMealOpti
     includeDelivery = includeDelivery,
     requestedAt = isoUtc(requestedAtEpochMillis),
 )
+
+/**
+ * Reuses the context the user validated for the BQ4 search, so Decision is reached from the same
+ * form. The coordinates stay in memory; the use case stamps a fresh `requestedAt`.
+ */
+fun RestaurantSearchRequestDto.toDecisionContext(): DecisionContext {
+    val campus = CampusCatalog.campuses.firstOrNull { it.id == campusId }
+    val coordinates = Coordinates(location.latitude, location.longitude, accuracyMeters = null)
+    val isCampusCenter = campus != null && campus.latitude == location.latitude && campus.longitude == location.longitude
+    return DecisionContext(
+        location = if (isCampusCenter) MealLocation.forCampus(campus) else MealLocation.fromDevice(coordinates, campus),
+        availableMinutes = availableMinutes,
+        maximumBudget = maximumBudget,
+        dietaryPreferences = dietaryPreferences.mapNotNull { name -> DietaryPreference.entries.firstOrNull { it.name == name } }.toSet(),
+        includeDelivery = includeDelivery,
+    )
+}
 
 /** `java.time` needs API 26 and minSdk is 24, so the timestamp is formatted by hand. */
 private fun isoUtc(epochMillis: Long): String =

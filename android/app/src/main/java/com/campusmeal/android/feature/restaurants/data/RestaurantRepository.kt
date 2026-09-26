@@ -24,6 +24,9 @@ interface RestaurantRepository {
     suspend fun search(request: RestaurantSearchRequestDto): RestaurantSearchResult
 
     suspend fun getRestaurant(restaurantId: String): RestaurantDetailResult
+
+    /** Deletes the cached last search. The cache is not scoped per user; sign-out calls this. */
+    suspend fun clearCache()
 }
 
 /**
@@ -108,7 +111,7 @@ class NetworkRestaurantRepository(
         preferences.edit { it[CACHE_KEY] = raw }
     }
 
-    private suspend fun clearCache() {
+    override suspend fun clearCache() {
         preferences.edit { it.remove(CACHE_KEY) }
     }
 

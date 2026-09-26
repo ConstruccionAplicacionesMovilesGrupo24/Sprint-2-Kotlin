@@ -1,11 +1,8 @@
 <resources>
     <string name="app_name">CampusMeal</string>
-    <string name="foundation_ready">CampusMeal Android foundation ready</string>
-    <string name="route_placeholder">%1$s route pending implementation</string>
 
     <!-- BQ4 context: device location and manual campus fallback. Copy follows screens 04, 13 and 14
          of the CampusMeal UI Figma file. -->
-    <string name="context_open_action">Set my lunch context</string>
     <string name="context_back">‹</string>
     <string name="context_location_appbar">Location</string>
     <string name="context_location_appbar_with">Context with location</string>
@@ -64,5 +61,4 @@
     <string name="auth_error_session_expired">Your session expired. Log in again to continue.</string>
     <string name="auth_expired_title">Your session expired</string>
     <string name="auth_expired_body">For security, we signed you out after a period of inactivity. Log back in to pick up where you left off.</string>
-    <string name="auth_logout_action">Log out</string>
 </resources>

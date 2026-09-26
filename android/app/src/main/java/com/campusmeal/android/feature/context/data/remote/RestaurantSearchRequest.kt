@@ -42,6 +42,10 @@ fun MealContext.toRestaurantSearchRequestDto(
         requestedAt = requestedAtEpochMillis.toIsoUtc(),
     )
 
+/** The same context evaluated now, e.g. when Home reopens a search built earlier. */
+fun RestaurantSearchRequestDto.requestedNow(epochMillis: Long = System.currentTimeMillis()): RestaurantSearchRequestDto =
+    copy(requestedAt = epochMillis.toIsoUtc())
+
 private fun Long.toIsoUtc(): String =
     SimpleDateFormat(
         "yyyy-MM-dd'T'HH:mm:ss'Z'",

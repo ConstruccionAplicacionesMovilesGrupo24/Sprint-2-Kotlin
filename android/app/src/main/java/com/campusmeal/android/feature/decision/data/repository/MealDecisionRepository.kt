@@ -55,7 +55,7 @@ class NetworkMealDecisionRepository(
             // The backend offered alternatives but none could be shown: that is a broken contract,
             // not an honest "nothing is available".
             mapped.skippedAlternatives > 0 -> failure(MealDecisionError.InvalidResponse)
-            else -> MealDecisionResult.NoAvailableAlternatives
+            else -> MealDecisionResult.NoAvailableAlternatives(recommendationId, mainExplanation)
         }
     }
 

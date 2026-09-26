@@ -123,3 +123,28 @@ and Natalia's Comparison screen calls `container.compareMealOptions`.
   `mainExplanation` and `supportingReasons` are per recommendation or per alternative.
 - Currency: costs are whole Colombian pesos and no currency code is sent or read.
 - No pagination or partial refresh: each comparison is a fresh call.
+
+## Update 2026-09-25 — integration audit
+
+The statements above about runtime status are outdated. Current state, verified on an API 36
+emulator against the NestJS backend and PostgreSQL:
+
+- The backend implements `POST /api/v1/meal-decisions/compare` (CampusMealBack Issue #6); the
+  response shape matches `CompareMealOptionsResponseDto` field for field.
+- Login stores tokens in `KeystoreSessionStorage`, not `InMemorySessionStorage`.
+- **Entry point:** Results screen → **Compare Cook · Walk · Order** → `CampusMealRoute.Decision`.
+  The route builds a `DecisionContext` from the last validated search context
+  (`RestaurantSearchRequestDto.toDecisionContext()`, in memory only) and `DecisionViewModel` calls
+  `container.compareMealOptions`.
+- `feature/decision/presentation/DecisionScreen.kt` is a minimal screen (not the Figma design): it
+  lists alternatives in backend order with rank, score, time, cost in COP, expiring ingredients,
+  restaurant, walking/delivery minutes, delivery fee, `mainExplanation` and `supportingReasons`,
+  exactly as received. `NoAvailableAlternatives` now carries the backend's `mainExplanation`.
+- **BQ8 events:** `RecommendationEventReporter` sends `POST analytics/events` — one impression when a
+  recommendation with alternatives is shown, one selection when the user taps **Choose**. Each event
+  gets its `clientEventId` once and reuses it on every retry (2 automatic retries on network/5xx, then
+  a manual **Retry**). `RecommendationEventDto` has no default values on purpose: kotlinx
+  serialization omits properties equal to their default, and a missing `platform` is rejected (400).
+- Verified: `includeDelivery=false` (no ORDER), `includeDelivery=true` (ORDER with delivery fee),
+  no alternatives (backend explanation shown, no events sent), offline selection retried with the
+  same `clientEventId` and stored once.

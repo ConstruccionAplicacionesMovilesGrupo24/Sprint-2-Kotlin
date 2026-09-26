@@ -15,6 +15,9 @@ data class InventoryItemUi(
     val expirationDate: String,
     val remainingDays: Int,
     val urgency: InventoryUrgency,
+    /** Raw values used to prefill the edit dialog. */
+    val quantity: Double = 0.0,
+    val unit: String = "",
 )
 
 data class InventoryScreenData(
@@ -35,6 +38,8 @@ fun List<InventoryItem>.toInventoryScreenData(): InventoryScreenData {
             id = item.id,
             name = item.name,
             quantityLabel = "$quantity ${item.unit}",
+            quantity = item.quantity,
+            unit = item.unit,
             expirationDate = item.expirationDate,
             remainingDays = item.remainingDays,
             urgency = when {

@@ -65,7 +65,8 @@ sealed interface MealDecisionResult {
      */
     data class PartialContent(val decision: MealDecision, val skippedAlternatives: Int) : MealDecisionResult
 
-    data object NoAvailableAlternatives : MealDecisionResult
+    /** The backend found nothing that fits; [mainExplanation] is its text, shown as received. */
+    data class NoAvailableAlternatives(val recommendationId: String, val mainExplanation: String) : MealDecisionResult
 
     /** There is no session, or the backend answered HTTP 401. */
     data object Unauthorized : MealDecisionResult

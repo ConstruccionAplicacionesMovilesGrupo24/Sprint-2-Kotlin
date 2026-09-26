@@ -22,3 +22,21 @@ data class InventoryItemDto(
     val remainingDays: Int,
     val active: Boolean,
 )
+
+/** Body of `POST inventory`. [expirationDate] is a calendar date `YYYY-MM-DD`. */
+@Serializable
+data class CreateInventoryItemRequestDto(
+    val name: String,
+    val quantity: Double,
+    val unit: String,
+    val expirationDate: String,
+)
+
+/** Body of `PATCH inventory/{id}`. Null fields are omitted by the shared Json (explicitNulls = false). */
+@Serializable
+data class UpdateInventoryItemRequestDto(
+    val name: String? = null,
+    val quantity: Double? = null,
+    val unit: String? = null,
+    val expirationDate: String? = null,
+)

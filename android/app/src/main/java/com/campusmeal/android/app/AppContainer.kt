@@ -22,10 +22,14 @@ import com.campusmeal.android.feature.auth.data.AuthApi
 import com.campusmeal.android.feature.auth.data.NetworkAuthRepository
 import com.campusmeal.android.feature.auth.domain.AuthRepository
 import com.campusmeal.android.feature.decision.data.remote.MealDecisionApi
+import com.campusmeal.android.feature.decision.data.remote.RecommendationEventsApi
+import com.campusmeal.android.feature.decision.data.repository.RecommendationEventReporter
 import com.campusmeal.android.feature.decision.data.repository.MealDecisionRepository
 import com.campusmeal.android.feature.decision.data.repository.NetworkMealDecisionRepository
 import com.campusmeal.android.feature.decision.domain.CompareMealOptionsUseCase
 import com.campusmeal.android.feature.inventory.data.local.RoomInventoryCache
+import com.campusmeal.android.feature.profile.data.CurrentUserApi
+import com.campusmeal.android.feature.profile.data.ProfileRepository
 import com.campusmeal.android.feature.restaurants.data.NetworkRestaurantRepository
 import com.campusmeal.android.feature.restaurants.data.RestaurantApi
 import com.campusmeal.android.feature.restaurants.data.RestaurantRepository
@@ -54,7 +58,9 @@ interface AppContainer {
     val inventoryRepository: InventoryRepository
     val mealDecisionRepository: MealDecisionRepository
     val compareMealOptions: CompareMealOptionsUseCase
+    val recommendationEventReporter: RecommendationEventReporter
     val restaurantRepository: RestaurantRepository
+    val profileRepository: ProfileRepository
 }
 
 class DefaultAppContainer(context: Context) : AppContainer {
@@ -99,11 +105,21 @@ class DefaultAppContainer(context: Context) : AppContainer {
 
     // INTERIM: replaced by the full authentication data layer behind the same interface.
     override val authRepository: AuthRepository by lazy {
-        NetworkAuthRepository(retrofit.create(AuthApi::class.java), sessionStorage)
+        NetworkAuthRepository(
+            api = retrofit.create(AuthApi::class.java),
+            storage = sessionStorage,
+            // Inventory and restaurant caches are not scoped per user.
+            onSessionEnded = {
+                inventoryRepository.clearCache()
+                restaurantRepository.clearCache()
+            },
+        )
     }
 
     override val locationProvider: LocationProvider by lazy { FusedLocationProvider(appContext) }
 
+    // Location-context events have no backend endpoint yet. BQ8 recommendation events go to
+    // POST analytics/events through recommendationEventReporter.
     override val analyticsTracker: AnalyticsTracker by lazy { NoOpAnalyticsTracker() }
 
     override val authorizationHeaderProvider: AuthorizationHeaderProvider by lazy {
@@ -129,11 +145,25 @@ class DefaultAppContainer(context: Context) : AppContainer {
         CompareMealOptionsUseCase(mealDecisionRepository)
     }
 
+    override val recommendationEventReporter: RecommendationEventReporter by lazy {
+        RecommendationEventReporter(
+            api = retrofit.create(RecommendationEventsApi::class.java),
+            authorizationHeaderProvider = authorizationHeaderProvider,
+        )
+    }
+
     override val restaurantRepository: RestaurantRepository by lazy {
         NetworkRestaurantRepository(
             api = retrofit.create(RestaurantApi::class.java),
             authorizationHeaderProvider = authorizationHeaderProvider,
             preferences = preferences,
+        )
+    }
+
+    override val profileRepository: ProfileRepository by lazy {
+        ProfileRepository(
+            api = retrofit.create(CurrentUserApi::class.java),
+            authorizationHeaderProvider = authorizationHeaderProvider,
         )
     }
 }

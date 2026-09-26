@@ -206,3 +206,23 @@ Static checks:
 - **Git:**
   - This work depends on `core/network/ApiResult.kt`, which was added during the Issue #1 follow-up and is not committed yet. Commit that first, or together with this change.
   - Each person reviews the other's code before Issue #2 is closed.
+
+## Update 2026-09-25 — integration audit
+
+Several pending items above are done or outdated:
+
+- **Sign-out cache leak (fixed).** Nothing called `clearCache()`, so after A signed out and B signed
+  in, B saw A's cached expiring items when the network failed (reproduced on an emulator with the
+  published build). `NetworkAuthRepository` now takes an `onSessionEnded` hook; `AppContainer` wires it
+  to `inventoryRepository.clearCache()` and `restaurantRepository.clearCache()`. It runs on logout,
+  when a session is invalidated, and before a new session is stored.
+- **Add / Edit / Consume (connected).** `InventoryApi` now has `POST inventory`, `PATCH inventory/{id}`
+  and `DELETE inventory/{id}` (`Response<Unit>`, 204 is not decoded). `InventoryRoute` opens a minimal
+  add/edit dialog (name, quantity, unit, `YYYY-MM-DD`); **Consume** is the backend soft deactivation.
+  After each success the list is reloaded from the backend, which owns order and `remainingDays`.
+  Writes are not queued offline.
+- The screen still lists only `GET inventory/expiring?withinDays=3`: an item added with a later
+  expiration date is saved but not shown until it enters the window (the "later" section still has no
+  data source).
+- Token refresh and Keystore-backed session storage exist (`SessionRefreshInterceptor`,
+  `KeystoreSessionStorage`).

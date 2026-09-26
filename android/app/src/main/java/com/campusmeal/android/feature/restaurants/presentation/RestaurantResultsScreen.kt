@@ -55,6 +55,7 @@ fun RestaurantResultsRoute(
     onBack: () -> Unit,
     onChangeContext: () -> Unit,
     onRestaurantSelected: (String) -> Unit,
+    onCompareOptions: () -> Unit,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -70,6 +71,7 @@ fun RestaurantResultsRoute(
         onRetry = viewModel::retry,
         onChangeContext = onChangeContext,
         onRestaurantSelected = onRestaurantSelected,
+        onCompareOptions = onCompareOptions,
     )
 }
 
@@ -81,6 +83,7 @@ fun RestaurantResultsScreen(
     onRetry: () -> Unit,
     onChangeContext: () -> Unit,
     onRestaurantSelected: (String) -> Unit,
+    onCompareOptions: () -> Unit = {},
 ) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -108,6 +111,17 @@ fun RestaurantResultsScreen(
                     containerColor = MaterialTheme.colorScheme.background,
                 ),
             )
+        },
+        bottomBar = {
+            // BQ5: the same context also feeds the backend Cook / Walk / Order comparison.
+            Button(
+                onClick = onCompareOptions,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = PagePadding, vertical = 12.dp),
+            ) {
+                Text(text = "Compare Cook · Walk · Order")
+            }
         },
     ) { innerPadding ->
 

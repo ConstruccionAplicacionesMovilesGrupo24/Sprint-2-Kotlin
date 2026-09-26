@@ -20,12 +20,15 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -34,6 +37,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,6 +47,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -48,6 +55,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.campusmeal.android.core.common.UiState
 import com.campusmeal.android.core.designsystem.CampusMealTheme
 import com.campusmeal.android.core.designsystem.campusMealColors
+import com.campusmeal.android.feature.inventory.domain.model.InventoryItemDraft
 import java.text.DateFormat
 import java.util.Date
 
@@ -59,18 +67,110 @@ private val ButtonHeight = 52.dp
 @Composable
 fun InventoryRoute(
     viewModel: InventoryViewModel,
-    onAddItem: () -> Unit = {},
-    onEditItem: (String) -> Unit = {},
-    onConsumeItem: (String) -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val actionMessage by viewModel.actionMessage.collectAsStateWithLifecycle()
+
+    // null: closed; NEW_ITEM: adding; otherwise the item being edited.
+    var dialogItem by remember { mutableStateOf<InventoryItemUi?>(null) }
 
     InventoryScreen(
         state = state,
         onRetry = viewModel::loadInventory,
-        onAddItem = onAddItem,
-        onEditItem = onEditItem,
-        onConsumeItem = onConsumeItem,
+        onAddItem = { dialogItem = NEW_ITEM },
+        onEditItem = { itemId -> dialogItem = state.itemById(itemId) },
+        onConsumeItem = viewModel::consumeItem,
+    )
+
+    dialogItem?.let { item ->
+        InventoryItemDialog(
+            item = item.takeIf { it !== NEW_ITEM },
+            onDismiss = { dialogItem = null },
+            onSave = { draft ->
+                viewModel.saveItem(itemId = item.takeIf { it !== NEW_ITEM }?.id, draft = draft)
+                dialogItem = null
+            },
+        )
+    }
+
+    actionMessage?.let { message ->
+        AlertDialog(
+            onDismissRequest = viewModel::dismissActionMessage,
+            confirmButton = { TextButton(onClick = viewModel::dismissActionMessage) { Text("OK") } },
+            text = { Text(message) },
+        )
+    }
+}
+
+private val NEW_ITEM = InventoryItemUi(
+    id = "",
+    name = "",
+    quantityLabel = "",
+    expirationDate = "",
+    remainingDays = 0,
+    urgency = InventoryUrgency.LATER,
+)
+
+private fun UiState<InventoryScreenData>.itemById(itemId: String): InventoryItemUi? {
+    val data = when (this) {
+        is UiState.Content -> data
+        is UiState.OfflineWithCache -> data
+        else -> return null
+    }
+    return (data.today + data.soon + data.later).firstOrNull { it.id == itemId }
+}
+
+private val CALENDAR_DATE = Regex("""^\d{4}-\d{2}-\d{2}$""")
+
+/**
+ * Minimal add/edit form. The backend is authoritative: it rejects impossible dates and computes
+ * `remainingDays`; this only blocks obviously incomplete input.
+ */
+@Composable
+private fun InventoryItemDialog(
+    item: InventoryItemUi?,
+    onDismiss: () -> Unit,
+    onSave: (InventoryItemDraft) -> Unit,
+) {
+    var name by remember { mutableStateOf(item?.name.orEmpty()) }
+    var quantity by remember { mutableStateOf(item?.quantity?.let { if (it % 1.0 == 0.0) it.toInt().toString() else it.toString() }.orEmpty()) }
+    var unit by remember { mutableStateOf(item?.unit.orEmpty()) }
+    var expirationDate by remember { mutableStateOf(item?.expirationDate.orEmpty()) }
+
+    val parsedQuantity = quantity.replace(',', '.').toDoubleOrNull()?.takeIf { it >= 0 && it.isFinite() }
+    val valid = name.isNotBlank() && unit.isNotBlank() && parsedQuantity != null && CALENDAR_DATE.matches(expirationDate)
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(if (item == null) "Add item" else "Edit item") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Name") }, singleLine = true)
+                OutlinedTextField(
+                    value = quantity,
+                    onValueChange = { quantity = it },
+                    label = { Text("Quantity") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                )
+                OutlinedTextField(value = unit, onValueChange = { unit = it }, label = { Text("Unit") }, singleLine = true)
+                OutlinedTextField(
+                    value = expirationDate,
+                    onValueChange = { expirationDate = it },
+                    label = { Text("Expiration (YYYY-MM-DD)") },
+                    singleLine = true,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = valid,
+                onClick = {
+                    onSave(InventoryItemDraft(name.trim(), parsedQuantity ?: 0.0, unit.trim(), expirationDate.trim()))
+                },
+            ) { Text("Save") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
 }
 
@@ -432,8 +532,9 @@ private fun InventoryItemCard(
     }
 }
 
+/** Shared with Home's "Expiring soon" list. */
 @Composable
-private fun UrgencyBadge(
+internal fun UrgencyBadge(
     item: InventoryItemUi,
 ) {
     val semanticColors = MaterialTheme.campusMealColors

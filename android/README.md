@@ -2,7 +2,9 @@
 
 Native Android client for CampusMeal, built with Kotlin and Jetpack Compose.
 
-This is the **bootstrap foundation**. It holds the project configuration, dependencies, an app shell and the architecture boundaries. None of the product screens exist yet.
+Current state (2026-09-25): login/registration with Keystore-backed session and single-flight token refresh; a bottom navigation bar (**Home · Inventory · Decide · Profile**); Home with greeting (`/auth/me`), the context in use and the live "Expiring soon" list; BQ2 inventory (add/edit/consume, offline cache); BQ4 context form and restaurant results/detail; BQ5 Cook · Walk · Order with BQ8 impression/selection events; and Profile (account data, current context, logout, OpenStreetMap attribution for walking times).
+
+**Decide** without a context opens the context form and then goes straight to the comparison. The context is kept in memory only, so it is lost when the process ends. See [Manual end-to-end check](#manual-end-to-end-check).
 
 ## Requirements
 
@@ -57,7 +59,7 @@ android/
         ├── main/java/com/campusmeal/android/
         │   ├── app/            Application, MainActivity, CampusMealApp, AppContainer
         │   ├── core/
-        │   │   ├── analytics/  AnalyticsTracker boundary (no-op for now)
+        │   │   ├── analytics/  AnalyticsTracker boundary (no-op: location events have no endpoint; BQ8 events use feature/decision)
         │   │   ├── common/     UiState
         │   │   ├── database/   Room database shell and cache metadata
         │   │   ├── datastore/  Preferences DataStore instance
@@ -91,6 +93,18 @@ instrumented and Compose tests are not included. Validation is performed through
 - Successful debug compilation.
 - Android lint.
 - Manual execution of the main application flows on an emulator or device.
+
+## Manual end-to-end check
+
+With CampusMealBack running (`docker compose up -d postgres`, `npm run migration:run`, seeds, `npm run start:dev`) and an emulator:
+
+1. Confirm the emulator reaches the API before blaming Retrofit: `adb shell '(printf "GET /api/v1/health HTTP/1.1\r\nHost: 10.0.2.2\r\nConnection: close\r\n\r\n"; sleep 2) | nc 10.0.2.2 3000'` must print `HTTP/1.1 200 OK`.
+2. `./gradlew :app:assembleDebug` and `adb install -r app/build/outputs/apk/debug/app-debug.apk`.
+3. **Create account** → Home. Force-stop and reopen: Home again (session restored).
+4. **Inventory** → **Add item** (use today's date and the next two days) → **Edit** one date → **Consume** one. The backend log shows `POST /inventory 201`, `PATCH 200`, `DELETE 204`, each followed by `GET /inventory/expiring 200`.
+5. Home → **Set** (or **Find restaurants**) → **Choose campus manually** → a campus, time, budget (toggle **Include delivery** with the switch itself) → **Find meals** → **View restaurant**.
+6. On Results (or the **Decide** tab), **Compare Cook · Walk · Order** → `POST /meal-decisions/compare 200` and one `POST /analytics/events 202` (impression). **Choose** an alternative → a second `202` (selection). `adb logcat -s CampusMealBQ8` shows the `clientEventId` of each attempt.
+7. Cache isolation: open Inventory as user A, **Log out**, sign in as B, disable network (`adb shell svc wifi disable; adb shell svc data disable`), open Inventory: B must see the connection error, never A's items.
 
 ## Backend URL configuration
 

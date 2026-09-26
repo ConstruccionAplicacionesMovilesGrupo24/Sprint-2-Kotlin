@@ -9,6 +9,9 @@ import com.campusmeal.android.app.AppContainer
 import com.campusmeal.android.core.common.UiState
 import com.campusmeal.android.feature.inventory.domain.model.ExpiringInventoryResult
 import com.campusmeal.android.feature.inventory.domain.model.InventoryDataSource
+import com.campusmeal.android.feature.inventory.domain.model.InventoryError
+import com.campusmeal.android.feature.inventory.domain.model.InventoryItemDraft
+import com.campusmeal.android.feature.inventory.domain.model.InventoryWriteResult
 import com.campusmeal.android.feature.inventory.domain.repository.InventoryRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,8 +28,44 @@ class InventoryViewModel(
     val uiState: StateFlow<UiState<InventoryScreenData>> =
         _uiState.asStateFlow()
 
+    private val _actionMessage = MutableStateFlow<String?>(null)
+
+    /** Result of the last add/edit/consume that needs the user's attention; null when none. */
+    val actionMessage: StateFlow<String?> = _actionMessage.asStateFlow()
+
     init {
         loadInventory()
+    }
+
+    /** Adds an item, or edits [itemId] when it is not null, then reloads the backend list. */
+    fun saveItem(itemId: String?, draft: InventoryItemDraft) {
+        viewModelScope.launch {
+            val result = if (itemId == null) repository.addItem(draft) else repository.updateItem(itemId, draft)
+            afterWrite(result, success = if (itemId == null) "Item added" else "Item updated")
+        }
+    }
+
+    fun consumeItem(itemId: String) {
+        viewModelScope.launch {
+            afterWrite(repository.consumeItem(itemId), success = "Item marked as consumed")
+        }
+    }
+
+    fun dismissActionMessage() {
+        _actionMessage.value = null
+    }
+
+    private fun afterWrite(result: InventoryWriteResult, success: String) {
+        _actionMessage.value = when (result) {
+            InventoryWriteResult.Success -> success
+            InventoryWriteResult.Unauthorized -> "Session expired. Sign in again."
+            is InventoryWriteResult.Failure -> when (val error = result.error) {
+                is InventoryError.BackendUnavailable -> "No connection. The change was not saved."
+                is InventoryError.Http -> if (error.code == 404) "Item not found" else "The change was rejected (HTTP ${error.code})"
+                InventoryError.InvalidResponse -> "Unexpected server response"
+            }
+        }
+        if (result == InventoryWriteResult.Success) loadInventory()
     }
 
     fun loadInventory() {
