@@ -7,6 +7,8 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.campusmeal.android.app.AppContainer
 import com.campusmeal.android.core.common.UiState
+import com.campusmeal.android.core.session.AccountSessionCoordinator
+import com.campusmeal.android.core.session.AccountSessionScope
 import com.campusmeal.android.feature.inventory.domain.model.ExpiringInventoryResult
 import com.campusmeal.android.feature.inventory.domain.model.InventoryDataSource
 import com.campusmeal.android.feature.inventory.domain.model.InventoryError
@@ -18,8 +20,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+/** Bound to the session [scope] it was created for; results of another scope are never shown. */
 class InventoryViewModel(
     private val repository: InventoryRepository,
+    private val coordinator: AccountSessionCoordinator,
+    private val scope: AccountSessionScope,
 ) : ViewModel() {
 
     private val _uiState =
@@ -40,14 +45,15 @@ class InventoryViewModel(
     /** Adds an item, or edits [itemId] when it is not null, then reloads the backend list. */
     fun saveItem(itemId: String?, draft: InventoryItemDraft) {
         viewModelScope.launch {
-            val result = if (itemId == null) repository.addItem(draft) else repository.updateItem(itemId, draft)
-            afterWrite(result, success = if (itemId == null) "Item added" else "Item updated")
+            val result = if (itemId == null) repository.addItem(scope, draft) else repository.updateItem(scope, itemId, draft)
+            if (coordinator.isCurrent(scope)) afterWrite(result, success = if (itemId == null) "Item added" else "Item updated")
         }
     }
 
     fun consumeItem(itemId: String) {
         viewModelScope.launch {
-            afterWrite(repository.consumeItem(itemId), success = "Item marked as consumed")
+            val result = repository.consumeItem(scope, itemId)
+            if (coordinator.isCurrent(scope)) afterWrite(result, success = "Item marked as consumed")
         }
     }
 
@@ -72,7 +78,10 @@ class InventoryViewModel(
         viewModelScope.launch {
             _uiState.value = UiState.Loading
 
-            when (val result = repository.getExpiringInventory()) {
+            val result = repository.getExpiringInventory(scope)
+            if (!coordinator.isCurrent(scope)) return@launch
+
+            when (result) {
 
                 is ExpiringInventoryResult.Success -> {
                     if (result.items.isEmpty()) {
@@ -110,9 +119,10 @@ class InventoryViewModel(
     companion object {
         fun factory(
             container: AppContainer,
+            scope: AccountSessionScope,
         ): ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                InventoryViewModel(container.inventoryRepository)
+                InventoryViewModel(container.inventoryRepository, container.sessionCoordinator, scope)
             }
         }
     }

@@ -2,15 +2,23 @@ package com.campusmeal.android.feature.auth.data
 
 import com.campusmeal.android.core.network.ApiResult
 import com.campusmeal.android.core.network.apiCall
+import com.campusmeal.android.core.session.AccountSessionCoordinator
+import com.campusmeal.android.core.session.DeactivationReason
 import com.campusmeal.android.core.session.SessionStorage
 import com.campusmeal.android.core.session.SessionTokens
+import com.campusmeal.android.feature.auth.domain.AccountIdentifier
 import com.campusmeal.android.feature.auth.domain.AuthRepository
 import com.campusmeal.android.feature.auth.domain.AuthResult
+import com.campusmeal.android.feature.auth.domain.IdentificationResult
+import com.campusmeal.android.feature.auth.domain.RefreshOutcome
 import com.campusmeal.android.feature.auth.domain.SessionStatus
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
@@ -75,14 +83,17 @@ data class TokenResponseDto(
         "TokenResponseDto(<redacted>)"
 }
 
+/**
+ * Login, registration, identification, refresh and logout. Every transition goes through the shared
+ * [AccountSessionCoordinator]; no network call runs while its lock is held.
+ */
 class NetworkAuthRepository(
     private val api: AuthApi,
     private val storage: SessionStorage,
-    /**
-     * Deletes per-user cached data. Runs when a session ends and before a new one is stored, so
-     * the next account never sees the previous account's cache, even offline.
-     */
-    private val onSessionEnded: suspend () -> Unit = {},
+    private val coordinator: AccountSessionCoordinator,
+    private val accountIdentifier: AccountIdentifier,
+    /** Application scope for the best-effort remote logout, which local logout never waits for. */
+    private val backgroundScope: CoroutineScope,
 ) : AuthRepository {
 
     private val expired =
@@ -95,24 +106,41 @@ class NetworkAuthRepository(
     private val refreshMutex =
         Mutex()
 
+    /** One `auth/me` identification at a time; each trigger makes at most one request. */
+    private val identifyMutex =
+        Mutex()
+
+    /**
+     * Access tokens issued to the session of [generation], newest last. They let a 401 be traced to
+     * the session that sent it, so a request from an ended session is never refreshed or retried with
+     * the new session's token. Memory only; never logged.
+     */
+    private class TokenLineage(val generation: Long, val accessTokens: List<String>)
+
+    @Volatile
+    private var lineage: TokenLineage? = null
+
     override val sessionStatus:
             Flow<SessionStatus> =
         combine(
             storage.session,
+            coordinator.sessionState,
             expired,
-        ) { tokens, isExpired ->
+        ) { tokens, state, isExpired ->
 
             when {
                 isExpired ->
-                    SessionStatus.EXPIRED
+                    SessionStatus.Expired
 
-                tokens != null ->
-                    SessionStatus.AUTHENTICATED
+                tokens == null ->
+                    SessionStatus.SignedOut
 
                 else ->
-                    SessionStatus.SIGNED_OUT
+                    state.scope
+                        ?.let(SessionStatus::Authenticated)
+                        ?: SessionStatus.AccountNotIdentified
             }
-        }
+        }.distinctUntilChanged()
 
     override suspend fun login(
         email: String,
@@ -142,54 +170,57 @@ class NetworkAuthRepository(
             )
         }
 
+    override suspend fun identifyAccount(): IdentificationResult {
+        val state = coordinator.currentState()
+        if (storage.session.first() == null) return IdentificationResult.NotAuthenticated
+        state.scope?.let { return IdentificationResult.Identified(it) }
+        return identify(state.generation)
+    }
+
+    /**
+     * Local logout completes inside one coordinator transition: the departing tokens are captured
+     * and cleared, the generation advances and the account's read data is deleted. The backend is
+     * then asked to revoke the captured session in the background; its outcome changes nothing here.
+     */
     override suspend fun logout() {
-        val tokens =
-            storage.session.first()
-
-        if (tokens != null) {
-            /*
-             * Local secrets are always deleted.
-             */
-            apiCall {
-                api.logout(
-                    authorization =
-                        "Bearer ${tokens.accessToken}",
-                    request =
-                        LogoutRequestDto(
-                            refreshToken =
-                                tokens.refreshToken,
-                        ),
-                )
+        val departing =
+            coordinator.endSession(
+                expectedGeneration = null,
+                reason = DeactivationReason.LOGOUT,
+            ) {
+                val tokens = storage.session.first()
+                storage.clear()
+                expired.value = false
+                tokens
             }
-        }
 
-        storage.clear()
-        onSessionEnded()
-        expired.value = false
+        lineage = null
+        departing?.let(::revokeInBackground)
     }
 
     override suspend fun refreshSession(
-        rejectedAccessToken: String?,
-    ): Boolean =
+        rejectedAccessToken: String,
+    ): RefreshOutcome =
         refreshMutex.withLock {
+
+            val generation =
+                generationOf(rejectedAccessToken)
+                    ?: return@withLock RefreshOutcome.NotCurrentSession
 
             val current =
                 storage.session.first()
-                    ?: return@withLock false
+                    ?: return@withLock RefreshOutcome.NotCurrentSession
 
             /*
-             * Another request may already have refreshed while
-             * this request was waiting for the Mutex.
-             *
-             * If the stored access token is different from the one
-             * that received the 401, no second refresh is needed.
+             * Another request of the same session may already have refreshed while this one was
+             * waiting for the Mutex. Its new token is reused only if that session is still active.
              */
-            if (
-                rejectedAccessToken != null &&
-                current.accessToken !=
-                rejectedAccessToken
-            ) {
-                return@withLock true
+            if (current.accessToken != rejectedAccessToken) {
+                return@withLock if (coordinator.currentState().generation == generation) {
+                    RefreshOutcome.Refreshed(bearer(current.accessToken), generation)
+                } else {
+                    RefreshOutcome.NotCurrentSession
+                }
             }
 
             when (
@@ -212,108 +243,138 @@ class NetworkAuthRepository(
                         tokens.accessToken.isBlank() ||
                         tokens.refreshToken.isBlank()
                     ) {
-                        invalidateSession()
-                        false
+                        // An unusable answer says nothing about the stored credentials.
+                        RefreshOutcome.TemporarilyUnavailable
                     } else {
-                        storage.save(
-                            SessionTokens(
-                                accessToken =
-                                    tokens.accessToken,
-                                refreshToken =
-                                    tokens.refreshToken,
-                            ),
-                        )
+                        val saved =
+                            coordinator.runIfGeneration(generation) {
+                                storage.save(
+                                    SessionTokens(
+                                        accessToken =
+                                            tokens.accessToken,
+                                        refreshToken =
+                                            tokens.refreshToken,
+                                    ),
+                                )
+                                remember(generation, tokens.accessToken)
+                            }
 
-                        expired.value = false
-
-                        true
+                        // The session ended while refreshing: its new tokens are dropped, never stored.
+                        if (saved == null) {
+                            RefreshOutcome.NotCurrentSession
+                        } else {
+                            RefreshOutcome.Refreshed(bearer(tokens.accessToken), generation)
+                        }
                     }
                 }
 
                 /*
-                 * No connection or a server error says nothing about the
-                 * session: keep it, so the user is not signed out offline.
+                 * The backend rejected the refresh token itself (401), or answered 400 because the
+                 * stored token is unusable: the session can no longer be trusted.
                  */
-                is ApiResult.NetworkUnavailable -> false
+                ApiResult.Unauthorized -> {
+                    invalidate(generation)
+                    RefreshOutcome.Rejected
+                }
 
                 is ApiResult.HttpError ->
-                    if (result.code in 500..599) {
-                        false
+                    if (result.code == 400) {
+                        invalidate(generation)
+                        RefreshOutcome.Rejected
                     } else {
-                        invalidateSession()
-                        false
+                        /*
+                         * 408, 429 and 5xx are temporary. Any other status is unexpected for this
+                         * endpoint and is treated conservatively as a protocol problem, not as a
+                         * credential rejection, so the user is not signed out by a server bug.
+                         */
+                        RefreshOutcome.TemporarilyUnavailable
                     }
 
-                else -> {
-                    /*
-                     * The backend rejected the refresh token (401) or
-                     * answered nonsense: the local session can no
-                     * longer be trusted.
-                     */
-                    invalidateSession()
-                    false
-                }
+                /*
+                 * No connection or an unreadable answer says nothing about the session: keep it, so
+                 * the user is not signed out offline.
+                 */
+                is ApiResult.NetworkUnavailable,
+                is ApiResult.InvalidResponse ->
+                    RefreshOutcome.TemporarilyUnavailable
             }
         }
 
-    override suspend fun expireSession() {
-        if (
-            storage.session.first() ==
-            null
-        ) {
-            return
-        }
-
-        invalidateSession()
+    override suspend fun expireSession(generation: Long) {
+        invalidate(generation)
     }
 
     override fun acknowledgeExpiredSession() {
         expired.value = false
     }
 
-    private suspend fun invalidateSession() {
-        storage.clear()
-        onSessionEnded()
-        expired.value = true
+    /** Ends only the session of [generation]; local data stays for the same account's reauthentication. */
+    private suspend fun invalidate(generation: Long) {
+        val ended =
+            coordinator.endSession(
+                expectedGeneration = generation,
+                reason = DeactivationReason.EXPIRED,
+            ) {
+                expired.value = true
+                storage.clear()
+            }
+
+        if (ended != null) lineage = null
     }
 
     private suspend fun authenticate(
         call:
         suspend () -> TokenResponseDto,
-    ): AuthResult =
-        when (
+    ): AuthResult {
+        // A late answer of an attempt superseded by a newer transition must not install its tokens.
+        val attempt =
+            coordinator.currentState().generation
+
+        return when (
             val response =
                 apiCall(call)
         ) {
 
             is ApiResult.Success -> {
-                val tokens =
+                val dto =
                     response.data
 
                 if (
-                    tokens.accessToken.isBlank() ||
-                    tokens.refreshToken.isBlank()
+                    dto.accessToken.isBlank() ||
+                    dto.refreshToken.isBlank()
                 ) {
-                    AuthResult.Unavailable(
+                    return AuthResult.Unavailable(
                         null,
                     )
-                } else {
-                    // A new sign-in may be a different account.
-                    onSessionEnded()
+                }
 
-                    storage.save(
-                        SessionTokens(
-                            accessToken =
-                                tokens.accessToken,
-                            refreshToken =
-                                tokens.refreshToken,
-                        ),
+                val tokens =
+                    SessionTokens(
+                        accessToken =
+                            dto.accessToken,
+                        refreshToken =
+                            dto.refreshToken,
                     )
 
-                    expired.value = false
+                val generation =
+                    coordinator.replaceCredentials(attempt) {
+                        expired.value = false
+                        storage.save(tokens)
+                    }
 
-                    AuthResult.Success
+                if (generation == null) {
+                    revokeInBackground(tokens)
+                    return AuthResult.Unavailable(
+                        null,
+                    )
                 }
+
+                lineage = TokenLineage(generation, listOf(tokens.accessToken))
+
+                // If this fails the session stays AccountNotIdentified and is retried from that screen.
+                identify(generation)
+
+                AuthResult.Success
             }
 
             ApiResult.Unauthorized ->
@@ -348,4 +409,50 @@ class NetworkAuthRepository(
                     null,
                 )
         }
+    }
+
+    private suspend fun identify(generation: Long): IdentificationResult =
+        identifyMutex.withLock {
+            val state = coordinator.currentState()
+            when {
+                state.generation != generation -> IdentificationResult.Superseded
+                state.scope != null -> IdentificationResult.Identified(checkNotNull(state.scope))
+                else -> accountIdentifier.identify(generation)
+            }
+        }
+
+    /** The generation of the session that sent [accessToken], or null when that session is no longer active. */
+    private suspend fun generationOf(accessToken: String): Long? {
+        val state = coordinator.currentState()
+        val known = lineage
+        if (known != null && known.generation == state.generation && accessToken in known.accessTokens) {
+            return state.generation
+        }
+        // After a restart, or an account change that kept the same tokens, only the stored token is known.
+        return state.generation.takeIf { storage.session.first()?.accessToken == accessToken }
+    }
+
+    private fun remember(generation: Long, accessToken: String) {
+        val known = lineage?.takeIf { it.generation == generation }?.accessTokens.orEmpty()
+        lineage = TokenLineage(generation, (known + accessToken).takeLast(MAX_REMEMBERED_TOKENS))
+    }
+
+    /** Best-effort revocation with the departing session's own credentials, never another account's. */
+    private fun revokeInBackground(tokens: SessionTokens) {
+        backgroundScope.launch {
+            // auth/logout is excluded from refresh, so the interceptor never swaps in a newer token.
+            apiCall {
+                api.logout(
+                    authorization = bearer(tokens.accessToken),
+                    request = LogoutRequestDto(refreshToken = tokens.refreshToken),
+                )
+            }
+        }
+    }
+
+    private fun bearer(accessToken: String) = "Bearer $accessToken"
+
+    private companion object {
+        const val MAX_REMEMBERED_TOKENS = 5
+    }
 }

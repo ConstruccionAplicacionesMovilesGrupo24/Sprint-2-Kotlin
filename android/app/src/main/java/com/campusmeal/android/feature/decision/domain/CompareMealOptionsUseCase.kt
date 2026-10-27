@@ -1,5 +1,6 @@
 package com.campusmeal.android.feature.decision.domain
 
+import com.campusmeal.android.core.session.AccountSessionScope
 import com.campusmeal.android.feature.decision.data.repository.MealDecisionRepository
 import com.campusmeal.android.feature.decision.domain.model.DecisionContext
 import com.campusmeal.android.feature.decision.domain.model.MealDecisionError
@@ -15,10 +16,10 @@ class CompareMealOptionsUseCase(
     private val currentTimeMillis: () -> Long = System::currentTimeMillis,
 ) {
 
-    suspend operator fun invoke(context: DecisionContext): MealDecisionResult {
+    suspend operator fun invoke(scope: AccountSessionScope, context: DecisionContext): MealDecisionResult {
         if (context.availableMinutes <= 0 || context.maximumBudget < 0) {
             return MealDecisionResult.Failure(MealDecisionError.InvalidContext)
         }
-        return repository.compare(context, currentTimeMillis())
+        return repository.compare(scope, context, currentTimeMillis())
     }
 }

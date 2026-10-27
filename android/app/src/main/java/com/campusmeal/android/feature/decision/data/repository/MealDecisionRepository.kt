@@ -2,6 +2,7 @@ package com.campusmeal.android.feature.decision.data.repository
 
 import com.campusmeal.android.core.network.ApiResult
 import com.campusmeal.android.core.network.apiCall
+import com.campusmeal.android.core.session.AccountSessionScope
 import com.campusmeal.android.core.session.AuthorizationHeaderProvider
 import com.campusmeal.android.feature.decision.data.mapper.toDomainOrNull
 import com.campusmeal.android.feature.decision.data.mapper.toRequestDto
@@ -13,7 +14,8 @@ import com.campusmeal.android.feature.decision.domain.model.MealDecisionResult
 
 /** The BQ5 boundary the ViewModel depends on. */
 interface MealDecisionRepository {
-    suspend fun compare(context: DecisionContext, requestedAtEpochMillis: Long): MealDecisionResult
+    /** Sent with the credentials of [scope] only; null credentials (scope ended) answer Unauthorized. */
+    suspend fun compare(scope: AccountSessionScope, context: DecisionContext, requestedAtEpochMillis: Long): MealDecisionResult
 }
 
 /**
@@ -26,8 +28,8 @@ class NetworkMealDecisionRepository(
     private val authorizationHeaderProvider: AuthorizationHeaderProvider,
 ) : MealDecisionRepository {
 
-    override suspend fun compare(context: DecisionContext, requestedAtEpochMillis: Long): MealDecisionResult {
-        val authorization = authorizationHeaderProvider.getAuthorizationHeader()
+    override suspend fun compare(scope: AccountSessionScope, context: DecisionContext, requestedAtEpochMillis: Long): MealDecisionResult {
+        val authorization = authorizationHeaderProvider.getAuthorizationHeader(scope)
             ?: return MealDecisionResult.Unauthorized
 
         val request = context.toRequestDto(requestedAtEpochMillis)

@@ -61,4 +61,11 @@
     <string name="auth_error_session_expired">Your session expired. Log in again to continue.</string>
     <string name="auth_expired_title">Your session expired</string>
     <string name="auth_expired_body">For security, we signed you out after a period of inactivity. Log back in to pick up where you left off.</string>
+
+    <!-- S3-02: credentials exist but GET auth/me has not identified the account yet. -->
+    <string name="auth_identify_title">Confirming your account</string>
+    <string name="auth_identify_body">You are signed in, but CampusMeal must confirm your account with the server before showing your data. Check your connection and try again.</string>
+    <string name="auth_identify_progress">Confirming your account…</string>
+    <string name="auth_identify_retry">Try again</string>
+    <string name="auth_identify_logout">Log out</string>
 </resources>

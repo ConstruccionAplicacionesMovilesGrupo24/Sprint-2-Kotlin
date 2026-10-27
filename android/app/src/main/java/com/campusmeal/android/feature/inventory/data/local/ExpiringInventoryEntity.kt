@@ -2,15 +2,19 @@ package com.campusmeal.android.feature.inventory.data.local
 
 import androidx.room.Entity
 import androidx.room.Index
-import androidx.room.PrimaryKey
 
-/** One item of the last successful BQ2 result. [priorityIndex] restores the backend's order. */
+/**
+ * One item of an account's last successful BQ2 result. [accountId] is the owner (the `auth/me` id);
+ * [priorityIndex] restores the backend's order within that account's snapshot.
+ */
 @Entity(
     tableName = "expiring_inventory_items",
-    indices = [Index(value = ["priorityIndex"], unique = true)],
+    primaryKeys = ["accountId", "itemId"],
+    indices = [Index(value = ["accountId", "priorityIndex"], unique = true)],
 )
 data class ExpiringInventoryEntity(
-    @PrimaryKey val itemId: String,
+    val accountId: String,
+    val itemId: String,
     val name: String,
     val quantity: Double,
     val unit: String,

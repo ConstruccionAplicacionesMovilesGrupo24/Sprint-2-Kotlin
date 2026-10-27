@@ -1,6 +1,8 @@
 package com.campusmeal.android.core.network
 
 import java.io.IOException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.serialization.SerializationException
 import retrofit2.HttpException
 
@@ -28,6 +30,9 @@ sealed interface ApiResult<out T> {
 /**
  * Runs a Retrofit suspend call and maps its expected failures to [ApiResult].
  * Unexpected exceptions, including coroutine cancellation, still propagate.
+ *
+ * A temporary token-refresh failure arrives as `SessionRefreshUnavailableException`, an
+ * [IOException], so it maps to [ApiResult.NetworkUnavailable] like any connectivity failure.
  */
 suspend fun <T> apiCall(call: suspend () -> T): ApiResult<T> =
     try {
@@ -35,6 +40,8 @@ suspend fun <T> apiCall(call: suspend () -> T): ApiResult<T> =
     } catch (e: HttpException) {
         if (e.code() == 401) ApiResult.Unauthorized else ApiResult.HttpError(e.code())
     } catch (e: IOException) {
+        // A call canceled with its coroutine can surface as IOException("Canceled"): keep it a cancellation.
+        currentCoroutineContext().ensureActive()
         ApiResult.NetworkUnavailable(e)
     } catch (e: SerializationException) {
         ApiResult.InvalidResponse(e)

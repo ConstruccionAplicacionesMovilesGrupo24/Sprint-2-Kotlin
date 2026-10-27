@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.campusmeal.android.app.AppContainer
+import com.campusmeal.android.core.session.AccountSessionCoordinator
+import com.campusmeal.android.core.session.AccountSessionScope
 import com.campusmeal.android.feature.context.data.remote.RestaurantSearchRequestDto
 import com.campusmeal.android.feature.restaurants.data.RestaurantRepository
 import com.campusmeal.android.feature.restaurants.domain.RestaurantResults
@@ -44,8 +46,11 @@ sealed interface RestaurantResultsUiState {
     data object Unauthorized : RestaurantResultsUiState
 }
 
+/** Bound to the session [scope] it was created for; results of another scope are never shown. */
 class RestaurantResultsViewModel(
     private val repository: RestaurantRepository,
+    private val coordinator: AccountSessionCoordinator,
+    private val scope: AccountSessionScope,
 ) : ViewModel() {
 
     private val _uiState =
@@ -78,10 +83,12 @@ class RestaurantResultsViewModel(
             _uiState.value =
                 RestaurantResultsUiState.Loading
 
-            when (
-                val result =
-                    repository.search(request)
-            ) {
+            val result =
+                repository.search(scope, request)
+
+            if (!coordinator.isCurrent(scope)) return@launch
+
+            when (result) {
 
                 is RestaurantSearchResult.Success -> {
 
@@ -145,6 +152,7 @@ class RestaurantResultsViewModel(
 
         fun factory(
             container: AppContainer,
+            scope: AccountSessionScope,
         ): ViewModelProvider.Factory =
             viewModelFactory {
 
@@ -152,6 +160,9 @@ class RestaurantResultsViewModel(
                     RestaurantResultsViewModel(
                         repository =
                             container.restaurantRepository,
+                        coordinator =
+                            container.sessionCoordinator,
+                        scope = scope,
                     )
                 }
             }

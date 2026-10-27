@@ -50,9 +50,13 @@ fun InventoryItemDto.toDomainOrNull(): InventoryItem? {
     )
 }
 
-/** [priorityIndex] is the item's position in the backend response; Room restores the order from it. */
-fun InventoryItem.toEntity(priorityIndex: Int): ExpiringInventoryEntity =
+/**
+ * [accountId] owns the row. [priorityIndex] is the item's position in the backend response; Room
+ * restores the order from it.
+ */
+fun InventoryItem.toEntity(accountId: String, priorityIndex: Int): ExpiringInventoryEntity =
     ExpiringInventoryEntity(
+        accountId = accountId,
         itemId = id,
         name = name,
         quantity = quantity,
@@ -62,8 +66,8 @@ fun InventoryItem.toEntity(priorityIndex: Int): ExpiringInventoryEntity =
         priorityIndex = priorityIndex,
     )
 
-fun List<InventoryItem>.toEntities(): List<ExpiringInventoryEntity> =
-    mapIndexed { index, item -> item.toEntity(priorityIndex = index) }
+fun List<InventoryItem>.toEntities(accountId: String): List<ExpiringInventoryEntity> =
+    mapIndexed { index, item -> item.toEntity(accountId = accountId, priorityIndex = index) }
 
 fun ExpiringInventoryEntity.toDomain(): InventoryItem =
     InventoryItem(

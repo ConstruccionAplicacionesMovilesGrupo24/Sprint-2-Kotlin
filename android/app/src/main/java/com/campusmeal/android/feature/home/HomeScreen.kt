@@ -28,7 +28,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.campusmeal.android.core.common.Freshness
+import com.campusmeal.android.core.common.formatSyncedAt
 import com.campusmeal.android.core.designsystem.campusMealColors
+import com.campusmeal.android.core.network.ReconnectEffect
 import com.campusmeal.android.feature.inventory.presentation.InventoryItemUi
 import com.campusmeal.android.feature.inventory.presentation.UrgencyBadge
 import java.text.NumberFormat
@@ -49,6 +52,7 @@ private val PagePadding = 20.dp
 fun HomeRoute(
     viewModel: HomeViewModel,
     context: ContextSummary?,
+    online: Boolean,
     onChangeContext: () -> Unit,
     onCompare: () -> Unit,
     onFindRestaurants: () -> Unit,
@@ -56,6 +60,7 @@ fun HomeRoute(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) { viewModel.refresh() }
+    ReconnectEffect(online, viewModel::onReconnected)
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -74,7 +79,17 @@ fun HomeRoute(
             ExpiringState.Loading -> item { CircularProgressIndicator(Modifier.padding(8.dp)) }
             ExpiringState.Unavailable -> item { Hint("Your inventory could not be loaded right now.") }
             is ExpiringState.Items -> {
-                if (expiring.offline) item { Hint("Offline · showing your last synced items") }
+                expiring.cached?.let { cached ->
+                    val syncedAt = formatSyncedAt(cached.syncedAtEpochMillis)
+                    item {
+                        Hint(
+                            when (cached) {
+                                is Freshness.Fresh -> "Offline · showing your items synced $syncedAt"
+                                is Freshness.Stale -> "Offline · last synced $syncedAt; this list may be out of date"
+                            },
+                        )
+                    }
+                }
                 if (expiring.items.isEmpty()) item { Hint("Nothing expires in the next 3 days.") }
                 items(expiring.items, key = { it.id }) { ExpiringCard(it) }
             }
