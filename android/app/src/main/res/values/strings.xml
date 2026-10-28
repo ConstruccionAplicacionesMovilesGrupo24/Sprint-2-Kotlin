@@ -68,4 +68,7 @@
     <string name="auth_identify_progress">Confirming your account…</string>
     <string name="auth_identify_retry">Try again</string>
     <string name="auth_identify_logout">Log out</string>
+
+    <!-- Shown while a request is still running after a few seconds. It never claims a confirmed cause. -->
+    <string name="slow_response_notice">The server is taking longer than usual to respond. It may be starting up; this can take about a minute.</string>
 </resources>

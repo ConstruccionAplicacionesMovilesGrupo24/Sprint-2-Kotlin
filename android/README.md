@@ -73,6 +73,8 @@ android/
 
 Contribution notes for individual issues live in [`docs/`](docs/).
 
+Sprint 3 notes: [S3-01 plan](docs/SPRINT3_PLAN.md) · [S3-02 session](docs/SPRINT3_SESSION.md) · [S3-03 complete inventory and drafts](docs/SPRINT3_INVENTORY.md) · [S3-03 bug fixes: timeout, inventory, route continuity](docs/S3_03_BUGFIX_VALIDATION.md).
+
 Feature packages (`feature/auth`, `feature/inventory`, `feature/context`, `feature/restaurants`, `feature/decision`, `feature/profile`) are created along with their first real source files. Empty placeholder packages are not kept.
 
 ## Build and validate

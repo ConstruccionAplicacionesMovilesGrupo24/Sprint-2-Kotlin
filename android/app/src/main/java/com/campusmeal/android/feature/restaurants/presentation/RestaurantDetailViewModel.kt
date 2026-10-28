@@ -6,11 +6,16 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.campusmeal.android.app.AppContainer
+import com.campusmeal.android.core.common.CachePolicy
+import com.campusmeal.android.core.common.Freshness
 import com.campusmeal.android.core.session.AccountSessionCoordinator
 import com.campusmeal.android.core.session.AccountSessionScope
 import com.campusmeal.android.feature.restaurants.data.RestaurantRepository
 import com.campusmeal.android.feature.restaurants.domain.RestaurantDetail
 import com.campusmeal.android.feature.restaurants.domain.RestaurantDetailResult
+import com.campusmeal.android.feature.restaurants.domain.ResultSource
+import com.campusmeal.android.feature.restaurants.domain.RouteEstimateSnapshot
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,8 +25,14 @@ sealed interface RestaurantDetailUiState {
 
     data object Loading : RestaurantDetailUiState
 
+    /**
+     * Fresh restaurant, address and meals from `GET restaurants/:id`, plus the walking estimate from the
+     * search the user opened it from. [route] is null when there is no matching search (direct open,
+     * restored after process death, or another context): the detail endpoint itself has no origin.
+     */
     data class Content(
         val detail: RestaurantDetail,
+        val route: DetailRoute?,
     ) : RestaurantDetailUiState
 
     data class Error(
@@ -31,13 +42,27 @@ sealed interface RestaurantDetailUiState {
     data object Unauthorized : RestaurantDetailUiState
 }
 
-/** Bound to the session [scope] it was created for; results of another scope are never shown. */
+/**
+ * The search's estimate as shown on the detail screen. [historical] when the search was a saved copy or
+ * is older than the search freshness policy: it is a past value, and a successful detail request never
+ * makes it current again.
+ */
+data class DetailRoute(val estimate: RouteEstimateSnapshot, val historical: Boolean)
+
+/**
+ * Bound to the session [scope] it was created for; results of another scope are never shown.
+ * [routeEstimate] comes from the selected search row (memory only) and is never recomputed here.
+ */
 class RestaurantDetailViewModel(
     private val repository: RestaurantRepository,
     private val coordinator: AccountSessionCoordinator,
     private val scope: AccountSessionScope,
     private val restaurantId: String,
+    private val routeEstimate: RouteEstimateSnapshot?,
+    private val cachePolicy: CachePolicy,
 ) : ViewModel() {
+
+    private var loadJob: Job? = null
 
     private val _uiState =
         MutableStateFlow<RestaurantDetailUiState>(
@@ -56,7 +81,9 @@ class RestaurantDetailViewModel(
     }
 
     private fun load() {
-        viewModelScope.launch {
+        // A retry replaces the previous request; its late answer is dropped.
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
 
             _uiState.value =
                 RestaurantDetailUiState.Loading
@@ -72,9 +99,16 @@ class RestaurantDetailViewModel(
             when (result) {
 
                 is RestaurantDetailResult.Success -> {
+                    if (result.detail.summary.id != restaurantId) {
+                        _uiState.value = RestaurantDetailUiState.Error(message = "Unable to load restaurant details.")
+                        return@launch
+                    }
                     _uiState.value =
                         RestaurantDetailUiState.Content(
                             detail = result.detail,
+                            route = routeEstimate?.takeIf { it.restaurantId == restaurantId }?.let { estimate ->
+                                DetailRoute(estimate, historical = estimate.isHistorical())
+                            },
                         )
                 }
 
@@ -94,12 +128,17 @@ class RestaurantDetailViewModel(
         }
     }
 
+    private fun RouteEstimateSnapshot.isHistorical(): Boolean =
+        source == ResultSource.CACHE ||
+            Freshness.synced(searchedAtEpochMillis, cachePolicy.restaurantSearch) is Freshness.Stale
+
     companion object {
 
         fun factory(
             container: AppContainer,
             scope: AccountSessionScope,
             restaurantId: String,
+            routeEstimate: RouteEstimateSnapshot?,
         ): ViewModelProvider.Factory =
             viewModelFactory {
 
@@ -112,6 +151,8 @@ class RestaurantDetailViewModel(
                         scope = scope,
                         restaurantId =
                             restaurantId,
+                        routeEstimate = routeEstimate,
+                        cachePolicy = container.cachePolicy,
                     )
                 }
             }

@@ -20,16 +20,17 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.campusmeal.android.core.common.Freshness
 import com.campusmeal.android.core.common.formatSyncedAt
+import com.campusmeal.android.core.designsystem.SlowResponseNotice
 import com.campusmeal.android.core.designsystem.campusMealColors
 import com.campusmeal.android.core.network.ReconnectEffect
 import com.campusmeal.android.feature.inventory.presentation.InventoryItemUi
@@ -59,7 +60,11 @@ fun HomeRoute(
     onOpenInventory: () -> Unit,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    LaunchedEffect(Unit) { viewModel.refresh() }
+    // Each return to the foreground re-checks the Bogota date and refreshes what is due.
+    LifecycleStartEffect(viewModel) {
+        viewModel.refresh()
+        onStopOrDispose { }
+    }
     ReconnectEffect(online, viewModel::onReconnected)
 
     LazyColumn(
@@ -76,21 +81,17 @@ fun HomeRoute(
             }
         }
         when (val expiring = state.expiring) {
-            ExpiringState.Loading -> item { CircularProgressIndicator(Modifier.padding(8.dp)) }
+            ExpiringState.Loading -> item {
+                Column {
+                    CircularProgressIndicator(Modifier.padding(8.dp))
+                    SlowResponseNotice(active = true)
+                }
+            }
             ExpiringState.Unavailable -> item { Hint("Your inventory could not be loaded right now.") }
             is ExpiringState.Items -> {
-                expiring.cached?.let { cached ->
-                    val syncedAt = formatSyncedAt(cached.syncedAtEpochMillis)
-                    item {
-                        Hint(
-                            when (cached) {
-                                is Freshness.Fresh -> "Offline · showing your items synced $syncedAt"
-                                is Freshness.Stale -> "Offline · last synced $syncedAt; this list may be out of date"
-                            },
-                        )
-                    }
-                }
-                if (expiring.items.isEmpty()) item { Hint("Nothing expires in the next 3 days.") }
+                // remainingDays is valid as of the sync: always say when that was.
+                item { Hint(expiringLabel(expiring)) }
+                if (expiring.items.isEmpty()) item { Hint("No items expire in the next 3 days.") }
                 items(expiring.items, key = { it.id }) { ExpiringCard(it) }
             }
         }
@@ -179,6 +180,16 @@ private fun ExpiringCard(item: InventoryItemUi) {
             }
             UrgencyBadge(item)
         }
+    }
+}
+
+private fun expiringLabel(expiring: ExpiringState.Items): String {
+    val asOf = "As of ${formatSyncedAt(expiring.syncedAt.syncedAtEpochMillis)}"
+    return when {
+        expiring.historical -> "$asOf (an earlier day): days left were counted then and may have changed."
+        expiring.refreshFailed -> "$asOf · could not refresh; showing the copy saved on this device."
+        expiring.syncedAt is Freshness.Stale -> "$asOf · may be out of date."
+        else -> asOf
     }
 }
 

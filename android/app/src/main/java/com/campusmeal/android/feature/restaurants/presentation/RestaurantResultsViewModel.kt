@@ -12,6 +12,7 @@ import com.campusmeal.android.feature.context.data.remote.RestaurantSearchReques
 import com.campusmeal.android.feature.restaurants.data.RestaurantRepository
 import com.campusmeal.android.feature.restaurants.domain.RestaurantResults
 import com.campusmeal.android.feature.restaurants.domain.RestaurantSearchResult
+import com.campusmeal.android.feature.restaurants.domain.RouteEstimateSnapshot
 import com.campusmeal.android.feature.restaurants.domain.ResultSource
 import com.campusmeal.android.feature.restaurants.domain.RouteProviderStatus
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -46,6 +47,17 @@ sealed interface RestaurantResultsUiState {
     data object Unauthorized : RestaurantResultsUiState
 }
 
+/**
+ * A restaurant opened from the results on screen: its route estimate plus the exact validated request
+ * that produced it, so the detail screen can check it still matches the current search context. Kept
+ * in memory only (the request contains coordinates).
+ */
+data class SelectedRoute(
+    val scope: AccountSessionScope,
+    val request: RestaurantSearchRequestDto,
+    val estimate: RouteEstimateSnapshot,
+)
+
 /** Bound to the session [scope] it was created for; results of another scope are never shown. */
 class RestaurantResultsViewModel(
     private val repository: RestaurantRepository,
@@ -63,9 +75,42 @@ class RestaurantResultsViewModel(
 
     private var lastRequest: RestaurantSearchRequestDto? = null
 
+    /** The request whose results are on screen; null while none are. */
+    private var shownRequest: RestaurantSearchRequestDto? = null
+
+    /**
+     * The estimate [restaurantId] has in the results currently shown, for the detail screen. Null when
+     * no successful search is shown or the restaurant is not in it.
+     */
+    fun routeFor(restaurantId: String): SelectedRoute? {
+        val request = shownRequest ?: return null
+        val results = when (val state = _uiState.value) {
+            is RestaurantResultsUiState.Content -> state.results
+            is RestaurantResultsUiState.RoutesUnavailableWithPartialResults -> state.results
+            is RestaurantResultsUiState.OfflineWithCache -> state.results
+            else -> return null
+        }
+        // Judged per restaurant: a PARTIAL search can still hold a valid estimate for this one.
+        val restaurant = results.restaurants.firstOrNull { it.id == restaurantId } ?: return null
+        return SelectedRoute(
+            scope = scope,
+            request = request,
+            estimate = RouteEstimateSnapshot(
+                restaurantId = restaurant.id,
+                walkingMinutes = restaurant.walkingMinutes,
+                estimatedTotalMinutes = restaurant.estimatedTotalMinutes,
+                searchedAtEpochMillis = results.lastUpdatedAtEpochMillis,
+                source = results.source,
+            ),
+        )
+    }
+
     fun search(
         request: RestaurantSearchRequestDto,
     ) {
+        // Coming back from a detail recomposes the route with the same request: keep its results and
+        // their time. A new search always has a new `requestedAt`, and retry() re-runs explicitly.
+        if (request == lastRequest) return
         lastRequest = request
         load(request)
     }
@@ -82,11 +127,15 @@ class RestaurantResultsViewModel(
 
             _uiState.value =
                 RestaurantResultsUiState.Loading
+            shownRequest = null
 
             val result =
                 repository.search(scope, request)
 
             if (!coordinator.isCurrent(scope)) return@launch
+            // A newer search replaced this one: its late answer must not be shown (or handed to detail).
+            if (request != lastRequest) return@launch
+            if (result is RestaurantSearchResult.Success) shownRequest = request
 
             when (result) {
 

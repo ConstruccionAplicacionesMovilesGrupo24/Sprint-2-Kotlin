@@ -30,6 +30,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.campusmeal.android.R
 import com.campusmeal.android.app.AppContainer
+import com.campusmeal.android.core.designsystem.SlowResponseNotice
 import com.campusmeal.android.core.designsystem.campusMealColors
 import com.campusmeal.android.core.network.ReconnectEffect
 import com.campusmeal.android.feature.auth.domain.AuthRepository
@@ -108,6 +109,7 @@ fun AccountNotIdentifiedScreen(
             textAlign = TextAlign.Center,
         )
         if (identifying) CircularProgressIndicator()
+        SlowResponseNotice(active = identifying, textAlign = TextAlign.Center)
         Button(
             onClick = viewModel::retry,
             enabled = !identifying,

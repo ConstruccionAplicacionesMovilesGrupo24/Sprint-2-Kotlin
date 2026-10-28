@@ -36,10 +36,26 @@ sealed interface Freshness {
         /** For data known to be synchronized. A future timestamp (device clock change) counts as fresh. */
         fun synced(syncedAtEpochMillis: Long, ttl: Duration, nowEpochMillis: Long = System.currentTimeMillis()): Synced =
             if (nowEpochMillis - syncedAtEpochMillis <= ttl.inWholeMilliseconds) Fresh(syncedAtEpochMillis) else Stale(syncedAtEpochMillis)
+
+        /**
+         * Like [synced], but a data set invalidated at or after its last sync (for example by a confirmed
+         * write) is [Stale] regardless of age: its content is known to be behind the server.
+         */
+        fun synced(
+            syncedAtEpochMillis: Long,
+            invalidatedAtEpochMillis: Long?,
+            ttl: Duration,
+            nowEpochMillis: Long = System.currentTimeMillis(),
+        ): Synced =
+            if (invalidatedAtEpochMillis != null && invalidatedAtEpochMillis >= syncedAtEpochMillis) {
+                Stale(syncedAtEpochMillis)
+            } else {
+                synced(syncedAtEpochMillis, ttl, nowEpochMillis)
+            }
     }
 }
 
-private val BOGOTA: TimeZone = TimeZone.getTimeZone("America/Bogota")
+private val BOGOTA: TimeZone = BogotaCalendar.ZONE
 
 /**
  * Formats a stored UTC instant for "Updated …" labels, in the agreed America/Bogota calendar.
