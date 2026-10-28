@@ -9,17 +9,22 @@ import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 /**
  * Persists CampusMeal session tokens encrypted at rest.
  *
  * The encryption key lives inside Android Keystore and cannot be exported.
  * SharedPreferences only stores AES-GCM ciphertext and its IV.
+ *
+ * Writes use `commit()` on [Dispatchers.IO]: the session coordinator orders credential writes
+ * against the persisted account identity, so a write must be on disk before the next step runs.
  */
 class KeystoreSessionStorage(
     context: Context,
@@ -45,31 +50,33 @@ class KeystoreSessionStorage(
         tokens: SessionTokens,
     ) {
         mutex.withLock {
-            val access =
-                encrypt(tokens.accessToken)
+            withContext(Dispatchers.IO) {
+                val access =
+                    encrypt(tokens.accessToken)
 
-            val refresh =
-                encrypt(tokens.refreshToken)
+                val refresh =
+                    encrypt(tokens.refreshToken)
 
-            preferences
-                .edit()
-                .putString(
-                    ACCESS_TOKEN_CIPHERTEXT,
-                    access.ciphertext,
-                )
-                .putString(
-                    ACCESS_TOKEN_IV,
-                    access.iv,
-                )
-                .putString(
-                    REFRESH_TOKEN_CIPHERTEXT,
-                    refresh.ciphertext,
-                )
-                .putString(
-                    REFRESH_TOKEN_IV,
-                    refresh.iv,
-                )
-                .apply()
+                preferences
+                    .edit()
+                    .putString(
+                        ACCESS_TOKEN_CIPHERTEXT,
+                        access.ciphertext,
+                    )
+                    .putString(
+                        ACCESS_TOKEN_IV,
+                        access.iv,
+                    )
+                    .putString(
+                        REFRESH_TOKEN_CIPHERTEXT,
+                        refresh.ciphertext,
+                    )
+                    .putString(
+                        REFRESH_TOKEN_IV,
+                        refresh.iv,
+                    )
+                    .commit()
+            }
 
             state.value = tokens
         }
@@ -77,10 +84,12 @@ class KeystoreSessionStorage(
 
     override suspend fun clear() {
         mutex.withLock {
-            preferences
-                .edit()
-                .clear()
-                .apply()
+            withContext(Dispatchers.IO) {
+                preferences
+                    .edit()
+                    .clear()
+                    .commit()
+            }
 
             state.value = null
         }

@@ -6,12 +6,18 @@ import androidx.datastore.preferences.core.Preferences
 import com.campusmeal.android.BuildConfig
 import com.campusmeal.android.core.analytics.AnalyticsTracker
 import com.campusmeal.android.core.analytics.NoOpAnalyticsTracker
+import com.campusmeal.android.core.common.CachePolicy
 import com.campusmeal.android.core.database.CampusMealDatabase
 import com.campusmeal.android.core.datastore.CampusMealPreferences
 import com.campusmeal.android.core.location.FusedLocationProvider
 import com.campusmeal.android.core.location.LocationProvider
+import com.campusmeal.android.core.network.AndroidConnectivityObserver
 import com.campusmeal.android.core.network.ApiClientFactory
+import com.campusmeal.android.core.network.ConnectivityObserver
 import com.campusmeal.android.core.network.NetworkConfig
+import com.campusmeal.android.core.session.AccountDataCleaner
+import com.campusmeal.android.core.session.AccountSessionCoordinator
+import com.campusmeal.android.core.session.AccountWorkCanceller
 import com.campusmeal.android.core.session.KeystoreSessionStorage
 import com.campusmeal.android.core.session.AuthorizationHeaderProvider
 import com.campusmeal.android.core.session.SessionAuthorizationHeaderProvider
@@ -36,6 +42,10 @@ import com.campusmeal.android.feature.restaurants.data.RestaurantRepository
 import com.campusmeal.android.feature.inventory.data.remote.InventoryApi
 import com.campusmeal.android.feature.inventory.data.repository.OfflineFirstInventoryRepository
 import com.campusmeal.android.feature.inventory.domain.repository.InventoryRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 
@@ -51,6 +61,11 @@ interface AppContainer {
     val preferences: DataStore<Preferences>
     val sessionStorage: SessionStorage
     val sessionRepository: SessionRepository
+
+    /** The single owner of the active account and session generation; shared by every account-scoped component. */
+    val sessionCoordinator: AccountSessionCoordinator
+    val cachePolicy: CachePolicy
+    val connectivityObserver: ConnectivityObserver
     val authRepository: AuthRepository
     val locationProvider: LocationProvider
     val analyticsTracker: AnalyticsTracker
@@ -66,6 +81,9 @@ interface AppContainer {
 class DefaultAppContainer(context: Context) : AppContainer {
 
     private val appContext = context.applicationContext
+
+    /** Application-lifetime scope for work no screen should wait for, such as the remote logout request. */
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     override val networkConfig: NetworkConfig by lazy {
         NetworkConfig(
@@ -83,9 +101,6 @@ class DefaultAppContainer(context: Context) : AppContainer {
                     authRepository = {
                         authRepository
                     },
-                    authorizationHeaderProvider = {
-                        authorizationHeaderProvider
-                    },
                 ),
             ),
         )
@@ -97,22 +112,39 @@ class DefaultAppContainer(context: Context) : AppContainer {
 
     override val preferences: DataStore<Preferences> by lazy { CampusMealPreferences.dataStore(appContext) }
 
-    // PENDING: replace with an Android Keystore-backed implementation before real login ships.
+    // Tokens are encrypted with an Android Keystore key.
     override val sessionStorage: SessionStorage by lazy {
         KeystoreSessionStorage(appContext)
     }
     override val sessionRepository: SessionRepository by lazy { SessionRepository(sessionStorage) }
 
-    // INTERIM: replaced by the full authentication data layer behind the same interface.
+    override val sessionCoordinator: AccountSessionCoordinator by lazy {
+        AccountSessionCoordinator(
+            preferences = preferences,
+            hasCredentials = { sessionStorage.session.first() != null },
+            listeners = {
+                listOf(
+                    // Each account-owned store deletes only its own rows; later issues register theirs here.
+                    AccountDataCleaner(stores = listOf(inventoryCache, restaurantRepository, profileRepository)),
+                    AccountWorkCanceller(appContext),
+                )
+            },
+        )
+    }
+
+    override val cachePolicy: CachePolicy by lazy { CachePolicy() }
+
+    override val connectivityObserver: ConnectivityObserver by lazy {
+        AndroidConnectivityObserver(appContext, applicationScope)
+    }
+
     override val authRepository: AuthRepository by lazy {
         NetworkAuthRepository(
             api = retrofit.create(AuthApi::class.java),
             storage = sessionStorage,
-            // Inventory and restaurant caches are not scoped per user.
-            onSessionEnded = {
-                inventoryRepository.clearCache()
-                restaurantRepository.clearCache()
-            },
+            coordinator = sessionCoordinator,
+            accountIdentifier = profileRepository,
+            backgroundScope = applicationScope,
         )
     }
 
@@ -123,14 +155,17 @@ class DefaultAppContainer(context: Context) : AppContainer {
     override val analyticsTracker: AnalyticsTracker by lazy { NoOpAnalyticsTracker() }
 
     override val authorizationHeaderProvider: AuthorizationHeaderProvider by lazy {
-        SessionAuthorizationHeaderProvider(sessionStorage)
+        SessionAuthorizationHeaderProvider(sessionStorage, sessionCoordinator)
     }
+
+    private val inventoryCache: RoomInventoryCache by lazy { RoomInventoryCache(database) }
 
     override val inventoryRepository: InventoryRepository by lazy {
         OfflineFirstInventoryRepository(
             api = retrofit.create(InventoryApi::class.java),
             authorizationHeaderProvider = authorizationHeaderProvider,
-            cache = RoomInventoryCache(database),
+            cache = inventoryCache,
+            coordinator = sessionCoordinator,
         )
     }
 
@@ -152,11 +187,12 @@ class DefaultAppContainer(context: Context) : AppContainer {
         )
     }
 
-    override val restaurantRepository: RestaurantRepository by lazy {
+    override val restaurantRepository: NetworkRestaurantRepository by lazy {
         NetworkRestaurantRepository(
             api = retrofit.create(RestaurantApi::class.java),
             authorizationHeaderProvider = authorizationHeaderProvider,
             preferences = preferences,
+            coordinator = sessionCoordinator,
         )
     }
 
@@ -164,6 +200,8 @@ class DefaultAppContainer(context: Context) : AppContainer {
         ProfileRepository(
             api = retrofit.create(CurrentUserApi::class.java),
             authorizationHeaderProvider = authorizationHeaderProvider,
+            coordinator = sessionCoordinator,
+            dao = database.accountProfileDao(),
         )
     }
 }

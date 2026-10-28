@@ -2,6 +2,8 @@ package com.campusmeal.android.feature.inventory.data.repository
 
 import com.campusmeal.android.core.network.ApiResult
 import com.campusmeal.android.core.network.apiCall
+import com.campusmeal.android.core.session.AccountSessionCoordinator
+import com.campusmeal.android.core.session.AccountSessionScope
 import com.campusmeal.android.core.session.AuthorizationHeaderProvider
 import com.campusmeal.android.feature.inventory.data.local.ExpiringInventoryCache
 import com.campusmeal.android.feature.inventory.data.mapper.toExpiringItemsOrNull
@@ -19,32 +21,31 @@ import com.campusmeal.android.feature.inventory.domain.repository.InventoryRepos
 
 /**
  * Keeps BQ2 available offline. Each call asks the backend first and caches every successful
- * result, including an empty one. The cached result is returned only when the backend is unreachable
- * (connectivity failure or HTTP 5xx). HTTP 401 clears the cache because it may belong to an invalid
- * session; token refresh happens in SessionRefreshInterceptor before a 401 reaches this class.
+ * result, including an empty one, under the account of the caller's scope. The cached result is
+ * returned only when the backend is unreachable (connectivity failure, HTTP 5xx, or a token refresh
+ * that is temporarily unavailable). HTTP 401 never deletes the cache: the session lifecycle owns that
+ * cleanup, and token refresh happens in SessionRefreshInterceptor before a 401 reaches this class.
  * Writes go straight to the backend and are not queued offline.
  */
 class OfflineFirstInventoryRepository(
     private val api: InventoryApi,
     private val authorizationHeaderProvider: AuthorizationHeaderProvider,
     private val cache: ExpiringInventoryCache,
+    private val coordinator: AccountSessionCoordinator,
     private val currentTimeMillis: () -> Long = System::currentTimeMillis,
 ) : InventoryRepository {
 
-    override suspend fun getExpiringInventory(): ExpiringInventoryResult {
-        val authorization = authorizationHeaderProvider.getAuthorizationHeader()
+    override suspend fun getExpiringInventory(scope: AccountSessionScope): ExpiringInventoryResult {
+        val authorization = authorizationHeaderProvider.getAuthorizationHeader(scope)
             ?: return ExpiringInventoryResult.Unauthorized
 
         return when (val response = apiCall { api.getExpiringInventory(authorization, EXPIRING_WITHIN_DAYS) }) {
-            is ApiResult.Success -> cacheFreshResult(response.data)
-            ApiResult.Unauthorized -> {
-                cache.clear()
-                ExpiringInventoryResult.Unauthorized
-            }
-            is ApiResult.NetworkUnavailable -> cachedResultOrUnavailable(httpCode = null)
+            is ApiResult.Success -> cacheFreshResult(scope, response.data)
+            ApiResult.Unauthorized -> ExpiringInventoryResult.Unauthorized
+            is ApiResult.NetworkUnavailable -> cachedResultOrUnavailable(scope, httpCode = null)
             is ApiResult.HttpError ->
                 if (response.code in 500..599) {
-                    cachedResultOrUnavailable(httpCode = response.code)
+                    cachedResultOrUnavailable(scope, httpCode = response.code)
                 } else {
                     ExpiringInventoryResult.Failure(InventoryError.Http(response.code))
                 }
@@ -52,8 +53,8 @@ class OfflineFirstInventoryRepository(
         }
     }
 
-    override suspend fun addItem(draft: InventoryItemDraft): InventoryWriteResult =
-        write { authorization ->
+    override suspend fun addItem(scope: AccountSessionScope, draft: InventoryItemDraft): InventoryWriteResult =
+        write(scope) { authorization ->
             apiCall {
                 api.createItem(
                     authorization,
@@ -62,8 +63,8 @@ class OfflineFirstInventoryRepository(
             }
         }
 
-    override suspend fun updateItem(itemId: String, draft: InventoryItemDraft): InventoryWriteResult =
-        write { authorization ->
+    override suspend fun updateItem(scope: AccountSessionScope, itemId: String, draft: InventoryItemDraft): InventoryWriteResult =
+        write(scope) { authorization ->
             apiCall {
                 api.updateItem(
                     authorization,
@@ -73,8 +74,8 @@ class OfflineFirstInventoryRepository(
             }
         }
 
-    override suspend fun consumeItem(itemId: String): InventoryWriteResult =
-        write { authorization ->
+    override suspend fun consumeItem(scope: AccountSessionScope, itemId: String): InventoryWriteResult =
+        write(scope) { authorization ->
             // Response<Unit> never throws for non-2xx, so map the status here.
             when (val response = apiCall { api.deactivateItem(authorization, itemId) }) {
                 is ApiResult.Success -> when {
@@ -86,15 +87,15 @@ class OfflineFirstInventoryRepository(
             }
         }
 
-    private suspend fun write(call: suspend (authorization: String) -> ApiResult<*>): InventoryWriteResult {
-        val authorization = authorizationHeaderProvider.getAuthorizationHeader()
+    private suspend fun write(
+        scope: AccountSessionScope,
+        call: suspend (authorization: String) -> ApiResult<*>,
+    ): InventoryWriteResult {
+        val authorization = authorizationHeaderProvider.getAuthorizationHeader(scope)
             ?: return InventoryWriteResult.Unauthorized
         return when (val response = call(authorization)) {
             is ApiResult.Success -> InventoryWriteResult.Success
-            ApiResult.Unauthorized -> {
-                cache.clear()
-                InventoryWriteResult.Unauthorized
-            }
+            ApiResult.Unauthorized -> InventoryWriteResult.Unauthorized
             is ApiResult.NetworkUnavailable -> InventoryWriteResult.Failure(InventoryError.BackendUnavailable(null))
             is ApiResult.HttpError -> InventoryWriteResult.Failure(
                 if (response.code in 500..599) InventoryError.BackendUnavailable(response.code) else InventoryError.Http(response.code),
@@ -103,21 +104,19 @@ class OfflineFirstInventoryRepository(
         }
     }
 
-    override suspend fun clearCache() {
-        cache.clear()
-    }
-
-    private suspend fun cacheFreshResult(response: ExpiringInventoryResponseDto): ExpiringInventoryResult {
+    /** Stores the result only if [scope] is still active; a late answer of an ended session is not cached. */
+    private suspend fun cacheFreshResult(scope: AccountSessionScope, response: ExpiringInventoryResponseDto): ExpiringInventoryResult {
         val items = response.toExpiringItemsOrNull()
             ?: return ExpiringInventoryResult.Failure(InventoryError.InvalidResponse)
         val syncedAt = currentTimeMillis()
-        cache.replace(items, syncedAt)
+        coordinator.runIfCurrent(scope) { cache.replace(scope.accountId, items, syncedAt) }
         return ExpiringInventoryResult.Success(items, InventoryDataSource.NETWORK, syncedAt)
     }
 
-    private suspend fun cachedResultOrUnavailable(httpCode: Int?): ExpiringInventoryResult {
-        val cached = cache.read()
+    private suspend fun cachedResultOrUnavailable(scope: AccountSessionScope, httpCode: Int?): ExpiringInventoryResult {
+        val cached = cache.read(scope.accountId)
             ?: return ExpiringInventoryResult.Failure(InventoryError.BackendUnavailable(httpCode))
         return ExpiringInventoryResult.Success(cached.items, InventoryDataSource.CACHE, cached.lastSyncedAtEpochMillis)
     }
 }
+

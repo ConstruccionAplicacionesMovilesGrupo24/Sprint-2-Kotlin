@@ -28,10 +28,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.campusmeal.android.BuildConfig
+import com.campusmeal.android.core.common.formatSyncedAt
 import com.campusmeal.android.core.designsystem.campusMealColors
+import com.campusmeal.android.core.network.ReconnectEffect
 import com.campusmeal.android.feature.home.ContextSummary
 import com.campusmeal.android.feature.home.cop
 import com.campusmeal.android.feature.profile.data.CurrentUserResult
+import com.campusmeal.android.feature.profile.data.ProfileSource
 
 private val CardShape = RoundedCornerShape(14.dp)
 
@@ -43,11 +46,13 @@ private val CardShape = RoundedCornerShape(14.dp)
 fun ProfileRoute(
     viewModel: ProfileViewModel,
     context: ContextSummary?,
+    online: Boolean,
     onChangeContext: () -> Unit,
     onLogout: () -> Unit,
 ) {
     val user by viewModel.user.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) { viewModel.load() }
+    ReconnectEffect(online, viewModel::onReconnected)
 
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
@@ -57,25 +62,19 @@ fun ProfileRoute(
 
         when (val result = user) {
             null -> CircularProgressIndicator()
-            is CurrentUserResult.Success -> Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.size(64.dp)) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(initials(result.user.name), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                    }
-                }
-                Column(Modifier.padding(start = 16.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(result.user.name, style = MaterialTheme.typography.titleMedium)
-                    Text(result.user.email, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.campusMealColors.textSecondary)
+            is CurrentUserResult.Success -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (result.source == ProfileSource.CACHE) {
                     Text(
-                        if (result.user.role == "ANALYST") "Analyst account" else "Student account",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
+                        "Offline · profile updated ${formatSyncedAt(result.fetchedAtEpochMillis)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.campusMealColors.textSecondary,
                     )
                 }
+                ProfileHeader(result)
             }
             CurrentUserResult.Unauthorized -> Text("Your session is no longer valid. Log in again.")
             CurrentUserResult.Unavailable -> Column {
-                Text("Your profile could not be loaded. Check your connection.")
+                Text("Your profile is not available offline yet. Connect to load it.")
                 TextButton(onClick = viewModel::load) { Text("Try again") }
             }
         }
@@ -101,6 +100,27 @@ fun ProfileRoute(
 
         OutlinedButton(onClick = onLogout, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(11.dp)) {
             Text("Log out")
+        }
+    }
+}
+
+/** Avatar, name, email and role. The role only changes presentation; the backend stays authoritative. */
+@Composable
+private fun ProfileHeader(result: CurrentUserResult.Success) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.size(64.dp)) {
+            Box(contentAlignment = Alignment.Center) {
+                Text(initials(result.user.name), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            }
+        }
+        Column(Modifier.padding(start = 16.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(result.user.name, style = MaterialTheme.typography.titleMedium)
+            Text(result.user.email, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.campusMealColors.textSecondary)
+            Text(
+                if (result.user.role == "ANALYST") "Analyst account" else "Student account",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
         }
     }
 }

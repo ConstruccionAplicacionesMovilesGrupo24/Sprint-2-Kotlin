@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.campusmeal.android.app.AppContainer
+import com.campusmeal.android.core.session.AccountSessionCoordinator
+import com.campusmeal.android.core.session.AccountSessionScope
 import com.campusmeal.android.feature.restaurants.data.RestaurantRepository
 import com.campusmeal.android.feature.restaurants.domain.RestaurantDetail
 import com.campusmeal.android.feature.restaurants.domain.RestaurantDetailResult
@@ -29,8 +31,11 @@ sealed interface RestaurantDetailUiState {
     data object Unauthorized : RestaurantDetailUiState
 }
 
+/** Bound to the session [scope] it was created for; results of another scope are never shown. */
 class RestaurantDetailViewModel(
     private val repository: RestaurantRepository,
+    private val coordinator: AccountSessionCoordinator,
+    private val scope: AccountSessionScope,
     private val restaurantId: String,
 ) : ViewModel() {
 
@@ -56,12 +61,15 @@ class RestaurantDetailViewModel(
             _uiState.value =
                 RestaurantDetailUiState.Loading
 
-            when (
-                val result =
-                    repository.getRestaurant(
-                        restaurantId,
-                    )
-            ) {
+            val result =
+                repository.getRestaurant(
+                    scope,
+                    restaurantId,
+                )
+
+            if (!coordinator.isCurrent(scope)) return@launch
+
+            when (result) {
 
                 is RestaurantDetailResult.Success -> {
                     _uiState.value =
@@ -90,6 +98,7 @@ class RestaurantDetailViewModel(
 
         fun factory(
             container: AppContainer,
+            scope: AccountSessionScope,
             restaurantId: String,
         ): ViewModelProvider.Factory =
             viewModelFactory {
@@ -98,6 +107,9 @@ class RestaurantDetailViewModel(
                     RestaurantDetailViewModel(
                         repository =
                             container.restaurantRepository,
+                        coordinator =
+                            container.sessionCoordinator,
+                        scope = scope,
                         restaurantId =
                             restaurantId,
                     )

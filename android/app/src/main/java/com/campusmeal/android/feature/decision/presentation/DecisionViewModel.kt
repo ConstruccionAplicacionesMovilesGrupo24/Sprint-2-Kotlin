@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.campusmeal.android.app.AppContainer
+import com.campusmeal.android.core.session.AccountSessionCoordinator
+import com.campusmeal.android.core.session.AccountSessionScope
 import com.campusmeal.android.feature.decision.data.repository.RecommendationEvent
 import com.campusmeal.android.feature.decision.data.repository.RecommendationEventReporter
 import com.campusmeal.android.feature.decision.domain.CompareMealOptionsUseCase
@@ -35,6 +37,9 @@ data class SelectionState(val alternative: String? = null, val status: Selection
 class DecisionViewModel(
     private val compareMealOptions: CompareMealOptionsUseCase,
     private val eventReporter: RecommendationEventReporter,
+    private val coordinator: AccountSessionCoordinator,
+    /** The session this screen belongs to: results of another session are never shown or reported. */
+    private val scope: AccountSessionScope,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<DecisionUiState>(DecisionUiState.Loading)
@@ -53,7 +58,8 @@ class DecisionViewModel(
         pendingSelection = null
         viewModelScope.launch {
             _uiState.value = DecisionUiState.Loading
-            val result = compareMealOptions(context)
+            val result = compareMealOptions(scope, context)
+            if (!coordinator.isCurrent(scope)) return@launch
             _uiState.value = DecisionUiState.Loaded(result)
             val shown = when (result) {
                 is MealDecisionResult.Content -> result.decision
@@ -62,7 +68,7 @@ class DecisionViewModel(
             }
             // Impression: once, when a recommendation with alternatives becomes visible.
             if (shown != null && impressionsSent.add(shown.recommendationId)) {
-                eventReporter.report(RecommendationEvent(shown.recommendationId, selectedAlternative = null))
+                eventReporter.report(scope, RecommendationEvent(shown.recommendationId, selectedAlternative = null))
             }
         }
     }
@@ -78,14 +84,17 @@ class DecisionViewModel(
         pendingSelection = event
         _selection.value = SelectionState(event.selectedAlternative, SelectionStatus.SENDING)
         viewModelScope.launch {
-            val accepted = eventReporter.report(event)
+            val accepted = eventReporter.report(scope, event)
+            if (!coordinator.isCurrent(scope)) return@launch
             _selection.value = SelectionState(event.selectedAlternative, if (accepted) SelectionStatus.SENT else SelectionStatus.FAILED)
         }
     }
 
     companion object {
-        fun factory(container: AppContainer): ViewModelProvider.Factory = viewModelFactory {
-            initializer { DecisionViewModel(container.compareMealOptions, container.recommendationEventReporter) }
+        fun factory(container: AppContainer, scope: AccountSessionScope): ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                DecisionViewModel(container.compareMealOptions, container.recommendationEventReporter, container.sessionCoordinator, scope)
+            }
         }
     }
 }

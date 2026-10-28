@@ -29,6 +29,7 @@ import com.campusmeal.android.app.AppContainer
 import com.campusmeal.android.app.CampusMealApplication
 import com.campusmeal.android.core.designsystem.NavigationIcons
 import com.campusmeal.android.core.designsystem.campusMealColors
+import com.campusmeal.android.core.session.AccountSessionScope
 import com.campusmeal.android.feature.auth.AuthViewModel
 import com.campusmeal.android.feature.auth.LoginScreen
 import com.campusmeal.android.feature.auth.RegistrationScreen
@@ -105,10 +106,15 @@ private enum class TopLevel(val label: String, val icon: ImageVector, val route:
 /**
  * Protected application graph with the bottom navigation bar. The bar is shown on the four
  * top-level destinations; the context form, results and detail are pushed on top without it.
+ *
+ * Composed for exactly one [sessionScope]: every account-owned ViewModel is created for it, and the
+ * caller discards this graph when the scope changes.
  */
 @Composable
 fun CampusMealNavHost(
     navController: NavHostController,
+    sessionScope: AccountSessionScope,
+    online: Boolean,
     onLogout: () -> Unit,
     modifier: Modifier = Modifier,
     startDestination: CampusMealRoute = CampusMealRoute.Home,
@@ -184,8 +190,9 @@ fun CampusMealNavHost(
 
             composable<CampusMealRoute.Home> {
                 HomeRoute(
-                    viewModel = viewModel(factory = HomeViewModel.factory(container)),
+                    viewModel = viewModel(factory = HomeViewModel.factory(container, sessionScope)),
                     context = currentContext?.toContextSummary(),
+                    online = online,
                     onChangeContext = { navController.navigate(CampusMealRoute.Context) },
                     onCompare = ::decide,
                     onFindRestaurants = {
@@ -204,7 +211,7 @@ fun CampusMealNavHost(
 
             composable<CampusMealRoute.Inventory> {
                 InventoryRoute(
-                    viewModel = viewModel(factory = InventoryViewModel.factory(container)),
+                    viewModel = viewModel(factory = InventoryViewModel.factory(container, sessionScope)),
                 )
             }
 
@@ -241,7 +248,7 @@ fun CampusMealNavHost(
              */
             composable<CampusMealRoute.Restaurants> {
                 RestaurantResultsRoute(
-                    viewModel = viewModel(factory = RestaurantResultsViewModel.factory(container)),
+                    viewModel = viewModel(factory = RestaurantResultsViewModel.factory(container, sessionScope)),
                     request = currentContext,
                     onBack = { navController.popBackStack() },
                     onChangeContext = { navController.navigate(CampusMealRoute.Context) },
@@ -256,7 +263,11 @@ fun CampusMealNavHost(
                 val route = entry.toRoute<CampusMealRoute.RestaurantDetail>()
                 RestaurantDetailRoute(
                     viewModel = viewModel(
-                        factory = RestaurantDetailViewModel.factory(container = container, restaurantId = route.restaurantId),
+                        factory = RestaurantDetailViewModel.factory(
+                            container = container,
+                            scope = sessionScope,
+                            restaurantId = route.restaurantId,
+                        ),
                     ),
                     onBack = { navController.popBackStack() },
                 )
@@ -267,7 +278,7 @@ fun CampusMealNavHost(
              */
             composable<CampusMealRoute.Decision> {
                 DecisionRoute(
-                    viewModel = viewModel(factory = DecisionViewModel.factory(container)),
+                    viewModel = viewModel(factory = DecisionViewModel.factory(container, sessionScope)),
                     context = remember(currentContext) { currentContext?.toDecisionContext() },
                     onBack = { navController.popBackStack() },
                     onSetContext = {
@@ -279,8 +290,9 @@ fun CampusMealNavHost(
 
             composable<CampusMealRoute.Profile> {
                 ProfileRoute(
-                    viewModel = viewModel(factory = ProfileViewModel.factory(container)),
+                    viewModel = viewModel(factory = ProfileViewModel.factory(container, sessionScope)),
                     context = currentContext?.toContextSummary(),
+                    online = online,
                     onChangeContext = { navController.navigate(CampusMealRoute.Context) },
                     onLogout = onLogout,
                 )

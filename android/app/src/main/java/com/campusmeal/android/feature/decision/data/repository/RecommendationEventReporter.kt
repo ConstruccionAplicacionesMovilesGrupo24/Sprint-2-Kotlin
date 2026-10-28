@@ -4,6 +4,7 @@ import android.util.Log
 import com.campusmeal.android.BuildConfig
 import com.campusmeal.android.core.network.ApiResult
 import com.campusmeal.android.core.network.apiCall
+import com.campusmeal.android.core.session.AccountSessionScope
 import com.campusmeal.android.core.session.AuthorizationHeaderProvider
 import com.campusmeal.android.feature.decision.data.remote.RecommendationEventDto
 import com.campusmeal.android.feature.decision.data.remote.RecommendationEventsApi
@@ -36,8 +37,12 @@ class RecommendationEventReporter(
     /**
      * Returns true once the backend accepted the event (202). Connectivity failures and HTTP 5xx
      * are retried with the same [RecommendationEvent.clientEventId]; other failures are not.
+     *
+     * Every attempt uses the credentials of [scope] only: once that session ends, retries stop instead
+     * of sending the event with another account's token. Pending events are still memory-only until
+     * the S3-09 outbox.
      */
-    suspend fun report(event: RecommendationEvent): Boolean {
+    suspend fun report(scope: AccountSessionScope, event: RecommendationEvent): Boolean {
         val dto = RecommendationEventDto(
             clientEventId = event.clientEventId,
             recommendationId = event.recommendationId,
@@ -48,7 +53,7 @@ class RecommendationEventReporter(
         )
         for (attempt in 0..retryDelaysMillis.size) {
             if (attempt > 0) delay(retryDelaysMillis[attempt - 1])
-            val authorization = authorizationHeaderProvider.getAuthorizationHeader() ?: return false
+            val authorization = authorizationHeaderProvider.getAuthorizationHeader(scope) ?: return false
             val status = when (val result = apiCall { api.send(authorization, dto) }) {
                 is ApiResult.Success -> result.data.code()
                 ApiResult.Unauthorized -> 401
