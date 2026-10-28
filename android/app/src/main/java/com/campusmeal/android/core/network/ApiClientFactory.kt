@@ -39,8 +39,25 @@ object ApiClientFactory {
         OkHttpClient.Builder()
             .connectTimeout(config.connectTimeoutSeconds, TimeUnit.SECONDS)
             .readTimeout(config.readTimeoutSeconds, TimeUnit.SECONDS)
+            .writeTimeout(config.writeTimeoutSeconds, TimeUnit.SECONDS)
+            .callTimeout(config.callTimeoutSeconds, TimeUnit.SECONDS)
             .apply { interceptors.forEach(::addInterceptor) }
             .apply { if (config.httpLoggingEnabled) addInterceptor(createLoggingInterceptor(logger)) }
+            .build()
+
+    /**
+     * Client for non-idempotent writes (POST/PATCH/DELETE). It shares [base]'s connection pool,
+     * timeouts and interceptors (session refresh and redacted logging), with two differences:
+     * - OkHttp never retries a connection failure transparently, so a write that may have reached the
+     *   server is not resent behind the app's back. The session interceptor's single retry after an
+     *   actual 401 is kept: a 401 means the server did not apply the request.
+     * - [TransmissionTrackingInterceptor] records whether the request reached a connection, so a
+     *   failure can be classified as "not sent" or "outcome unknown".
+     */
+    fun createMutationOkHttpClient(base: OkHttpClient): OkHttpClient =
+        base.newBuilder()
+            .retryOnConnectionFailure(false)
+            .addNetworkInterceptor(TransmissionTrackingInterceptor)
             .build()
 
     fun createRetrofit(

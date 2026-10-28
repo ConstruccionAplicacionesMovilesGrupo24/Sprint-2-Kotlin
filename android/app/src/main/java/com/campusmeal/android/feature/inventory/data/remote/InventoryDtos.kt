@@ -3,12 +3,13 @@ package com.campusmeal.android.feature.inventory.data.remote
 import kotlinx.serialization.Serializable
 
 /**
- * Provisional NestJS contract for `GET inventory/expiring`. Every field is required, so a missing
- * field fails decoding; unknown fields are ignored by the shared Json configuration.
- * Keep these types out of the UI: map them with the inventory mappers.
+ * NestJS contract shared by `GET inventory` and `GET inventory/expiring` (`InventoryItemsResponseDto`
+ * in CampusMealBack). Every field is required, so a missing field fails decoding; unknown fields are
+ * ignored by the shared Json configuration. Keep these types out of the UI: map them with the
+ * inventory mappers.
  */
 @Serializable
-data class ExpiringInventoryResponseDto(
+data class InventoryItemsResponseDto(
     val items: List<InventoryItemDto>,
 )
 

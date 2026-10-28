@@ -33,13 +33,14 @@ import com.campusmeal.android.feature.decision.data.repository.RecommendationEve
 import com.campusmeal.android.feature.decision.data.repository.MealDecisionRepository
 import com.campusmeal.android.feature.decision.data.repository.NetworkMealDecisionRepository
 import com.campusmeal.android.feature.decision.domain.CompareMealOptionsUseCase
-import com.campusmeal.android.feature.inventory.data.local.RoomInventoryCache
+import com.campusmeal.android.feature.inventory.data.local.RoomInventoryStore
 import com.campusmeal.android.feature.profile.data.CurrentUserApi
 import com.campusmeal.android.feature.profile.data.ProfileRepository
 import com.campusmeal.android.feature.restaurants.data.NetworkRestaurantRepository
 import com.campusmeal.android.feature.restaurants.data.RestaurantApi
 import com.campusmeal.android.feature.restaurants.data.RestaurantRepository
 import com.campusmeal.android.feature.inventory.data.remote.InventoryApi
+import com.campusmeal.android.feature.inventory.data.remote.InventoryMutationApi
 import com.campusmeal.android.feature.inventory.data.repository.OfflineFirstInventoryRepository
 import com.campusmeal.android.feature.inventory.domain.repository.InventoryRepository
 import kotlinx.coroutines.CoroutineScope
@@ -57,6 +58,9 @@ interface AppContainer {
     val networkConfig: NetworkConfig
     val okHttpClient: OkHttpClient
     val retrofit: Retrofit
+
+    /** For non-idempotent writes: no transparent connection retries (see ApiClientFactory). */
+    val mutationRetrofit: Retrofit
     val database: CampusMealDatabase
     val preferences: DataStore<Preferences>
     val sessionStorage: SessionStorage
@@ -108,6 +112,11 @@ class DefaultAppContainer(context: Context) : AppContainer {
 
     override val retrofit: Retrofit by lazy { ApiClientFactory.createRetrofit(networkConfig, okHttpClient) }
 
+    // Same pool, timeouts and interceptors as okHttpClient; writes are never retried behind the app's back.
+    override val mutationRetrofit: Retrofit by lazy {
+        ApiClientFactory.createRetrofit(networkConfig, ApiClientFactory.createMutationOkHttpClient(okHttpClient))
+    }
+
     override val database: CampusMealDatabase by lazy { CampusMealDatabase.create(appContext) }
 
     override val preferences: DataStore<Preferences> by lazy { CampusMealPreferences.dataStore(appContext) }
@@ -125,7 +134,7 @@ class DefaultAppContainer(context: Context) : AppContainer {
             listeners = {
                 listOf(
                     // Each account-owned store deletes only its own rows; later issues register theirs here.
-                    AccountDataCleaner(stores = listOf(inventoryCache, restaurantRepository, profileRepository)),
+                    AccountDataCleaner(stores = listOf(inventoryStore, restaurantRepository, profileRepository)),
                     AccountWorkCanceller(appContext),
                 )
             },
@@ -158,14 +167,16 @@ class DefaultAppContainer(context: Context) : AppContainer {
         SessionAuthorizationHeaderProvider(sessionStorage, sessionCoordinator)
     }
 
-    private val inventoryCache: RoomInventoryCache by lazy { RoomInventoryCache(database) }
+    private val inventoryStore: RoomInventoryStore by lazy { RoomInventoryStore(database) }
 
     override val inventoryRepository: InventoryRepository by lazy {
         OfflineFirstInventoryRepository(
             api = retrofit.create(InventoryApi::class.java),
+            mutationApi = mutationRetrofit.create(InventoryMutationApi::class.java),
             authorizationHeaderProvider = authorizationHeaderProvider,
-            cache = inventoryCache,
+            store = inventoryStore,
             coordinator = sessionCoordinator,
+            cachePolicy = cachePolicy,
         )
     }
 

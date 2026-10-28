@@ -31,12 +31,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.campusmeal.android.core.common.formatSyncedAt
+import com.campusmeal.android.core.designsystem.SlowResponseNotice
 import com.campusmeal.android.core.designsystem.campusMealColors
 import com.campusmeal.android.feature.context.domain.DietaryPreference
 import com.campusmeal.android.feature.restaurants.domain.Meal
 import com.campusmeal.android.feature.restaurants.domain.OpeningStatus
 import com.campusmeal.android.feature.restaurants.domain.RestaurantDetail
-import com.campusmeal.android.feature.restaurants.domain.RouteProviderStatus
 import java.text.DateFormat
 import java.util.Date
 import java.util.Locale
@@ -44,10 +45,15 @@ import java.util.Locale
 private val DetailPadding = 24.dp
 private val DetailCardShape = RoundedCornerShape(14.dp)
 
+/**
+ * [onRefreshRoute] returns to the search and runs it again for the current context; null when there is
+ * no validated context to search from.
+ */
 @Composable
 fun RestaurantDetailRoute(
     viewModel: RestaurantDetailViewModel,
     onBack: () -> Unit,
+    onRefreshRoute: (() -> Unit)?,
 ) {
     val state by
     viewModel.uiState.collectAsStateWithLifecycle()
@@ -56,6 +62,7 @@ fun RestaurantDetailRoute(
         state = state,
         onBack = onBack,
         onRetry = viewModel::retry,
+        onRefreshRoute = onRefreshRoute,
     )
 }
 
@@ -65,6 +72,7 @@ fun RestaurantDetailScreen(
     state: RestaurantDetailUiState,
     onBack: () -> Unit,
     onRetry: () -> Unit,
+    onRefreshRoute: (() -> Unit)? = null,
 ) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -121,6 +129,8 @@ fun RestaurantDetailScreen(
             is RestaurantDetailUiState.Content -> {
                 DetailContent(
                     detail = state.detail,
+                    route = state.route,
+                    onRefreshRoute = onRefreshRoute,
                     modifier =
                         Modifier.padding(
                             innerPadding,
@@ -179,12 +189,20 @@ private fun LoadingDetail(
                     .typography
                     .titleMedium,
         )
+
+        SlowResponseNotice(
+            active = true,
+            modifier = Modifier.padding(top = 12.dp),
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+        )
     }
 }
 
 @Composable
 private fun DetailContent(
     detail: RestaurantDetail,
+    route: DetailRoute?,
+    onRefreshRoute: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -274,46 +292,29 @@ private fun DetailContent(
                     ),
             ) {
 
+                // The detail endpoint has no origin: walking and total come only from the search the
+                // user opened this restaurant from, exactly as the backend returned them.
                 MetricCard(
                     modifier =
                         Modifier.weight(1f),
                     title = "Walk",
-                    value =
-                        detail.summary
-                            .walkingMinutes
-                            ?.let {
-                                "$it min"
-                            }
-                            ?: "Unavailable",
+                    value = routeValue(route, route?.estimate?.walkingMinutes),
                 )
 
                 MetricCard(
                     modifier =
                         Modifier.weight(1f),
                     title = "Total",
-                    value =
-                        detail.summary
-                            .estimatedTotalMinutes
-                            ?.let {
-                                "$it min"
-                            }
-                            ?: "Unavailable",
+                    value = routeValue(route, route?.estimate?.estimatedTotalMinutes),
                 )
             }
         }
 
-        if (
-            detail.routeProviderStatus !=
-            RouteProviderStatus.AVAILABLE
-        ) {
-            item {
-                InfoCard(
-                    title =
-                        "Limited route information",
-                    value =
-                        "Walking estimates are currently incomplete. Restaurant and meal information is still available.",
-                )
-            }
+        item {
+            RouteProvenance(
+                route = route,
+                onRefreshRoute = onRefreshRoute,
+            )
         }
 
         item {
@@ -352,9 +353,10 @@ private fun DetailContent(
         }
 
         item {
+            // Restaurant and meal data only; it says nothing about the route estimate's age.
             Text(
                 text =
-                    "Last updated ${
+                    "Restaurant details updated ${
                         formatDetailTimestamp(
                             detail.lastUpdatedAtEpochMillis,
                         )
@@ -368,6 +370,85 @@ private fun DetailContent(
                         .campusMealColors
                         .textSecondary,
             )
+        }
+    }
+}
+
+private fun routeValue(route: DetailRoute?, minutes: Int?): String = when {
+    route == null -> "—"
+    minutes == null -> "Unavailable"
+    else -> "$minutes min"
+}
+
+/**
+ * Where the walking estimate comes from and how old it is. A missing estimate inside a matching search
+ * is a real provider gap for this restaurant; no search at all only means none was run from here.
+ */
+@Composable
+private fun RouteProvenance(
+    route: DetailRoute?,
+    onRefreshRoute: (() -> Unit)?,
+) {
+    val (title, message) = when {
+        route == null ->
+            "Walking estimate" to "Search from your current location to get a walking estimate."
+        route.estimate.walkingMinutes == null ->
+            "Walking estimate unavailable" to
+                "The route service gave no estimate for this restaurant in your search at " +
+                "${formatSyncedAt(route.estimate.searchedAtEpochMillis)}. Restaurant and meal information is still available."
+        route.historical ->
+            "Earlier estimate" to
+                "From your search at ${formatSyncedAt(route.estimate.searchedAtEpochMillis)}. " +
+                "It may no longer be accurate; refresh the search for a current estimate."
+        else ->
+            "Estimate from your search" to "Calculated for your search at ${formatSyncedAt(route.estimate.searchedAtEpochMillis)}."
+    }
+    val offerRefresh = onRefreshRoute != null && (route == null || route.historical || route.estimate.walkingMinutes == null)
+
+    Surface(
+        modifier =
+            Modifier.fillMaxWidth(),
+        shape = DetailCardShape,
+        color =
+            MaterialTheme
+                .colorScheme
+                .surfaceVariant,
+    ) {
+        Column(
+            modifier =
+                Modifier.padding(16.dp),
+            verticalArrangement =
+                Arrangement.spacedBy(
+                    6.dp,
+                ),
+        ) {
+            Text(
+                text = title,
+                style =
+                    MaterialTheme
+                        .typography
+                        .titleMedium,
+            )
+
+            Text(
+                text = message,
+                style =
+                    MaterialTheme
+                        .typography
+                        .bodyMedium,
+                color =
+                    MaterialTheme
+                        .campusMealColors
+                        .textSecondary,
+            )
+
+            if (offerRefresh) {
+                TextButton(
+                    onClick = onRefreshRoute,
+                ) {
+                    Text("Refresh route")
+                }
+            }
         }
     }
 }

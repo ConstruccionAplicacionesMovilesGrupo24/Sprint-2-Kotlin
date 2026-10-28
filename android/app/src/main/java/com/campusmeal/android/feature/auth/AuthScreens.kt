@@ -57,6 +57,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.campusmeal.android.R
 import com.campusmeal.android.core.designsystem.CampusMealTheme
+import com.campusmeal.android.core.designsystem.SlowResponseNotice
 import com.campusmeal.android.core.designsystem.campusMealColors
 
 private val PagePadding = 24.dp
@@ -427,6 +428,7 @@ private fun AuthMessage(state: AuthUiState) {
 
 @Composable
 private fun PrimaryButton(@StringRes text: Int, loading: Boolean, onClick: () -> Unit) {
+    SlowResponseNotice(active = loading, modifier = Modifier.padding(bottom = 8.dp))
     Button(
         onClick = onClick,
         enabled = !loading,

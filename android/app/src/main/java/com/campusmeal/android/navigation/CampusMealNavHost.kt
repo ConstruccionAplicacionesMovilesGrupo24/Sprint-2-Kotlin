@@ -52,6 +52,7 @@ import com.campusmeal.android.feature.restaurants.presentation.RestaurantDetailR
 import com.campusmeal.android.feature.restaurants.presentation.RestaurantDetailViewModel
 import com.campusmeal.android.feature.restaurants.presentation.RestaurantResultsRoute
 import com.campusmeal.android.feature.restaurants.presentation.RestaurantResultsViewModel
+import com.campusmeal.android.feature.restaurants.presentation.SelectedRoute
 
 /**
  * Signed-out graph.
@@ -126,6 +127,13 @@ fun CampusMealNavHost(
      * information is not stored locally; it is lost when the process ends.
      */
     var currentContext by remember { mutableStateOf<RestaurantSearchRequestDto?>(null) }
+
+    /*
+     * The route estimate of the restaurant last opened from the results, with the request that produced
+     * it. Memory only, like the context: it dies with the process and with this graph (scope change).
+     * The detail screen uses it only while it still matches the current context and restaurant.
+     */
+    var selectedRoute by remember { mutableStateOf<SelectedRoute?>(null) }
 
     // True when the user asked to decide before having a context: the form then leads to Decision.
     var decideAfterContext by remember { mutableStateOf(false) }
@@ -212,6 +220,7 @@ fun CampusMealNavHost(
             composable<CampusMealRoute.Inventory> {
                 InventoryRoute(
                     viewModel = viewModel(factory = InventoryViewModel.factory(container, sessionScope)),
+                    online = online,
                 )
             }
 
@@ -247,12 +256,15 @@ fun CampusMealNavHost(
              * Issue #6: real restaurant results using RestaurantRepository.
              */
             composable<CampusMealRoute.Restaurants> {
+                val resultsViewModel: RestaurantResultsViewModel =
+                    viewModel(factory = RestaurantResultsViewModel.factory(container, sessionScope))
                 RestaurantResultsRoute(
-                    viewModel = viewModel(factory = RestaurantResultsViewModel.factory(container, sessionScope)),
+                    viewModel = resultsViewModel,
                     request = currentContext,
                     onBack = { navController.popBackStack() },
                     onChangeContext = { navController.navigate(CampusMealRoute.Context) },
                     onRestaurantSelected = { restaurantId ->
+                        selectedRoute = resultsViewModel.routeFor(restaurantId)
                         navController.navigate(CampusMealRoute.RestaurantDetail(restaurantId = restaurantId))
                     },
                     onCompareOptions = { openTab(TopLevel.DECIDE) },
@@ -261,15 +273,30 @@ fun CampusMealNavHost(
 
             composable<CampusMealRoute.RestaurantDetail> { entry ->
                 val route = entry.toRoute<CampusMealRoute.RestaurantDetail>()
+                // Only an estimate from the current search context, for this restaurant and session.
+                val estimate = selectedRoute
+                    ?.takeIf {
+                        it.scope == sessionScope && it.request == currentContext && it.estimate.restaurantId == route.restaurantId
+                    }
+                    ?.estimate
                 RestaurantDetailRoute(
                     viewModel = viewModel(
                         factory = RestaurantDetailViewModel.factory(
                             container = container,
                             scope = sessionScope,
                             restaurantId = route.restaurantId,
+                            routeEstimate = estimate,
                         ),
                     ),
                     onBack = { navController.popBackStack() },
+                    // The existing search refresh: the same context evaluated now, back on the results.
+                    onRefreshRoute = currentContext?.let { request ->
+                        {
+                            selectedRoute = null
+                            currentContext = request.requestedNow()
+                            navController.popBackStack()
+                        }
+                    },
                 )
             }
 

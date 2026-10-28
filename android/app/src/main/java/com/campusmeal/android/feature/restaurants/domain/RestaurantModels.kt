@@ -89,3 +89,22 @@ sealed interface RestaurantError {
     /** The response broke the contract. */
     data object InvalidResponse : RestaurantError
 }
+
+/**
+ * The walking estimate one restaurant had in one successful search, handed to its detail screen in
+ * memory only. The detail endpoint has no origin, so its own route fields are always null; this keeps
+ * the search's values exactly as the backend returned them (Android never recomputes them).
+ *
+ * It holds no coordinates and is never persisted, logged or put in navigation arguments.
+ */
+data class RouteEstimateSnapshot(
+    val restaurantId: String,
+    /** One way; null when the route provider had no estimate for this restaurant in that search. */
+    val walkingMinutes: Int?,
+    /** The backend's total (round trip plus dining); null with [walkingMinutes]. */
+    val estimatedTotalMinutes: Int?,
+    /** The search's `lastUpdatedAt`: the age of the estimate, independent of the detail's timestamp. */
+    val searchedAtEpochMillis: Long,
+    /** [ResultSource.CACHE] means the search itself was a saved copy: the estimate is historical. */
+    val source: ResultSource,
+)

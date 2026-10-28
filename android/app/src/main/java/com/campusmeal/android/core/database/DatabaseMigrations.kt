@@ -55,5 +55,41 @@ object DatabaseMigrations {
         }
     }
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3)
+    /**
+     * v3 → v4 (S3-03): complete inventory and drafts. Purely additive: no existing row is changed or
+     * deleted, so the S3-02 session, profile and BQ2 cache survive the upgrade.
+     *
+     * - `inventory_items`: each account's complete snapshot (`GET inventory`).
+     * - `inventory_drafts`: add/edit drafts with raw input and their last submission outcome.
+     * - `inventory_pending_consumes`: consumes whose outcome is not confirmed yet.
+     * - `cache_metadata.invalidatedAtEpochMillis`: nullable; set after a confirmed write.
+     */
+    val MIGRATION_3_4 = object : Migration(3, 4) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `inventory_items` (" +
+                    "`accountId` TEXT NOT NULL, `itemId` TEXT NOT NULL, `name` TEXT NOT NULL, " +
+                    "`quantity` REAL NOT NULL, `unit` TEXT NOT NULL, `expirationDate` TEXT NOT NULL, " +
+                    "`remainingDays` INTEGER NOT NULL, `position` INTEGER NOT NULL, " +
+                    "PRIMARY KEY(`accountId`, `itemId`))",
+            )
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `inventory_drafts` (" +
+                    "`accountId` TEXT NOT NULL, `draftId` TEXT NOT NULL, `targetItemId` TEXT, " +
+                    "`name` TEXT NOT NULL, `quantityText` TEXT NOT NULL, `unit` TEXT NOT NULL, " +
+                    "`expirationDateText` TEXT NOT NULL, `updatedAtEpochMillis` INTEGER NOT NULL, " +
+                    "`lastSubmitOutcome` TEXT NOT NULL, `lastSubmitAtEpochMillis` INTEGER, " +
+                    "`lastHttpCode` INTEGER, `lastErrorCode` TEXT, PRIMARY KEY(`accountId`, `draftId`))",
+            )
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `inventory_pending_consumes` (" +
+                    "`accountId` TEXT NOT NULL, `itemId` TEXT NOT NULL, `itemName` TEXT NOT NULL, " +
+                    "`outcome` TEXT NOT NULL, `startedAtEpochMillis` INTEGER NOT NULL, " +
+                    "PRIMARY KEY(`accountId`, `itemId`))",
+            )
+            db.execSQL("ALTER TABLE `cache_metadata` ADD COLUMN `invalidatedAtEpochMillis` INTEGER")
+        }
+    }
+
+    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
 }

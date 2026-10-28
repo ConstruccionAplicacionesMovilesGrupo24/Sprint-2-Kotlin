@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.campusmeal.android.core.designsystem.SlowResponseNotice
 import com.campusmeal.android.core.designsystem.campusMealColors
 import com.campusmeal.android.feature.context.data.remote.RestaurantSearchRequestDto
 import com.campusmeal.android.feature.context.domain.DietaryPreference
@@ -135,7 +136,7 @@ fun RestaurantResultsScreen(
 
                 RestaurantResultsUiState.Initial,
                 RestaurantResultsUiState.Loading -> {
-                    LoadingContent()
+                    LoadingContent(onCancel = onBack)
                 }
 
                 RestaurantResultsUiState.NoResults -> {
@@ -191,8 +192,9 @@ fun RestaurantResultsScreen(
     }
 }
 
+/** [onCancel] leaves the screen, which cancels the search with its ViewModel. */
 @Composable
-private fun LoadingContent() {
+private fun LoadingContent(onCancel: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -221,6 +223,16 @@ private fun LoadingContent() {
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.campusMealColors.textSecondary,
         )
+
+        SlowResponseNotice(
+            active = true,
+            modifier = Modifier.padding(top = 12.dp),
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+        )
+
+        TextButton(onClick = onCancel) {
+            Text("Cancel")
+        }
     }
 }
 

@@ -6,6 +6,12 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.campusmeal.android.feature.inventory.data.local.ExpiringInventoryDao
 import com.campusmeal.android.feature.inventory.data.local.ExpiringInventoryEntity
+import com.campusmeal.android.feature.inventory.data.local.InventoryDraftDao
+import com.campusmeal.android.feature.inventory.data.local.InventoryDraftEntity
+import com.campusmeal.android.feature.inventory.data.local.InventoryItemDao
+import com.campusmeal.android.feature.inventory.data.local.InventoryItemEntity
+import com.campusmeal.android.feature.inventory.data.local.PendingConsumeDao
+import com.campusmeal.android.feature.inventory.data.local.PendingConsumeEntity
 import com.campusmeal.android.feature.profile.data.local.AccountProfileDao
 import com.campusmeal.android.feature.profile.data.local.AccountProfileEntity
 
@@ -16,8 +22,15 @@ import com.campusmeal.android.feature.profile.data.local.AccountProfileEntity
  * Every version bump needs an explicit migration in [DatabaseMigrations] and a committed schema file.
  */
 @Database(
-    entities = [CacheMetadataEntity::class, ExpiringInventoryEntity::class, AccountProfileEntity::class],
-    version = 3,
+    entities = [
+        CacheMetadataEntity::class,
+        ExpiringInventoryEntity::class,
+        AccountProfileEntity::class,
+        InventoryItemEntity::class,
+        InventoryDraftEntity::class,
+        PendingConsumeEntity::class,
+    ],
+    version = 4,
     exportSchema = true,
 )
 abstract class CampusMealDatabase : RoomDatabase() {
@@ -27,6 +40,12 @@ abstract class CampusMealDatabase : RoomDatabase() {
     abstract fun expiringInventoryDao(): ExpiringInventoryDao
 
     abstract fun accountProfileDao(): AccountProfileDao
+
+    abstract fun inventoryItemDao(): InventoryItemDao
+
+    abstract fun inventoryDraftDao(): InventoryDraftDao
+
+    abstract fun pendingConsumeDao(): PendingConsumeDao
 
     companion object {
         const val NAME = "campusmeal.db"

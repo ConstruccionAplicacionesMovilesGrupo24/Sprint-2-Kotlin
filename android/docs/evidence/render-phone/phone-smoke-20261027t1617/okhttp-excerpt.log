@@ -1,0 +1,65 @@
+# CampusMeal OkHttp log excerpt (debug build, HEADERS level with Authorization/Cookie redacted by the app).
+# Only request/response status lines are kept. Device local time = America/Bogota (UTC-5).
+# Lines marked [live] were observed during the run but had rotated out of the logcat buffer before export.
+10-27 11:13:58.192 pid=30838 --> GET https://campusmeal-api.onrender.com/api/v1/auth/me   [live]
+10-27 11:14:28.441 pid=30838 <-- HTTP FAILED: java.net.SocketTimeoutException: timeout   [live]
+10-27 11:16:13.046 pid=30838 --> GET https://campusmeal-api.onrender.com/api/v1/auth/me   [live]
+10-27 11:16:13.298 pid=30838 <-- 401 https://campusmeal-api.onrender.com/api/v1/auth/me (251ms)   [live]
+10-27 11:16:13.305 pid=30838 --> POST https://campusmeal-api.onrender.com/api/v1/auth/refresh   [live]
+10-27 11:16:13.632 pid=30838 <-- 401 https://campusmeal-api.onrender.com/api/v1/auth/refresh (326ms)   [live]
+10-27 11:19:21.932 pid=30838 --> POST https://campusmeal-api.onrender.com/api/v1/auth/register
+10-27 11:19:23.721 pid=30838 <-- 201 https://campusmeal-api.onrender.com/api/v1/auth/register (1789ms)
+10-27 11:19:23.749 pid=30838 --> GET https://campusmeal-api.onrender.com/api/v1/auth/me
+10-27 11:19:23.966 pid=30838 <-- 200 https://campusmeal-api.onrender.com/api/v1/auth/me (217ms)
+10-27 11:19:24.053 pid=30838 --> GET https://campusmeal-api.onrender.com/api/v1/auth/me
+10-27 11:19:24.054 pid=30838 --> GET https://campusmeal-api.onrender.com/api/v1/inventory/expiring?withinDays=3
+10-27 11:19:24.229 pid=30838 <-- 200 https://campusmeal-api.onrender.com/api/v1/auth/me (175ms)
+10-27 11:19:24.313 pid=30838 <-- 200 https://campusmeal-api.onrender.com/api/v1/inventory/expiring?withinDays=3 (258ms)
+10-27 11:19:46.784 pid=30838 --> GET https://campusmeal-api.onrender.com/api/v1/auth/me
+10-27 11:19:46.996 pid=30838 <-- 200 https://campusmeal-api.onrender.com/api/v1/auth/me (211ms)
+10-27 11:19:59.247 pid=30838 --> GET https://campusmeal-api.onrender.com/api/v1/inventory/expiring?withinDays=3
+10-27 11:19:59.400 pid=30838 <-- 200 https://campusmeal-api.onrender.com/api/v1/inventory/expiring?withinDays=3 (153ms)
+10-27 11:20:37.682 pid=30838 --> GET https://campusmeal-api.onrender.com/api/v1/auth/me
+10-27 11:20:37.682 pid=30838 --> GET https://campusmeal-api.onrender.com/api/v1/inventory/expiring?withinDays=3
+10-27 11:20:37.866 pid=30838 <-- 200 https://campusmeal-api.onrender.com/api/v1/auth/me (184ms)
+10-27 11:20:37.972 pid=30838 <-- 200 https://campusmeal-api.onrender.com/api/v1/inventory/expiring?withinDays=3 (289ms)
+10-27 11:20:38.102 pid=30838 --> GET https://campusmeal-api.onrender.com/api/v1/inventory/expiring?withinDays=3
+10-27 11:20:38.331 pid=30838 <-- 200 https://campusmeal-api.onrender.com/api/v1/inventory/expiring?withinDays=3 (228ms)
+10-27 11:21:31.606 pid=30838 --> POST https://campusmeal-api.onrender.com/api/v1/inventory
+10-27 11:21:31.815 pid=30838 <-- 201 https://campusmeal-api.onrender.com/api/v1/inventory (208ms)
+10-27 11:21:31.817 pid=30838 --> GET https://campusmeal-api.onrender.com/api/v1/inventory/expiring?withinDays=3
+10-27 11:21:31.982 pid=30838 <-- 200 https://campusmeal-api.onrender.com/api/v1/inventory/expiring?withinDays=3 (164ms)
+10-27 11:22:33.783 pid=30838 --> PATCH https://campusmeal-api.onrender.com/api/v1/inventory/d5145208-4103-4df6-95de-6bfc93000aad
+10-27 11:22:34.029 pid=30838 <-- 200 https://campusmeal-api.onrender.com/api/v1/inventory/d5145208-4103-4df6-95de-6bfc93000aad (245ms)
+10-27 11:22:34.030 pid=30838 --> GET https://campusmeal-api.onrender.com/api/v1/inventory/expiring?withinDays=3
+10-27 11:22:34.178 pid=30838 <-- 200 https://campusmeal-api.onrender.com/api/v1/inventory/expiring?withinDays=3 (148ms)
+10-27 11:22:58.951 pid=30838 --> GET https://campusmeal-api.onrender.com/api/v1/auth/me
+10-27 11:22:58.952 pid=30838 --> GET https://campusmeal-api.onrender.com/api/v1/inventory/expiring?withinDays=3
+10-27 11:22:59.134 pid=30838 <-- 200 https://campusmeal-api.onrender.com/api/v1/auth/me (182ms)
+10-27 11:22:59.234 pid=30838 <-- 200 https://campusmeal-api.onrender.com/api/v1/inventory/expiring?withinDays=3 (282ms)
+10-27 11:24:11.848 pid=30838 --> POST https://campusmeal-api.onrender.com/api/v1/meal-decisions/compare
+10-27 11:24:12.800 pid=30838 <-- 200 https://campusmeal-api.onrender.com/api/v1/meal-decisions/compare (951ms)
+10-27 11:24:12.803 pid=30838 --> POST https://campusmeal-api.onrender.com/api/v1/analytics/events
+10-27 11:24:13.007 pid=30838 <-- 202 https://campusmeal-api.onrender.com/api/v1/analytics/events (204ms)
+10-27 11:24:45.840 pid=30838 --> GET https://campusmeal-api.onrender.com/api/v1/auth/me
+10-27 11:24:45.840 pid=30838 --> GET https://campusmeal-api.onrender.com/api/v1/inventory/expiring?withinDays=3
+10-27 11:24:45.998 pid=30838 <-- 200 https://campusmeal-api.onrender.com/api/v1/auth/me (157ms)
+10-27 11:24:46.140 pid=30838 <-- 200 https://campusmeal-api.onrender.com/api/v1/inventory/expiring?withinDays=3 (299ms)
+10-27 11:24:59.431 pid=30838 --> POST https://campusmeal-api.onrender.com/api/v1/restaurants/search
+10-27 11:24:59.983 pid=30838 <-- 200 https://campusmeal-api.onrender.com/api/v1/restaurants/search (550ms)
+10-27 11:25:39.369 pid=30838 --> GET https://campusmeal-api.onrender.com/api/v1/restaurants/4ae6f2a7-5fe9-40fa-bede-f9d1d57f093e
+10-27 11:25:39.569 pid=30838 <-- 200 https://campusmeal-api.onrender.com/api/v1/restaurants/4ae6f2a7-5fe9-40fa-bede-f9d1d57f093e (199ms)
+10-27 11:26:01.163 pid=12661 --> GET https://campusmeal-api.onrender.com/api/v1/auth/me
+10-27 11:26:01.163 pid=12661 --> GET https://campusmeal-api.onrender.com/api/v1/inventory/expiring?withinDays=3
+10-27 11:26:01.680 pid=12661 <-- 200 https://campusmeal-api.onrender.com/api/v1/inventory/expiring?withinDays=3 (516ms)
+10-27 11:26:01.777 pid=12661 <-- 200 https://campusmeal-api.onrender.com/api/v1/auth/me (613ms)
+10-27 11:26:39.378 pid=12661 --> GET https://campusmeal-api.onrender.com/api/v1/inventory/expiring?withinDays=3
+10-27 11:26:39.626 pid=12661 <-- 200 https://campusmeal-api.onrender.com/api/v1/inventory/expiring?withinDays=3 (247ms)
+10-27 11:26:53.438 pid=12661 --> DELETE https://campusmeal-api.onrender.com/api/v1/inventory/d5145208-4103-4df6-95de-6bfc93000aad
+10-27 11:26:53.606 pid=12661 <-- 204 https://campusmeal-api.onrender.com/api/v1/inventory/d5145208-4103-4df6-95de-6bfc93000aad (167ms)
+10-27 11:26:53.610 pid=12661 --> GET https://campusmeal-api.onrender.com/api/v1/inventory/expiring?withinDays=3
+10-27 11:26:53.819 pid=12661 <-- 200 https://campusmeal-api.onrender.com/api/v1/inventory/expiring?withinDays=3 (208ms)
+10-27 11:27:13.229 pid=12661 --> GET https://campusmeal-api.onrender.com/api/v1/auth/me
+10-27 11:27:13.406 pid=12661 <-- 200 https://campusmeal-api.onrender.com/api/v1/auth/me (177ms)
+10-27 11:27:27.088 pid=12661 --> POST https://campusmeal-api.onrender.com/api/v1/auth/logout
+10-27 11:27:27.249 pid=12661 <-- 204 https://campusmeal-api.onrender.com/api/v1/auth/logout (160ms)
