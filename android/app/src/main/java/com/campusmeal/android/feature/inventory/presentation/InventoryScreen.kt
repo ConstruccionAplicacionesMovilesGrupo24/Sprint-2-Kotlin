@@ -75,12 +75,14 @@ data class InventoryActions(
     val onSubmitDraft: (DraftUi) -> Unit = {},
     val onDiscardDraft: (String) -> Unit = {},
     val onDismissConsumeNotice: (String) -> Unit = {},
+    val onOpenRecipes: () -> Unit = {},
 )
 
 @Composable
 fun InventoryRoute(
     viewModel: InventoryViewModel,
     online: Boolean,
+    onOpenRecipes: () -> Unit,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val message by viewModel.message.collectAsStateWithLifecycle()
@@ -106,6 +108,7 @@ fun InventoryRoute(
             onSubmitDraft = viewModel::submitDraft,
             onDiscardDraft = viewModel::discardDraft,
             onDismissConsumeNotice = viewModel::dismissConsumeNotice,
+            onOpenRecipes = onOpenRecipes,
         ),
     )
 
@@ -195,7 +198,7 @@ fun InventoryScreen(
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
-        topBar = { InventoryTopBar() },
+        topBar = { InventoryTopBar(onOpenRecipes = actions.onOpenRecipes) },
         bottomBar = { AddItemBottomBar(onAddItem = actions.onAddItem) },
     ) { innerPadding ->
         if (!state.loaded) {
@@ -259,8 +262,10 @@ private fun LazyListScope.section(title: String, rows: List<InventoryRowUi>, act
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun InventoryTopBar() {
+private fun InventoryTopBar(onOpenRecipes: () -> Unit) {
     TopAppBar(
+        // BQ3 uses this complete inventory (S3-05).
+        actions = { TextButton(onClick = onOpenRecipes) { Text("Recipes") } },
         title = {
             Text(
                 text = "Inventory",

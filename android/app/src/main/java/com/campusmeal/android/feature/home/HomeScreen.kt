@@ -58,6 +58,7 @@ fun HomeRoute(
     onCompare: () -> Unit,
     onFindRestaurants: () -> Unit,
     onOpenInventory: () -> Unit,
+    onOpenRecipes: () -> Unit,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     // Each return to the foreground re-checks the Bogota date and refreshes what is due.
@@ -106,6 +107,14 @@ fun HomeRoute(
                     shape = RoundedCornerShape(11.dp),
                 ) {
                     Text("Find restaurants")
+                }
+                // BQ3: recipes from the complete inventory (S3-05).
+                OutlinedButton(
+                    onClick = onOpenRecipes,
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = RoundedCornerShape(11.dp),
+                ) {
+                    Text("Recipes you can cook")
                 }
             }
         }

@@ -38,6 +38,7 @@ import com.campusmeal.android.feature.context.LocationContextViewModel
 import com.campusmeal.android.feature.context.SetContextScreen
 import com.campusmeal.android.feature.context.data.remote.RestaurantSearchRequestDto
 import com.campusmeal.android.feature.context.data.remote.requestedNow
+import com.campusmeal.android.feature.context.domain.DietaryPreference
 import com.campusmeal.android.feature.decision.data.mapper.toDecisionContext
 import com.campusmeal.android.feature.decision.presentation.DecisionRoute
 import com.campusmeal.android.feature.decision.presentation.DecisionViewModel
@@ -48,6 +49,9 @@ import com.campusmeal.android.feature.inventory.presentation.InventoryRoute
 import com.campusmeal.android.feature.inventory.presentation.InventoryViewModel
 import com.campusmeal.android.feature.profile.presentation.ProfileRoute
 import com.campusmeal.android.feature.profile.presentation.ProfileViewModel
+import com.campusmeal.android.feature.recipes.presentation.RecipeDetailRoute
+import com.campusmeal.android.feature.recipes.presentation.RecipesRoute
+import com.campusmeal.android.feature.recipes.presentation.RecipesViewModel
 import com.campusmeal.android.feature.restaurants.presentation.RestaurantDetailRoute
 import com.campusmeal.android.feature.restaurants.presentation.RestaurantDetailViewModel
 import com.campusmeal.android.feature.restaurants.presentation.RestaurantResultsRoute
@@ -214,6 +218,7 @@ fun CampusMealNavHost(
                         }
                     },
                     onOpenInventory = { openTab(TopLevel.INVENTORY) },
+                    onOpenRecipes = { navController.navigate(CampusMealRoute.Recipes) },
                 )
             }
 
@@ -221,6 +226,41 @@ fun CampusMealNavHost(
                 InventoryRoute(
                     viewModel = viewModel(factory = InventoryViewModel.factory(container, sessionScope)),
                     online = online,
+                    onOpenRecipes = { navController.navigate(CampusMealRoute.Recipes) },
+                )
+            }
+
+            /*
+             * BQ3: one visit = one RecipesViewModel on this entry; the detail shares it, so the evaluation,
+             * memo and usage event are not repeated by opening a recipe.
+             */
+            composable<CampusMealRoute.Recipes> {
+                RecipesRoute(
+                    viewModel = viewModel(
+                        factory = RecipesViewModel.factory(
+                            container = container,
+                            scope = sessionScope,
+                            contextDiet = currentContext?.dietaryPreferences.orEmpty()
+                                .mapNotNull { name -> DietaryPreference.entries.firstOrNull { it.name == name } }
+                                .toSet(),
+                        ),
+                    ),
+                    online = online,
+                    onBack = { navController.popBackStack() },
+                    onOpenRecipe = { recipeId -> navController.navigate(CampusMealRoute.RecipeDetail(recipeId = recipeId)) },
+                )
+            }
+
+            composable<CampusMealRoute.RecipeDetail> { entry ->
+                val route = entry.toRoute<CampusMealRoute.RecipeDetail>()
+                val visitEntry = remember(entry) { navController.getBackStackEntry<CampusMealRoute.Recipes>() }
+                RecipeDetailRoute(
+                    viewModel = viewModel(
+                        viewModelStoreOwner = visitEntry,
+                        factory = RecipesViewModel.factory(container, sessionScope, contextDiet = emptySet()),
+                    ),
+                    recipeId = route.recipeId,
+                    onBack = { navController.popBackStack() },
                 )
             }
 
