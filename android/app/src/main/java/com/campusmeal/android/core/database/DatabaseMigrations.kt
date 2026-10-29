@@ -137,5 +137,29 @@ object DatabaseMigrations {
         }
     }
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+    /**
+     * v6 -> v7 (S3-11): the BQ5 comparison history (last 10 per account, raw backend response) and the
+     * BQ6 report cache (per account and month). Purely additive; both are per-account read data.
+     */
+    val MIGRATION_6_7 = object : Migration(6, 7) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `comparison_history` (" +
+                    "`recommendationId` TEXT NOT NULL, `accountId` TEXT NOT NULL, `comparedAtEpochMillis` INTEGER NOT NULL, " +
+                    "`campusId` TEXT, `availableMinutes` INTEGER NOT NULL, `maximumBudget` INTEGER NOT NULL, " +
+                    "`responseJson` TEXT NOT NULL, PRIMARY KEY(`recommendationId`))",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_comparison_history_accountId_comparedAtEpochMillis` " +
+                    "ON `comparison_history` (`accountId`, `comparedAtEpochMillis`)",
+            )
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `feature_adoption_reports` (" +
+                    "`accountId` TEXT NOT NULL, `month` TEXT NOT NULL, `responseJson` TEXT NOT NULL, " +
+                    "`fetchedAtEpochMillis` INTEGER NOT NULL, PRIMARY KEY(`accountId`, `month`))",
+            )
+        }
+    }
+
+    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
 }

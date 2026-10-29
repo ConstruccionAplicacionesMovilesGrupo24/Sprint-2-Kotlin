@@ -31,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.campusmeal.android.core.common.formatSyncedAt
 import com.campusmeal.android.feature.decision.domain.model.DecisionContext
 import com.campusmeal.android.feature.decision.domain.model.MealAlternative
 import com.campusmeal.android.feature.decision.domain.model.MealDecision
@@ -100,6 +101,14 @@ private fun DecisionScreen(
                     is MealDecisionResult.Content -> DecisionContent(result.decision, 0, selection, onSelect)
                     is MealDecisionResult.PartialContent ->
                         DecisionContent(result.decision, result.skippedAlternatives, selection, onSelect)
+                    is MealDecisionResult.Previous -> DecisionContent(
+                        decision = result.decision,
+                        skipped = result.skippedAlternatives,
+                        selection = SelectionState(),
+                        onSelect = { _, _ -> },
+                        previous = result,
+                        onRetry = onRetry,
+                    )
                     is MealDecisionResult.NoAvailableAlternatives ->
                         Message("No alternatives available", result.mainExplanation, onRetry)
                     MealDecisionResult.Unauthorized ->
@@ -126,11 +135,28 @@ private fun DecisionContent(
     skipped: Int,
     selection: SelectionState,
     onSelect: (String, MealOption) -> Unit,
+    previous: MealDecisionResult.Previous? = null,
+    onRetry: () -> Unit = {},
 ) {
     LazyColumn(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        if (previous != null) {
+            item {
+                ElevatedCard(shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("Previous comparison", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text(
+                            "From ${formatSyncedAt(previous.comparedAtEpochMillis)} for ${previous.availableMinutes} min · " +
+                                "${cop(previous.maximumBudget)}. It is not a current recommendation and cannot be chosen.",
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        OutlinedButton(onClick = onRetry) { Text("Compare again") }
+                    }
+                }
+            }
+        }
         item {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(decision.mainExplanation, style = MaterialTheme.typography.titleMedium)
@@ -139,14 +165,16 @@ private fun DecisionContent(
             }
         }
         items(decision.alternatives, key = { it.rank }) { alternative ->
-            AlternativeCard(alternative, selection) { onSelect(decision.recommendationId, alternative.option) }
+            AlternativeCard(alternative, selection, selectable = previous == null) { onSelect(decision.recommendationId, alternative.option) }
         }
-        item { SelectionFooter(selection, retry = { decision.alternatives.firstOrNull()?.let { onSelect(decision.recommendationId, it.option) } }) }
+        if (previous == null) {
+            item { SelectionFooter(selection, retry = { decision.alternatives.firstOrNull()?.let { onSelect(decision.recommendationId, it.option) } }) }
+        }
     }
 }
 
 @Composable
-private fun AlternativeCard(alternative: MealAlternative, selection: SelectionState, onChoose: () -> Unit) {
+private fun AlternativeCard(alternative: MealAlternative, selection: SelectionState, selectable: Boolean = true, onChoose: () -> Unit) {
     val name = alternative.option.wireName()
     ElevatedCard(
         shape = RoundedCornerShape(14.dp),
@@ -175,7 +203,7 @@ private fun AlternativeCard(alternative: MealAlternative, selection: SelectionSt
                 )
             }
             val chosen = selection.alternative == name
-            if (selection.status == SelectionStatus.NONE) {
+            if (selectable && selection.status == SelectionStatus.NONE) {
                 Button(onClick = onChoose) { Text("Choose $name") }
             } else if (chosen) {
                 Text("Your choice", fontWeight = FontWeight.Bold)

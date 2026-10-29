@@ -48,6 +48,7 @@ fun ProfileRoute(
     context: ContextSummary?,
     online: Boolean,
     onChangeContext: () -> Unit,
+    onOpenAnalystReport: () -> Unit,
     onLogout: () -> Unit,
 ) {
     val user by viewModel.user.collectAsStateWithLifecycle()
@@ -86,6 +87,13 @@ fun ProfileRoute(
                 Info("Campus", context.place)
                 Info("Time available", "${context.availableMinutes} minutes")
                 Info("Budget", cop(context.maximumBudget))
+            }
+        }
+
+        // Presentation only: the backend still answers 403 to anyone who is not an ANALYST.
+        if ((user as? CurrentUserResult.Success)?.user?.role == "ANALYST") {
+            Section("Analytics", action = "Open", onAction = onOpenAnalystReport) {
+                Text("BQ6 · monthly feature adoption", color = MaterialTheme.campusMealColors.textSecondary)
             }
         }
 
