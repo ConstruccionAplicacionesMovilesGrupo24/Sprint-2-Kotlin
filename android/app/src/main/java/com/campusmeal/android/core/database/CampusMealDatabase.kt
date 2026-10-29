@@ -14,6 +14,9 @@ import com.campusmeal.android.feature.inventory.data.local.PendingConsumeDao
 import com.campusmeal.android.feature.inventory.data.local.PendingConsumeEntity
 import com.campusmeal.android.feature.profile.data.local.AccountProfileDao
 import com.campusmeal.android.feature.profile.data.local.AccountProfileEntity
+import com.campusmeal.android.feature.recipes.data.local.RecipeCatalogDao
+import com.campusmeal.android.feature.recipes.data.local.RecipeCatalogMetadataEntity
+import com.campusmeal.android.feature.recipes.data.local.RecipeCatalogRecipeEntity
 
 /**
  * Local cache database. It holds no seed data; feature entities are added with their features.
@@ -29,8 +32,10 @@ import com.campusmeal.android.feature.profile.data.local.AccountProfileEntity
         InventoryItemEntity::class,
         InventoryDraftEntity::class,
         PendingConsumeEntity::class,
+        RecipeCatalogMetadataEntity::class,
+        RecipeCatalogRecipeEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
 )
 abstract class CampusMealDatabase : RoomDatabase() {
@@ -46,6 +51,8 @@ abstract class CampusMealDatabase : RoomDatabase() {
     abstract fun inventoryDraftDao(): InventoryDraftDao
 
     abstract fun pendingConsumeDao(): PendingConsumeDao
+
+    abstract fun recipeCatalogDao(): RecipeCatalogDao
 
     companion object {
         const val NAME = "campusmeal.db"

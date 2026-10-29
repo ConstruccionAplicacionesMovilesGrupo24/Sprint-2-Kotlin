@@ -91,5 +91,29 @@ object DatabaseMigrations {
         }
     }
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+    /**
+     * v4 -> v5 (S3-05): the BQ3 recipe catalog. Purely additive: profile, inventory snapshots, drafts and
+     * pending consumes are untouched.
+     *
+     * - `recipe_catalog_metadata`: the single stored version (contract, catalog version, generatedAt,
+     *   content hash, local fetch time).
+     * - `recipe_catalog_recipes`: one row per recipe of that version, as its validated contract JSON.
+     */
+    val MIGRATION_4_5 = object : Migration(4, 5) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `recipe_catalog_metadata` (" +
+                    "`id` INTEGER NOT NULL, `contractVersion` INTEGER NOT NULL, `catalogVersion` TEXT NOT NULL, " +
+                    "`generatedAt` TEXT NOT NULL, `contentHash` TEXT NOT NULL, `fetchedAtEpochMillis` INTEGER NOT NULL, " +
+                    "PRIMARY KEY(`id`))",
+            )
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `recipe_catalog_recipes` (" +
+                    "`recipeId` TEXT NOT NULL, `catalogVersion` TEXT NOT NULL, `position` INTEGER NOT NULL, " +
+                    "`recipeJson` TEXT NOT NULL, PRIMARY KEY(`recipeId`))",
+            )
+        }
+    }
+
+    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
 }

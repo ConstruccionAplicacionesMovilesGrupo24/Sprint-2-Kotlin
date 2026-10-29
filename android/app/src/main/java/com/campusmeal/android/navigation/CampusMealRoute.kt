@@ -28,6 +28,15 @@ sealed interface CampusMealRoute {
         val restaurantId: String,
     ) : CampusMealRoute
 
+    /** BQ3: recipes that fit the complete inventory, diet and preparation time. */
+    @Serializable
+    data object Recipes : CampusMealRoute
+
+    @Serializable
+    data class RecipeDetail(
+        val recipeId: String,
+    ) : CampusMealRoute
+
     /** Cook / Walk / Order decision flow. */
     @Serializable
     data object Decision : CampusMealRoute

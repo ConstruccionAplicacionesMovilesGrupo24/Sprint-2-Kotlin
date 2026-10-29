@@ -43,6 +43,13 @@ import com.campusmeal.android.feature.inventory.data.remote.InventoryApi
 import com.campusmeal.android.feature.inventory.data.remote.InventoryMutationApi
 import com.campusmeal.android.feature.inventory.data.repository.OfflineFirstInventoryRepository
 import com.campusmeal.android.feature.inventory.domain.repository.InventoryRepository
+import com.campusmeal.android.feature.recipes.data.local.RecipeFilterStore
+import com.campusmeal.android.feature.recipes.data.local.RoomRecipeCatalogStore
+import com.campusmeal.android.feature.recipes.data.remote.RecipeApi
+import com.campusmeal.android.feature.recipes.data.repository.OfflineFirstRecipeRepository
+import com.campusmeal.android.feature.recipes.domain.OutboxNotIntegratedUsageRecorder
+import com.campusmeal.android.feature.recipes.domain.RecipeRepository
+import com.campusmeal.android.feature.recipes.domain.RecipeUsageRecorder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -80,6 +87,11 @@ interface AppContainer {
     val recommendationEventReporter: RecommendationEventReporter
     val restaurantRepository: RestaurantRepository
     val profileRepository: ProfileRepository
+    val recipeRepository: RecipeRepository
+    val recipeFilterStore: RecipeFilterStore
+
+    /** BQ3 usage admission. Not durable until S3-09's outbox replaces this binding. */
+    val recipeUsageRecorder: RecipeUsageRecorder
 }
 
 class DefaultAppContainer(context: Context) : AppContainer {
@@ -134,7 +146,7 @@ class DefaultAppContainer(context: Context) : AppContainer {
             listeners = {
                 listOf(
                     // Each account-owned store deletes only its own rows; later issues register theirs here.
-                    AccountDataCleaner(stores = listOf(inventoryStore, restaurantRepository, profileRepository)),
+                    AccountDataCleaner(stores = listOf(inventoryStore, restaurantRepository, profileRepository, recipeFilterStore)),
                     AccountWorkCanceller(appContext),
                 )
             },
@@ -206,6 +218,22 @@ class DefaultAppContainer(context: Context) : AppContainer {
             coordinator = sessionCoordinator,
         )
     }
+
+    // The catalog is global, non-personal data and is not an AccountScopedStore: it survives logout.
+    override val recipeRepository: RecipeRepository by lazy {
+        OfflineFirstRecipeRepository(
+            api = retrofit.create(RecipeApi::class.java),
+            authorizationHeaderProvider = authorizationHeaderProvider,
+            store = RoomRecipeCatalogStore(database),
+            coordinator = sessionCoordinator,
+            cachePolicy = cachePolicy,
+        )
+    }
+
+    override val recipeFilterStore: RecipeFilterStore by lazy { RecipeFilterStore(preferences, sessionCoordinator) }
+
+    // S3-09 (durable outbox) is not in this checkout: say so instead of pretending to record the event.
+    override val recipeUsageRecorder: RecipeUsageRecorder = OutboxNotIntegratedUsageRecorder
 
     override val profileRepository: ProfileRepository by lazy {
         ProfileRepository(
