@@ -188,7 +188,7 @@ private fun AlternativeCard(alternative: MealAlternative, selection: SelectionSt
 private fun SelectionFooter(selection: SelectionState, retry: () -> Unit) {
     when (selection.status) {
         SelectionStatus.NONE -> Unit
-        SelectionStatus.SENDING -> Text("Saving your choice…")
+        SelectionStatus.PENDING -> Text("Choice saved on this device. It will sync when you're online.")
         SelectionStatus.SENT -> Text("Choice saved.")
         SelectionStatus.FAILED -> Column {
             Text("Your choice could not be sent.")

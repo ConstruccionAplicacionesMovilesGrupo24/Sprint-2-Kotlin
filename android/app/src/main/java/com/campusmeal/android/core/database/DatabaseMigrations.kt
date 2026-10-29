@@ -115,5 +115,27 @@ object DatabaseMigrations {
         }
     }
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+    /**
+     * v5 -> v6 (S3-09): the durable analytics outbox. Purely additive. Rows carry the `auth/me` account
+     * id and are never deleted by account cleanup: pending events survive logout and are sent the next
+     * time the same account is active.
+     */
+    val MIGRATION_5_6 = object : Migration(5, 6) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `outbox_events` (" +
+                    "`clientEventId` TEXT NOT NULL, `accountId` TEXT NOT NULL, `kind` TEXT NOT NULL, " +
+                    "`recommendationId` TEXT, `payloadJson` TEXT NOT NULL, " +
+                    "`occurredAtEpochMillis` INTEGER NOT NULL, `createdAtEpochMillis` INTEGER NOT NULL, " +
+                    "`status` TEXT NOT NULL, `attempts` INTEGER NOT NULL, `lastError` TEXT, " +
+                    "PRIMARY KEY(`clientEventId`))",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_outbox_events_accountId_status_createdAtEpochMillis` " +
+                    "ON `outbox_events` (`accountId`, `status`, `createdAtEpochMillis`)",
+            )
+        }
+    }
+
+    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
 }
