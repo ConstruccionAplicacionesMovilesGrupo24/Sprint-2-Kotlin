@@ -30,6 +30,8 @@ import com.campusmeal.android.app.CampusMealApplication
 import com.campusmeal.android.core.designsystem.NavigationIcons
 import com.campusmeal.android.core.designsystem.campusMealColors
 import com.campusmeal.android.core.session.AccountSessionScope
+import com.campusmeal.android.feature.analytics.presentation.AnalystReportRoute
+import com.campusmeal.android.feature.analytics.presentation.AnalystReportViewModel
 import com.campusmeal.android.feature.auth.AuthViewModel
 import com.campusmeal.android.feature.auth.LoginScreen
 import com.campusmeal.android.feature.auth.RegistrationScreen
@@ -361,7 +363,16 @@ fun CampusMealNavHost(
                     context = currentContext?.toContextSummary(),
                     online = online,
                     onChangeContext = { navController.navigate(CampusMealRoute.Context) },
+                    onOpenAnalystReport = { navController.navigate(CampusMealRoute.AnalystReport) },
                     onLogout = onLogout,
+                )
+            }
+
+            composable<CampusMealRoute.AnalystReport> {
+                AnalystReportRoute(
+                    viewModel = viewModel(factory = AnalystReportViewModel.factory(container, sessionScope)),
+                    online = online,
+                    onBack = { navController.popBackStack() },
                 )
             }
         }

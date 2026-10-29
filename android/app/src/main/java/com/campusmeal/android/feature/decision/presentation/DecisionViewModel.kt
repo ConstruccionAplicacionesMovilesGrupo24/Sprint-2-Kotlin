@@ -62,15 +62,22 @@ class DecisionViewModel(
     private var pendingSelection: RecommendationEvent? = null
     private var selectionJob: Job? = null
 
+    /** The comparison in flight. A new request cancels it, so a late answer never replaces a newer one. */
+    private var compareJob: Job? = null
+    private var compareRequest = 0L
+
     fun compare(context: DecisionContext) {
         lastContext = context
         _selection.value = SelectionState()
         pendingSelection = null
         selectionJob?.cancel()
-        viewModelScope.launch {
+        compareJob?.cancel()
+        val request = ++compareRequest
+        compareJob = viewModelScope.launch {
             _uiState.value = DecisionUiState.Loading
             val result = compareMealOptions(scope, context)
-            if (!coordinator.isCurrent(scope)) return@launch
+            // Cancellation is cooperative: also drop an answer that is no longer the latest request.
+            if (request != compareRequest || !coordinator.isCurrent(scope)) return@launch
             _uiState.value = DecisionUiState.Loaded(result)
             // BQ6: one use per explicit comparison request (a recomposition never reaches here).
             outbox.enqueueUsage(scope, UsageFeature.MEAL_COMPARISON)
@@ -87,10 +94,15 @@ class DecisionViewModel(
     }
 
     fun retryCompare() {
+        // A retry while a comparison is still loading would only duplicate the POST.
+        if (compareJob?.isActive == true) return
         lastContext?.let(::compare)
     }
 
     fun select(recommendationId: String, option: MealOption) {
+        // A previous (offline) comparison is not a current recommendation: it cannot be selected.
+        val loaded = (_uiState.value as? DecisionUiState.Loaded)?.result
+        if (loaded !is MealDecisionResult.Content && loaded !is MealDecisionResult.PartialContent) return
         val current = _selection.value
         if (current.status == SelectionStatus.PENDING || current.status == SelectionStatus.SENT) return
         val event = pendingSelection ?: RecommendationEvent(recommendationId, selectedAlternative = option.wireName())

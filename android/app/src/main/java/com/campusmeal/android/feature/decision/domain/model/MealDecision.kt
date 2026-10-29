@@ -68,6 +68,20 @@ sealed interface MealDecisionResult {
     /** The backend found nothing that fits; [mainExplanation] is its text, shown as received. */
     data class NoAvailableAlternatives(val recommendationId: String, val mainExplanation: String) : MealDecisionResult
 
+    /**
+     * Offline (or the backend failed) and a comparison of this account is stored: it is shown as a
+     * **previous** comparison from [comparedAtEpochMillis], for the context it was made with. It is not
+     * a current recommendation, so it cannot be selected until a new comparison succeeds.
+     */
+    data class Previous(
+        val decision: MealDecision,
+        val skippedAlternatives: Int,
+        val comparedAtEpochMillis: Long,
+        val availableMinutes: Int,
+        val maximumBudget: Long,
+        val cause: MealDecisionError,
+    ) : MealDecisionResult
+
     /** There is no session, or the backend answered HTTP 401. */
     data object Unauthorized : MealDecisionResult
 

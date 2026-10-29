@@ -6,6 +6,10 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.campusmeal.android.core.outbox.OutboxDao
 import com.campusmeal.android.core.outbox.OutboxEventEntity
+import com.campusmeal.android.feature.analytics.data.FeatureAdoptionReportDao
+import com.campusmeal.android.feature.analytics.data.FeatureAdoptionReportEntity
+import com.campusmeal.android.feature.decision.data.local.ComparisonHistoryDao
+import com.campusmeal.android.feature.decision.data.local.ComparisonHistoryEntity
 import com.campusmeal.android.feature.inventory.data.local.ExpiringInventoryDao
 import com.campusmeal.android.feature.inventory.data.local.ExpiringInventoryEntity
 import com.campusmeal.android.feature.inventory.data.local.InventoryDraftDao
@@ -37,8 +41,10 @@ import com.campusmeal.android.feature.recipes.data.local.RecipeCatalogRecipeEnti
         RecipeCatalogMetadataEntity::class,
         RecipeCatalogRecipeEntity::class,
         OutboxEventEntity::class,
+        ComparisonHistoryEntity::class,
+        FeatureAdoptionReportEntity::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = true,
 )
 abstract class CampusMealDatabase : RoomDatabase() {
@@ -58,6 +64,10 @@ abstract class CampusMealDatabase : RoomDatabase() {
     abstract fun recipeCatalogDao(): RecipeCatalogDao
 
     abstract fun outboxDao(): OutboxDao
+
+    abstract fun comparisonHistoryDao(): ComparisonHistoryDao
+
+    abstract fun featureAdoptionReportDao(): FeatureAdoptionReportDao
 
     companion object {
         const val NAME = "campusmeal.db"
