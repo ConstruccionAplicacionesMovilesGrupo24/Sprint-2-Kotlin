@@ -1,6 +1,7 @@
 package com.campusmeal.android.feature.context
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.campusmeal.android.feature.context.data.remote.RestaurantSearchRequestDto
 import com.campusmeal.android.feature.context.data.remote.toRestaurantSearchRequestDto
 import com.campusmeal.android.feature.context.domain.DietaryPreference
@@ -9,6 +10,7 @@ import com.campusmeal.android.feature.context.domain.MealLocation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 data class ContextForm(
     val availableMinutes: Int = 45,
@@ -42,8 +44,14 @@ sealed interface ContextUiState {
     ) : ContextUiState
 }
 
+/**
+ * [savedForm] loads the last form this account validated (persisted per account, without
+ * coordinates), so the form is not empty after the app is closed. It never overrides input the
+ * user already typed.
+ */
 class ContextViewModel(
     private val currentTimeMillis: () -> Long = System::currentTimeMillis,
+    savedForm: (suspend () -> ContextForm?)? = null,
 ) : ViewModel() {
 
     private val _uiState =
@@ -51,6 +59,17 @@ class ContextViewModel(
 
     val uiState: StateFlow<ContextUiState> =
         _uiState.asStateFlow()
+
+    private var userEdited = false
+
+    init {
+        if (savedForm != null) {
+            viewModelScope.launch {
+                val form = savedForm() ?: return@launch
+                if (!userEdited) _uiState.value = ContextUiState.Editing(form)
+            }
+        }
+    }
 
     fun onContextOpened() {
         if (_uiState.value == ContextUiState.Initial) {
@@ -194,6 +213,7 @@ class ContextViewModel(
     private fun updateForm(
         update: (ContextForm) -> ContextForm,
     ) {
+        userEdited = true
         _uiState.value =
             ContextUiState.Editing(
                 update(currentForm()),

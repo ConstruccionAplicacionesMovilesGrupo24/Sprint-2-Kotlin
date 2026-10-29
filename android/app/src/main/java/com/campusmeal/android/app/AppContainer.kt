@@ -27,6 +27,7 @@ import com.campusmeal.android.core.session.SessionRefreshInterceptor
 import com.campusmeal.android.feature.auth.data.AuthApi
 import com.campusmeal.android.feature.auth.data.NetworkAuthRepository
 import com.campusmeal.android.feature.auth.domain.AuthRepository
+import com.campusmeal.android.feature.context.data.local.ContextPreferencesStore
 import com.campusmeal.android.feature.decision.data.remote.MealDecisionApi
 import com.campusmeal.android.feature.decision.data.remote.RecommendationEventsApi
 import com.campusmeal.android.feature.decision.data.repository.RecommendationEventReporter
@@ -90,6 +91,9 @@ interface AppContainer {
     val recipeRepository: RecipeRepository
     val recipeFilterStore: RecipeFilterStore
 
+    /** Last meal context per account (no coordinates), restored after the app is closed. */
+    val contextPreferencesStore: ContextPreferencesStore
+
     /** BQ3 usage admission. Not durable until S3-09's outbox replaces this binding. */
     val recipeUsageRecorder: RecipeUsageRecorder
 }
@@ -146,7 +150,7 @@ class DefaultAppContainer(context: Context) : AppContainer {
             listeners = {
                 listOf(
                     // Each account-owned store deletes only its own rows; later issues register theirs here.
-                    AccountDataCleaner(stores = listOf(inventoryStore, restaurantRepository, profileRepository, recipeFilterStore)),
+                    AccountDataCleaner(stores = listOf(inventoryStore, restaurantRepository, profileRepository, recipeFilterStore, contextPreferencesStore)),
                     AccountWorkCanceller(appContext),
                 )
             },
@@ -231,6 +235,8 @@ class DefaultAppContainer(context: Context) : AppContainer {
     }
 
     override val recipeFilterStore: RecipeFilterStore by lazy { RecipeFilterStore(preferences, sessionCoordinator) }
+
+    override val contextPreferencesStore: ContextPreferencesStore by lazy { ContextPreferencesStore(preferences, sessionCoordinator) }
 
     // S3-09 (durable outbox) is not in this checkout: say so instead of pretending to record the event.
     override val recipeUsageRecorder: RecipeUsageRecorder = OutboxNotIntegratedUsageRecorder
