@@ -15,6 +15,9 @@ import com.campusmeal.android.core.network.AndroidConnectivityObserver
 import com.campusmeal.android.core.network.ApiClientFactory
 import com.campusmeal.android.core.network.ConnectivityObserver
 import com.campusmeal.android.core.network.NetworkConfig
+import com.campusmeal.android.core.outbox.OutboxRepository
+import com.campusmeal.android.core.outbox.UsageEventsApi
+import com.campusmeal.android.core.outbox.WorkManagerOutboxScheduler
 import com.campusmeal.android.core.session.AccountDataCleaner
 import com.campusmeal.android.core.session.AccountSessionCoordinator
 import com.campusmeal.android.core.session.AccountWorkCanceller
@@ -47,7 +50,7 @@ import com.campusmeal.android.feature.recipes.data.local.RecipeFilterStore
 import com.campusmeal.android.feature.recipes.data.local.RoomRecipeCatalogStore
 import com.campusmeal.android.feature.recipes.data.remote.RecipeApi
 import com.campusmeal.android.feature.recipes.data.repository.OfflineFirstRecipeRepository
-import com.campusmeal.android.feature.recipes.domain.OutboxNotIntegratedUsageRecorder
+import com.campusmeal.android.feature.recipes.data.usage.OutboxRecipeUsageRecorder
 import com.campusmeal.android.feature.recipes.domain.RecipeRepository
 import com.campusmeal.android.feature.recipes.domain.RecipeUsageRecorder
 import kotlinx.coroutines.CoroutineScope
@@ -84,13 +87,16 @@ interface AppContainer {
     val inventoryRepository: InventoryRepository
     val mealDecisionRepository: MealDecisionRepository
     val compareMealOptions: CompareMealOptionsUseCase
+
+    /** S3-09: durable delivery of BQ8 and BQ6 events (Room + WorkManager). */
+    val outboxRepository: OutboxRepository
     val recommendationEventReporter: RecommendationEventReporter
     val restaurantRepository: RestaurantRepository
     val profileRepository: ProfileRepository
     val recipeRepository: RecipeRepository
     val recipeFilterStore: RecipeFilterStore
 
-    /** BQ3 usage admission. Not durable until S3-09's outbox replaces this binding. */
+    /** BQ3 usage admission, stored durably in the S3-09 outbox. */
     val recipeUsageRecorder: RecipeUsageRecorder
 }
 
@@ -148,6 +154,8 @@ class DefaultAppContainer(context: Context) : AppContainer {
                     // Each account-owned store deletes only its own rows; later issues register theirs here.
                     AccountDataCleaner(stores = listOf(inventoryStore, restaurantRepository, profileRepository, recipeFilterStore)),
                     AccountWorkCanceller(appContext),
+                    // Not an AccountScopedStore: pending events survive logout (AccountLifecycle.kt).
+                    outboxRepository,
                 )
             },
         )
@@ -171,8 +179,8 @@ class DefaultAppContainer(context: Context) : AppContainer {
 
     override val locationProvider: LocationProvider by lazy { FusedLocationProvider(appContext) }
 
-    // Location-context events have no backend endpoint yet. BQ8 recommendation events go to
-    // POST analytics/events through recommendationEventReporter.
+    // Location-context events have no backend endpoint yet. BQ8 and BQ6 events go through the
+    // durable outbox (outboxRepository).
     override val analyticsTracker: AnalyticsTracker by lazy { NoOpAnalyticsTracker() }
 
     override val authorizationHeaderProvider: AuthorizationHeaderProvider by lazy {
@@ -203,11 +211,20 @@ class DefaultAppContainer(context: Context) : AppContainer {
         CompareMealOptionsUseCase(mealDecisionRepository)
     }
 
-    override val recommendationEventReporter: RecommendationEventReporter by lazy {
-        RecommendationEventReporter(
-            api = retrofit.create(RecommendationEventsApi::class.java),
+    // Events are idempotent by clientEventId, so the regular client (with connection retries) is safe.
+    override val outboxRepository: OutboxRepository by lazy {
+        OutboxRepository(
+            database = database,
+            recommendationApi = retrofit.create(RecommendationEventsApi::class.java),
+            usageApi = retrofit.create(UsageEventsApi::class.java),
             authorizationHeaderProvider = authorizationHeaderProvider,
+            coordinator = sessionCoordinator,
+            scheduler = WorkManagerOutboxScheduler(appContext),
         )
+    }
+
+    override val recommendationEventReporter: RecommendationEventReporter by lazy {
+        RecommendationEventReporter(outbox = outboxRepository)
     }
 
     override val restaurantRepository: NetworkRestaurantRepository by lazy {
@@ -232,8 +249,7 @@ class DefaultAppContainer(context: Context) : AppContainer {
 
     override val recipeFilterStore: RecipeFilterStore by lazy { RecipeFilterStore(preferences, sessionCoordinator) }
 
-    // S3-09 (durable outbox) is not in this checkout: say so instead of pretending to record the event.
-    override val recipeUsageRecorder: RecipeUsageRecorder = OutboxNotIntegratedUsageRecorder
+    override val recipeUsageRecorder: RecipeUsageRecorder by lazy { OutboxRecipeUsageRecorder(outboxRepository) }
 
     override val profileRepository: ProfileRepository by lazy {
         ProfileRepository(
