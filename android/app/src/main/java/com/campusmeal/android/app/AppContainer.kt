@@ -32,6 +32,7 @@ import com.campusmeal.android.feature.auth.data.NetworkAuthRepository
 import com.campusmeal.android.feature.auth.domain.AuthRepository
 import com.campusmeal.android.feature.analytics.data.FeatureAdoptionApi
 import com.campusmeal.android.feature.analytics.data.FeatureAdoptionRepository
+import com.campusmeal.android.feature.context.data.local.ContextPreferencesStore
 import com.campusmeal.android.feature.decision.data.local.ComparisonHistoryStore
 import com.campusmeal.android.feature.decision.data.remote.MealDecisionApi
 import com.campusmeal.android.feature.decision.data.remote.RecommendationEventsApi
@@ -102,6 +103,9 @@ interface AppContainer {
     /** S3-11: BQ6 report for ANALYST accounts, cached per account and month. */
     val featureAdoptionRepository: FeatureAdoptionRepository
 
+    /** Last meal context per account (no coordinates), restored after the app is closed. */
+    val contextPreferencesStore: ContextPreferencesStore
+
     /** BQ3 usage admission, stored durably in the S3-09 outbox. */
     val recipeUsageRecorder: RecipeUsageRecorder
 }
@@ -164,6 +168,7 @@ class DefaultAppContainer(context: Context) : AppContainer {
                             restaurantRepository,
                             profileRepository,
                             recipeFilterStore,
+                            contextPreferencesStore,
                             comparisonHistoryStore,
                             featureAdoptionRepository,
                         ),
@@ -277,6 +282,8 @@ class DefaultAppContainer(context: Context) : AppContainer {
     }
 
     override val recipeFilterStore: RecipeFilterStore by lazy { RecipeFilterStore(preferences, sessionCoordinator) }
+
+    override val contextPreferencesStore: ContextPreferencesStore by lazy { ContextPreferencesStore(preferences, sessionCoordinator) }
 
     override val recipeUsageRecorder: RecipeUsageRecorder by lazy { OutboxRecipeUsageRecorder(outboxRepository) }
 
