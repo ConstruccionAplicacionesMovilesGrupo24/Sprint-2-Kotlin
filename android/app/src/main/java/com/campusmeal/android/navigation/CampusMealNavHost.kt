@@ -10,14 +10,18 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
@@ -25,6 +29,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.toRoute
+import kotlinx.coroutines.launch
 import com.campusmeal.android.app.AppContainer
 import com.campusmeal.android.app.CampusMealApplication
 import com.campusmeal.android.core.designsystem.NavigationIcons
@@ -127,10 +132,22 @@ fun CampusMealNavHost(
     val container = (LocalContext.current.applicationContext as CampusMealApplication).container
 
     /*
-     * The last validated context. Kept only in memory and never persisted, so precise location
-     * information is not stored locally; it is lost when the process ends.
+     * The last validated context. In memory it may hold a device fix; on disk only its non-precise part
+     * is kept per account (ContextPreferencesStore: time, budget, diet, delivery and a manual campus,
+     * never coordinates). After a restart a manual-campus context is restored in full; one built from
+     * a device fix restores only the form, and the location is asked again.
      */
     var currentContext by remember { mutableStateOf<RestaurantSearchRequestDto?>(null) }
+    val contextStore = container.contextPreferencesStore
+    val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(sessionScope) {
+        if (currentContext == null) {
+            contextStore.read(sessionScope)?.toRequest()?.let { restored ->
+                if (currentContext == null) currentContext = restored
+            }
+        }
+    }
 
     /*
      * The route estimate of the restaurant last opened from the results, with the request that produced
@@ -270,7 +287,11 @@ fun CampusMealNavHost(
             composable<CampusMealRoute.Context> {
                 val locationViewModel: LocationContextViewModel =
                     viewModel(factory = LocationContextViewModel.factory(container))
-                val contextViewModel: ContextViewModel = viewModel()
+                val contextViewModel: ContextViewModel = viewModel(
+                    factory = viewModelFactory {
+                        initializer { ContextViewModel(savedForm = { contextStore.read(sessionScope)?.form }) }
+                    },
+                )
 
                 SetContextScreen(
                     contextViewModel = contextViewModel,
@@ -281,6 +302,7 @@ fun CampusMealNavHost(
                     },
                     onSearchReady = { request ->
                         currentContext = request
+                        coroutineScope.launch { contextStore.write(sessionScope, request) }
                         if (decideAfterContext) {
                             decideAfterContext = false
                             navController.popBackStack<CampusMealRoute.Context>(inclusive = true)
