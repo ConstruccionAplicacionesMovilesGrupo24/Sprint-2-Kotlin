@@ -83,7 +83,7 @@ class RestaurantDetailViewModel(
     }
 
     fun retry() {
-        load()
+        load(forceRefresh = true)
     }
 
     private fun recordDetailOpening() {
@@ -98,7 +98,9 @@ class RestaurantDetailViewModel(
             }
         }
 
-    private fun load() {
+    private fun load(
+            forceRefresh: Boolean = false,
+    ) {
         // A retry replaces the previous request; its late answer is dropped.
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
@@ -110,6 +112,7 @@ class RestaurantDetailViewModel(
                 repository.getRestaurant(
                     scope,
                     restaurantId,
+                    forceRefresh = forceRefresh,
                 )
 
             if (!coordinator.isCurrent(scope)) return@launch

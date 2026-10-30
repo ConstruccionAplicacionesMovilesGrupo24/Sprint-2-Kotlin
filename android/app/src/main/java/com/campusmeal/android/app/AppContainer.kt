@@ -277,6 +277,8 @@ class DefaultAppContainer(context: Context) : AppContainer {
             authorizationHeaderProvider = authorizationHeaderProvider,
             preferences = preferences,
             coordinator = sessionCoordinator,
+            database = database,
+            cachePolicy = cachePolicy,
         )
     }
 

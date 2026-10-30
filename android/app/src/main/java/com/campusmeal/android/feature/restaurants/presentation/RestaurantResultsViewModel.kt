@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
 
 sealed interface RestaurantResultsUiState {
 
@@ -80,6 +81,8 @@ class RestaurantResultsViewModel(
 
     /** The request whose results are on screen; null while none are. */
     private var shownRequest: RestaurantSearchRequestDto? = null
+    
+    private var loadJob: Job? = null
 
     /**
      * The estimate [restaurantId] has in the results currently shown, for the detail screen. Null when
@@ -130,20 +133,27 @@ class RestaurantResultsViewModel(
 
     fun retry() {
         val request = lastRequest ?: return
-        load(request)
+        load(request, forceRefresh = true)
     }
 
     private fun load(
         request: RestaurantSearchRequestDto,
+        forceRefresh: Boolean = false,
     ) {
-        viewModelScope.launch {
+        loadJob?.cancel()
+
+        loadJob = viewModelScope.launch {
 
             _uiState.value =
                 RestaurantResultsUiState.Loading
             shownRequest = null
 
             val result =
-                repository.search(scope, request)
+                repository.search(
+                    scope = scope,
+                    request = request,
+                    forceRefresh = forceRefresh,
+                )
 
             if (!coordinator.isCurrent(scope)) return@launch
             // A newer search replaced this one: its late answer must not be shown (or handed to detail).

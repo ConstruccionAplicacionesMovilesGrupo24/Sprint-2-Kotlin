@@ -160,6 +160,32 @@ object DatabaseMigrations {
             )
         }
     }
+    
+    /**
+     * v7 -> v8 (S3-13): the BQ7 restaurant search and detail caches. Purely additive; both are per-account
+     * read data.
+     */
+    val MIGRATION_7_8 = object : Migration(7, 8) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `restaurant_search_cache` (" +
+                    "`accountId` TEXT NOT NULL, " +
+                    "`contextKey` TEXT NOT NULL, " +
+                    "`responseJson` TEXT NOT NULL, " +
+                    "`fetchedAtEpochMillis` INTEGER NOT NULL, " +
+                    "PRIMARY KEY(`accountId`, `contextKey`))",
+            )
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `restaurant_detail_cache` (" +
+                    "`accountId` TEXT NOT NULL, " +
+                    "`restaurantId` TEXT NOT NULL, " +
+                    "`responseJson` TEXT NOT NULL, " +
+                    "`fetchedAtEpochMillis` INTEGER NOT NULL, " +
+                    "PRIMARY KEY(`accountId`, `restaurantId`))",
+            )
+        }
+    }
+
+    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
 }
