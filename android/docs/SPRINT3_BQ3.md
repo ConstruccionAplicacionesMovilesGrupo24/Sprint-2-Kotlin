@@ -6,8 +6,8 @@
 | Business question | **BQ3:** given the current user's available ingredients, dietary preferences and maximum preparation time, which recipes satisfy all three conditions? |
 | Owner | Juan Pablo (`bedoya0611`) |
 | Reviewer | Natalia (`NataliaEspitia`). **Review pending.** |
-| Depends on | S3-02 (session), S3-03 (complete inventory), S3-04 (backend catalog, deployed and seeded), S3-09 (outbox, **not present**; see §8) |
-| Status | Implemented locally, **uncommitted**, on branch `sprint3-issue-5` (base `08852b2`). Build, lint, the reference cases and device checks pass (§9). |
+| Depends on | S3-02 (session), S3-03 (complete inventory), S3-04 (backend catalog, deployed and seeded), S3-09 (durable outbox, integrated; see §8) |
+| Status | S3-05 merged in `main`. The S3-09 integration (§8, §9.4) is implemented locally on `main` at `ab3adbd`, **uncommitted**. |
 
 `<pkg>` stands for `android/app/src/main/java/com/campusmeal/android`. Backend contract and cases: `CampusMealBack/docs/SPRINT3_BQ3.md`.
 
@@ -151,12 +151,20 @@ There is no bundled or hard-coded catalog: without a stored catalog the screen s
 
 ## 8. FEATURE_USED and S3-09
 
-S3-09's outbox is **absent** from this checkout: no outbox table, admission API or worker, and `AnalyticsTracker` is still `NoOpAnalyticsTracker`. As agreed:
+The BQ3 usage event goes through the S3-09 durable outbox (`<pkg>/core/outbox/`, `docs/SPRINT3_EVENT_SYNC.md`):
 
-- `RecipeUsageRecorder` is the single injectable admission point. Its signature takes the account scope, a visit UUID v4 kept in `SavedStateHandle`, and the real UTC `occurredAt`. The only implementation, `OutboxNotIntegratedUsageRecorder`, returns `UsageAdmission.NotIntegrated`: it stores, queues and sends nothing.
-- The visit rule is implemented in the ViewModel. "Offered" is set once per visit when the main content (results, including a valid empty answer, offline included) is displayed. Recomposition, filter edits, refreshes, retries and detail navigation never repeat it.
-- The outcome is logged as `CampusMealUsage: FEATURE_USED(RECIPES) not recorded: durable outbox (S3-09) not integrated`, never reported as recorded. There is no direct HTTP call to `/analytics/usage-events`, no in-memory queue, and no routing through `NoOpAnalyticsTracker`.
-- **Pending for Daniel (S3-09):** bind `AppContainer.recipeUsageRecorder` to an adapter over the outbox's admission API. That adapter must use `visitId` as `clientEventId`, schemaVersion 1, platform ANDROID, `{ "feature": "RECIPES" }` and the outbox's dedup, capacity and generation rules, and return `Admitted` only after durable insertion. **Delivery is not complete until then.**
+- **Admission point.** `RecipeUsageRecorder` (`<pkg>/feature/recipes/domain/RecipeUsageRecorder.kt`) is bound in `AppContainer` to `OutboxRecipeUsageRecorder` (`<pkg>/feature/recipes/data/usage/OutboxRecipeUsageRecorder.kt`, added with S3-09). The adapter calls `OutboxRepository.enqueueUsage(scope, UsageFeature.RECIPES, visitId, occurredAt)` and maps `OutboxAdmission` to `UsageAdmission.Admitted`/`Rejected`. The provisional `OutboxNotIntegratedUsageRecorder` and `UsageAdmission.NotIntegrated` were removed.
+- **Payload.** `{ clientEventId: visitId, eventType: FEATURE_USED, feature: RECIPES, platform: ANDROID, occurredAt }`. `occurredAt` is the UTC instant the content was shown, kept when delivery happens later. No coordinates. The optional BQ9 fields (`zoneId`, `foodCategory`, `budgetBand`) are not sent; the backend DTO marks them `@IsOptional`.
+- **One event per visit.**
+  - The visit id is a UUID v4 kept in `SavedStateHandle`, so it survives configuration changes and process recreation.
+  - "Offered" is set once per visit, when the main content (results or a valid empty answer, offline included) is displayed. Recomposition, filter edits, refreshes, retries, detail navigation and returning from the background never repeat it.
+  - The outbox inserts with `OnConflictStrategy.IGNORE` on `clientEventId`, so even a second admission of the same visit stores one row.
+- **Durability.**
+  - The admission is a short local Room write inside the session coordinator lock, only while the scope is active, with at most 1,000 pending rows per account.
+  - It runs under `NonCancellable`, so leaving the screen right after it appears does not lose the visit.
+  - `Admitted` is returned only after the insertion. The account's WorkManager chain then delivers it with that account's credentials; the backend deduplicates by `clientEventId`.
+  - `Rejected` (session changed, outbox full) is logged (`CampusMealUsage`), never retried by the feature and never shown as recorded.
+- There is no direct HTTP call from the feature, no in-memory queue and no use of `NoOpAnalyticsTracker`. BQ8 recommendation events are untouched.
 
 ## 9. Verification
 
@@ -220,7 +228,7 @@ Also passing:
 | R-06 | Reconnect; no timestamp borrowing | Back on cellular: only the stale inventory was refreshed (401, `auth/refresh` 200, `GET inventory` 200), giving "Inventory updated 20:44". The catalog stayed "fetched 20:30" (fresh, not requested). | **PASS** |
 | R-07 | Edit/consume an ingredient: revision and recompute | Edited *Arroz* 1 kg → 0.1 kg (`PATCH` 200 + `GET`). Recipes recomputed: with Vegan/20 min, 0 matches (Spinach rice needs 150 g; "need more"); with no diet/30 min, **Milk rice** with "you have 100 g (needs 100 g)", so equality held through the kg→g conversion. After consuming both temporary items: 0 matches, inventory time 20:47. | **PASS** |
 | R-08 | Logout | Account rows all 0; `recipes.lastFilters.*` removed; catalog kept (1 metadata row, 6 recipes) as global data | **PASS** |
-| R-09 | FEATURE_USED visits | One `CampusMealUsage … not integrated` line per visit (Home visit, Inventory visit, offline visit). 0 extra lines for detail opening, filter changes or refresh. No request to `analytics/usage-events`. | **PASS** (hook only; durable delivery **NOT RUN**, S3-09 absent) |
+| R-09 | FEATURE_USED visits (before S3-09) | One `CampusMealUsage … not integrated` line per visit; 0 extra lines for detail opening, filter changes or refresh. | **PASS** at the time; replaced by the durable checks in §9.4 |
 | R-10 | Missing catalog, missing inventory, valid empty catalog, `503`, malformed or unknown version, version replacement/recipe removal on the device | These states cannot be created safely on the shared backend, and no Android-facing stub was used. Validation and replacement rules are covered by §9.2 and the code paths in §3; the device showed only valid states. | **NOT RUN** on device |
 | R-11 | Account switch with a late result | Needs a second account. Covered by construction: graph keyed by scope, scope-checked commits and publication, memo inside the ViewModel. | **NOT RUN** |
 | R-12 | Bogotá midnight | Phone clock not changed. The evaluator takes `todayIsoDate` explicitly (C10/C11 inclusivity), and the date ticker is shared with S3-03 (whose host check covered midnight). | **NOT RUN** on device |
@@ -235,6 +243,28 @@ Also passing:
 - The catalog stays on the device as global data.
 - Temporary harness files, device UI dumps and database copies were deleted.
 
+### 9.4 S3-09 integration (2026-10-30)
+
+Source: `main` at `ab3adbd` plus the uncommitted integration changes. APK SHA-256: `78010704ddc72e08008d684ec19f69d5b347efade62a224bda5c8dd75d820695`.
+
+Build and network:
+- Build: `assembleDebug` with the Render URL passes, with no Kotlin warnings.
+- Lint: 0 errors, 18 warnings. The extra one versus §9.1 is a `UseKtx` in `RestaurantDetailScreen.kt`, which came from the team's `main`, not from this change.
+- Device: SM-S948U1, Android 17, cellular (`MOBILE[LTE]`, `wifi_on=0`), Room v7.
+
+The phone had the S3-13 release build (signed with the team release key). The user uninstalled it, the debug APK was installed for user 0 only, and the user signed in privately. Evidence comes from `outbox_events` (event ids, type, feature, `occurredAt`, status only) and OkHttp request/status lines.
+
+| ID | Check | Observed | Result |
+|---|---|---|---|
+| U-01 | Online visit (Home) | Content shown → "admitted to the outbox" 53 ms later → `POST analytics/usage-events` **202** → row `9feb4525… FEATURE_USED RECIPES SENT`, `attempts=1` | **PASS** |
+| U-02 | Same visit: diet chips ×2, slider ×3, *Refresh*, background and resume | Still **1** RECIPES row; no new admission | **PASS** |
+| U-03 | New visit (from Inventory) | Exactly one new row `96b7a47a…`, delivered with 202 | **PASS** |
+| U-04 | Offline visit (airplane mode, force-stop, reopen) | Results evaluated from Room; row `bc23914a…` admitted as `PENDING`; still `PENDING` after another force-stop | **PASS** |
+| U-05 | Delivery after reconnecting | Cellular back and app reopened: `bc23914a…` became `SENT` (`attempts=1`), keeping `occurredAt 2026-10-30T12:37:32Z` (the offline time) | **PASS** |
+| U-06 | Rejected admission (outbox full or session ended during admission) | Not reproducible safely on the device; covered by the `OutboxRepository.admit` rules and the `Rejected` mapping | **NOT RUN** |
+
+Result: 3 visits and 3 `FEATURE_USED(RECIPES)` events, all delivered. The app's `SESSION_STARTED` events were also delivered; they belong to S3-09. These are real test interactions of the test account on the deployed backend.
+
 ## 10. The four strategies
 
 | Strategy | Feature work (S3-05) | Reused shared infrastructure |
@@ -247,7 +277,7 @@ Also passing:
 ## 11. Not claimed
 
 Not claimed:
-- durable FEATURE_USED delivery (S3-09);
+- R-10–R-12 below remain without device evidence;
 - device evidence for R-10–R-12;
 - Natalia's review;
 - any deployment: nothing was deployed, and no remote database was seeded or migrated.

@@ -8,6 +8,7 @@ import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.campusmeal.android.BuildConfig
 import com.campusmeal.android.app.AppContainer
 import com.campusmeal.android.core.common.BogotaCalendar
 import com.campusmeal.android.core.common.CachePolicy
@@ -35,6 +36,7 @@ import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -251,17 +253,21 @@ class RecipesViewModel(
     }
 
     /**
-     * The list's main content (results or a valid empty answer) is on screen. Records the BQ3 usage
-     * interaction once per visit; recomposition, filter edits, refreshes and detail navigation never repeat it.
+     * The list's main content (results or a valid empty answer) is on screen. Offers the BQ3 usage
+     * interaction to the S3-09 outbox once per visit; recomposition, filter edits, refreshes and detail
+     * navigation never repeat it. The visit id is the event's `clientEventId`, so even a second admission
+     * of the same visit (for example after process recreation) stores one event.
      */
     fun onMainContentShown() {
         if (savedState.get<Boolean>(USAGE_OFFERED) == true) return
         savedState[USAGE_OFFERED] = true
+        val occurredAt = currentTimeMillis()
         viewModelScope.launch {
-            when (val admission = usageRecorder.admitRecipesUsed(scope, visitId, currentTimeMillis())) {
-                UsageAdmission.Admitted -> Unit
-                // Not an error for the user, but never presented as recorded either.
-                UsageAdmission.NotIntegrated -> Log.i(USAGE_LOG_TAG, "FEATURE_USED(RECIPES) not recorded: durable outbox (S3-09) not integrated")
+            // A short local Room write: leaving the screen right away must not lose a visit that was shown.
+            val admission = withContext(NonCancellable) { usageRecorder.admitRecipesUsed(scope, visitId, occurredAt) }
+            when (admission) {
+                UsageAdmission.Admitted -> if (BuildConfig.DEBUG) Log.d(USAGE_LOG_TAG, "FEATURE_USED(RECIPES) admitted to the outbox")
+                // Never retried or presented as recorded: the outbox's own policy decided (session ended, full).
                 is UsageAdmission.Rejected -> Log.i(USAGE_LOG_TAG, "FEATURE_USED(RECIPES) not admitted: ${admission.reason}")
             }
         }
