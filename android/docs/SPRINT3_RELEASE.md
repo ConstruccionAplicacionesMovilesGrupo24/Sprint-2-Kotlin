@@ -7,7 +7,7 @@ The Sprint 3 build is delivered as a signed release APK through Firebase App Dis
 | Setting | Value |
 |---|---|
 | Application id | `com.campusmeal.android` |
-| Version | `versionCode 2`, `versionName 0.3.0` |
+| Version | `versionCode 3`, `versionName 0.3.1` (team build; 0.3.0 was the first distribution) |
 | Backend | `https://campusmeal-api.onrender.com/api/v1/` (Render + Neon, see `docs/DEPLOYMENT_RENDER_NEON.md` in CampusMealBack) |
 | Minification | Off (`isMinifyEnabled = false`), so kotlinx.serialization and Room need no R8 rules for this release |
 | Logging | No HTTP logging interceptor in release |
@@ -58,6 +58,14 @@ cd android
 
 The app does not include the Firebase SDK: App Distribution only needs the uploaded APK, so no `google-services.json` is added.
 
+## Release notes (0.3.1)
+
+- The context is kept after closing the app, also when it was set with the device location (stored as its campus, never coordinates).
+- Decide keeps the recommendation and your choice for 5 minutes; "Recalculate" asks for a new one.
+- After choosing: Walk/Order open the restaurant menu, with walking directions in the maps app; Cook opens the recipes with their steps.
+- Home shows your plan during your lunch time; for Cook it then asks whether you cooked it and marks the ingredients as used.
+- Context form: type any time in minutes, budget shown as 25,000, Vegan also selects Vegetarian.
+
 ## Release notes (0.3.0)
 
 - Accounts: per-account session and data, cleaned on logout or account switch (S3-02).
@@ -68,7 +76,7 @@ The app does not include the Firebase SDK: App Distribution only needs the uploa
 
 ## Verification on a physical phone
 
-1. Install from the invitation; the app opens and the version in Android Settings is 0.3.0.
+1. Install from the invitation; the app opens and the version in Android Settings is the one distributed (0.3.1). A newer version installs over the previous one without uninstalling, because it is signed with the same key.
 2. Log in with a demo account against the Render backend (the first request can take ~1 min while Render wakes up).
 3. Compare meals, choose one in airplane mode, reconnect: the choice shows as sent.
 4. Log in as the analyst: Profile -> Analytics shows the BQ6 report.
