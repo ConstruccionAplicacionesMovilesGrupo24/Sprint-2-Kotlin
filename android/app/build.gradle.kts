@@ -29,6 +29,14 @@ val emulatorApiBaseUrl = "http://10.0.2.2:3000/api/v1/"
 val debugApiBaseUrl = buildSetting("campusmeal.apiBaseUrl", "CAMPUSMEAL_API_BASE_URL") ?: emulatorApiBaseUrl
 val releaseApiBaseUrl = buildSetting("campusmeal.releaseApiBaseUrl", "CAMPUSMEAL_RELEASE_API_BASE_URL")
 
+// Release signing (S3-13). The keystore lives outside the repository; only its path and passwords are configured.
+val releaseStoreFile = buildSetting("campusmeal.release.storeFile", "CAMPUSMEAL_RELEASE_STORE_FILE")
+val releaseStorePassword = buildSetting("campusmeal.release.storePassword", "CAMPUSMEAL_RELEASE_STORE_PASSWORD")
+val releaseKeyAlias = buildSetting("campusmeal.release.keyAlias", "CAMPUSMEAL_RELEASE_KEY_ALIAS")
+val releaseKeyPassword = buildSetting("campusmeal.release.keyPassword", "CAMPUSMEAL_RELEASE_KEY_PASSWORD")
+val releaseSigningConfigured =
+    listOf(releaseStoreFile, releaseStorePassword, releaseKeyAlias, releaseKeyPassword).none { it == null }
+
 android {
     namespace = "com.campusmeal.android"
     compileSdk = 37
@@ -37,8 +45,19 @@ android {
         applicationId = "com.campusmeal.android"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.3.0"
+    }
+
+    signingConfigs {
+        if (releaseSigningConfigured) {
+            create("release") {
+                storeFile = file(releaseStoreFile!!)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
     }
 
     buildTypes {
@@ -47,6 +66,7 @@ android {
         }
         getByName("release") {
             isMinifyEnabled = false
+            if (releaseSigningConfigured) signingConfig = signingConfigs.getByName("release")
             buildConfigField("String", "API_BASE_URL", "\"${releaseApiBaseUrl.orEmpty()}\"")
         }
     }
@@ -73,13 +93,19 @@ ksp {
 }
 
 // Release artifacts must point at an explicitly configured HTTPS backend; there is no fallback.
+// They must also be signed: an unsigned APK cannot be installed from Firebase App Distribution.
 tasks.configureEach {
     if (name == "preReleaseBuild") {
         val url = releaseApiBaseUrl
+        val signed = releaseSigningConfigured
         doFirst {
             check(!url.isNullOrBlank() && url.startsWith("https://") && url.endsWith("/")) {
                 "Release builds require campusmeal.releaseApiBaseUrl (or CAMPUSMEAL_RELEASE_API_BASE_URL) " +
                     "set to an https:// URL ending in '/'. See android/README.md."
+            }
+            check(signed) {
+                "Release builds require campusmeal.release.storeFile, storePassword, keyAlias and keyPassword " +
+                    "(or the CAMPUSMEAL_RELEASE_* variables). See android/docs/SPRINT3_RELEASE.md."
             }
         }
     }

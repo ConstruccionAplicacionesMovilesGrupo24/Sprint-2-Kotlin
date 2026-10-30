@@ -145,9 +145,9 @@ Debug builds allow cleartext HTTP only to `10.0.2.2`, `localhost` and `127.0.0.1
 
 - **Debug builds in CI:** set `CAMPUSMEAL_API_BASE_URL` in the pipeline environment.
 
-### Production (future)
+### Release
 
-Release builds require `campusmeal.releaseApiBaseUrl` or `CAMPUSMEAL_RELEASE_API_BASE_URL`, set to an `https://` URL. The `preReleaseBuild` task fails otherwise. For that reason, `./gradlew build` (which also assembles release) needs this value. Set it only in CI secrets or your local environment, never in tracked files.
+Release builds require `campusmeal.releaseApiBaseUrl` or `CAMPUSMEAL_RELEASE_API_BASE_URL`, set to an `https://` URL, and the four `campusmeal.release.*` signing settings. The `preReleaseBuild` task fails otherwise. For that reason, `./gradlew build` (which also assembles release) needs these values. Set them only in CI secrets or your local environment, never in tracked files. Signing and Firebase App Distribution are described in `docs/SPRINT3_RELEASE.md`.
 
 ## Dependency choices
 
