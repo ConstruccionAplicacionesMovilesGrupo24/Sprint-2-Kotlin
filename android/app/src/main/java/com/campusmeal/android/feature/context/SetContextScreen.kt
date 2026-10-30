@@ -34,7 +34,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.campusmeal.android.core.designsystem.campusMealColors
@@ -210,12 +214,7 @@ private fun SetContextContent(
                         verticalArrangement =
                             Arrangement.spacedBy(10.dp),
                     ) {
-                        listOf(
-                            15,
-                            30,
-                            45,
-                            60,
-                        ).forEach { minutes ->
+                        PresetMinutes.forEach { minutes ->
 
                             FilterChip(
                                 selected =
@@ -235,6 +234,24 @@ private fun SetContextContent(
                             )
                         }
                     }
+
+                    // Any other time, typed. A preset chip clears it; blank while editing.
+                    OutlinedTextField(
+                        value = form.availableMinutes
+                            .takeIf { it > 0 && it !in PresetMinutes }
+                            ?.toString()
+                            .orEmpty(),
+                        onValueChange = { value ->
+                            if (value.length <= 3 && value.all(Char::isDigit)) {
+                                onAvailableMinutesChanged(value.toIntOrNull() ?: 0)
+                            }
+                        },
+                        label = { Text("Other time (minutes)") },
+                        placeholder = { Text("e.g. 90") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
 
                     if (
                         ContextValidationError.AVAILABLE_TIME
@@ -297,9 +314,11 @@ private fun SetContextContent(
                         },
                         placeholder = {
                             Text(
-                                "20000",
+                                "20,000",
                             )
                         },
+                        // Shown as 20,000; the value itself stays plain digits.
+                        visualTransformation = ThousandsSeparator,
                         singleLine = true,
                         isError =
                             ContextValidationError.BUDGET
@@ -543,6 +562,26 @@ private fun ValidationText(
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.error,
     )
+}
+
+private val PresetMinutes = listOf(15, 30, 45, 60)
+
+/** Groups the digits of the budget in thousands for display only (`25000` → `25,000`). */
+private object ThousandsSeparator : VisualTransformation {
+    override fun filter(text: AnnotatedString): TransformedText {
+        val digits = text.text
+        val formatted = digits.reversed().chunked(3).joinToString(",").reversed()
+        // Commas before a position: one per full group of three digits to its right.
+        fun commasBefore(offset: Int): Int = (digits.length - 1) / 3 - (digits.length - offset) / 3
+        val mapping = object : OffsetMapping {
+            override fun originalToTransformed(offset: Int): Int =
+                if (digits.isEmpty()) 0 else offset + commasBefore(offset).coerceAtLeast(0)
+
+            override fun transformedToOriginal(offset: Int): Int =
+                formatted.take(offset).count { it != ',' }
+        }
+        return TransformedText(AnnotatedString(formatted), mapping)
+    }
 }
 
 private fun DietaryPreference.label(): String =

@@ -103,12 +103,16 @@ class ContextViewModel(
         preference: DietaryPreference,
     ) {
         updateForm { form ->
-            val updatedPreferences =
-                if (preference in form.dietaryPreferences) {
-                    form.dietaryPreferences - preference
-                } else {
-                    form.dietaryPreferences + preference
-                }
+            val selected = preference !in form.dietaryPreferences
+            // Vegan implies vegetarian: choosing vegan selects vegetarian, and dropping vegetarian drops vegan.
+            val updatedPreferences = when {
+                selected && preference == DietaryPreference.VEGAN ->
+                    form.dietaryPreferences + DietaryPreference.VEGAN + DietaryPreference.VEGETARIAN
+                selected -> form.dietaryPreferences + preference
+                preference == DietaryPreference.VEGETARIAN ->
+                    form.dietaryPreferences - DietaryPreference.VEGETARIAN - DietaryPreference.VEGAN
+                else -> form.dietaryPreferences - preference
+            }
 
             form.copy(
                 dietaryPreferences = updatedPreferences,

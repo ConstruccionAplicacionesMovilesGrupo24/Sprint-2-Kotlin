@@ -33,6 +33,7 @@ import com.campusmeal.android.core.common.formatSyncedAt
 import com.campusmeal.android.core.designsystem.SlowResponseNotice
 import com.campusmeal.android.core.designsystem.campusMealColors
 import com.campusmeal.android.core.network.ReconnectEffect
+import com.campusmeal.android.feature.decision.data.local.MealPlan
 import com.campusmeal.android.feature.inventory.presentation.InventoryItemUi
 import com.campusmeal.android.feature.inventory.presentation.UrgencyBadge
 import java.text.NumberFormat
@@ -59,6 +60,7 @@ fun HomeRoute(
     onFindRestaurants: () -> Unit,
     onOpenInventory: () -> Unit,
     onOpenRecipes: () -> Unit,
+    onOpenRestaurant: (String) -> Unit,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     // Each return to the foreground re-checks the Bogota date and refreshes what is due.
@@ -75,6 +77,17 @@ fun HomeRoute(
     ) {
         item { Header(state.userName) }
         item { ContextCard(context, onChangeContext) }
+        state.plan?.let { plan ->
+            item {
+                PlanCard(
+                    state = plan,
+                    onOpenRestaurant = onOpenRestaurant,
+                    onOpenRecipes = onOpenRecipes,
+                    onCooked = { viewModel.onCooked(online) },
+                    onDismiss = viewModel::onDismissPlan,
+                )
+            }
+        }
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Expiring soon", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
@@ -160,6 +173,62 @@ private fun ContextCard(context: ContextSummary?, onChange: () -> Unit) {
             }
         }
     }
+}
+
+/** The alternative chosen in Decide, until lunch time is over (and, for Cook, until answered). */
+@Composable
+private fun PlanCard(
+    state: PlanState,
+    onOpenRestaurant: (String) -> Unit,
+    onOpenRecipes: () -> Unit,
+    onCooked: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    Surface(shape = CardShape, color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            when (state) {
+                is PlanState.Active -> {
+                    val plan = state.plan
+                    Text("Your plan", style = MaterialTheme.typography.titleSmall)
+                    Text(planTitle(plan), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(
+                        "Until ${SimpleDateFormat("HH:mm", Locale.US).format(Date(plan.endsAtEpochMillis))}",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        val restaurantId = plan.restaurantId
+                        if (plan.alternative == "COOK") {
+                            Button(onClick = onOpenRecipes) { Text("See recipes") }
+                            OutlinedButton(onClick = onCooked) { Text("I cooked it") }
+                        } else if (restaurantId != null) {
+                            Button(onClick = { onOpenRestaurant(restaurantId) }) {
+                                Text(if (plan.alternative == "WALK") "Menu and directions" else "See menu")
+                            }
+                        }
+                        TextButton(onClick = onDismiss) { Text("Dismiss") }
+                    }
+                }
+                is PlanState.AskCooked -> {
+                    Text("Did you cook it?", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(
+                        "Your plan was to cook with ${state.plan.ingredients.joinToString { it.name }}. " +
+                            "Mark them as used in your inventory?",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(onClick = onCooked) { Text("Yes, I cooked it") }
+                        OutlinedButton(onClick = onDismiss) { Text("No") }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun planTitle(plan: MealPlan): String = when (plan.alternative) {
+    "WALK" -> "Walk to ${plan.restaurantName ?: "the restaurant"}"
+    "ORDER" -> "Order from ${plan.restaurantName ?: "the restaurant"}"
+    else -> if (plan.ingredients.isEmpty()) "Cook at home" else "Cook with ${plan.ingredients.joinToString { it.name }}"
 }
 
 @Composable

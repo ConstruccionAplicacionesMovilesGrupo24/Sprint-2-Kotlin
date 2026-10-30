@@ -10,6 +10,8 @@ Two parts, both by Daniel: the BQ5 comparison keeps working sensibly without a c
 | Offline or backend 5xx, a comparison is saved | Shown as **"Previous comparison"** with its date and the context it was made for. It is not a current recommendation: the alternatives **cannot be chosen** and no impression is recorded. "Compare again" retries. |
 | Offline, nothing saved | Same error screen as before, with retry. |
 | New comparison while offline | Never queued: each `POST meal-decisions/compare` creates a recommendation on the server, so it is only sent when the user asks again with a connection. |
+| Back to Decide, or app reopened, within 5 minutes, same context | The same recommendation and the choice made on it are shown again (`RecentDecisionStore`, DataStore `decision.recent.{accountId}`: recommendation id, a context key without coordinates, time, and the selection event id). No new POST and no second impression. The selection status keeps following its outbox event. The context key uses the campus, so it also works for a device location on a campus (restored at the campus centre, see `BUG_CONTEXT_PERSISTENCE.md`). |
+| After 5 minutes, or "Recalculate" | A new comparison is requested from the backend. "Recalculate" is shown next to "Compared …" on every current result. |
 
 Android never recalculates scores or ranking: the saved response goes through the same mapper as a live one.
 

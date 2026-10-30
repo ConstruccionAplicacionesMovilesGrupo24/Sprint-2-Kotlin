@@ -13,6 +13,8 @@ import com.campusmeal.android.core.session.AccountSessionCoordinator
 import com.campusmeal.android.core.session.AccountSessionScope
 import com.campusmeal.android.feature.context.data.remote.RestaurantSearchRequestDto
 import com.campusmeal.android.feature.context.domain.CampusCatalog
+import com.campusmeal.android.feature.decision.data.local.MealPlan
+import com.campusmeal.android.feature.decision.data.local.MealPlanStore
 import com.campusmeal.android.feature.inventory.domain.model.ExpiringInventorySnapshot
 import com.campusmeal.android.feature.inventory.domain.model.InventoryRefreshResult
 import com.campusmeal.android.feature.inventory.domain.repository.InventoryRepository
@@ -22,6 +24,7 @@ import com.campusmeal.android.feature.profile.data.CurrentUserResult
 import com.campusmeal.android.feature.profile.data.ProfileRepository
 import com.campusmeal.android.feature.profile.data.ProfileSource
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -48,10 +51,20 @@ sealed interface ExpiringState {
     data object Unavailable : ExpiringState
 }
 
+/** The alternative chosen in Decide, while it matters. */
+sealed interface PlanState {
+    /** Still within the available lunch time. */
+    data class Active(val plan: MealPlan) : PlanState
+
+    /** A Cook plan whose time is over: ask whether it was cooked, to mark its ingredients as consumed. */
+    data class AskCooked(val plan: MealPlan) : PlanState
+}
+
 data class HomeUiState(
     /** Null until `/auth/me` or the stored profile answers, or when neither is available. */
     val userName: String? = null,
     val expiring: ExpiringState = ExpiringState.Loading,
+    val plan: PlanState? = null,
 )
 
 /** What Home shows about the context the user validated last (kept in memory only). */
@@ -70,9 +83,11 @@ fun RestaurantSearchRequestDto.toContextSummary(): ContextSummary = ContextSumma
 class HomeViewModel(
     private val profileRepository: ProfileRepository,
     private val inventoryRepository: InventoryRepository,
+    private val mealPlans: MealPlanStore,
     private val coordinator: AccountSessionCoordinator,
     private val scope: AccountSessionScope,
     private val cachePolicy: CachePolicy,
+    private val currentTimeMillis: () -> Long = System::currentTimeMillis,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -84,6 +99,7 @@ class HomeViewModel(
 
     private val today = MutableStateFlow(BogotaCalendar.today())
     private val expiringRefresh = MutableStateFlow(ExpiringRefresh())
+    private val now = MutableStateFlow(currentTimeMillis())
 
     init {
         viewModelScope.launch {
@@ -91,10 +107,54 @@ class HomeViewModel(
                 snapshot.toState(today, refresh)
             }.collect { state -> _uiState.update { it.copy(expiring = state) } }
         }
+        viewModelScope.launch {
+            combine(mealPlans.observe(scope), now) { plan, now -> plan?.let { planState(it, now) } }
+                .collect { plan -> _uiState.update { it.copy(plan = plan) } }
+        }
+        // The plan ends while Home may be open: re-check the time every half minute.
+        viewModelScope.launch {
+            while (true) {
+                delay(PLAN_TICK_MILLIS)
+                now.value = currentTimeMillis()
+            }
+        }
+    }
+
+    /** A Walk/Order plan disappears once lunch time is over; a Cook plan then asks whether it was cooked. */
+    private suspend fun planState(plan: MealPlan, now: Long): PlanState? = when {
+        now < plan.endsAtEpochMillis -> PlanState.Active(plan)
+        plan.alternative == "COOK" && plan.ingredients.isNotEmpty() -> PlanState.AskCooked(plan)
+        else -> {
+            mealPlans.clear(scope, plan.recommendationId)
+            null
+        }
+    }
+
+    /** "I cooked it": marks the plan's ingredients as consumed (offline-safe, like Inventory) and ends it. */
+    fun onCooked(online: Boolean) {
+        val plan = planOf(_uiState.value.plan) ?: return
+        viewModelScope.launch {
+            plan.ingredients.forEach { inventoryRepository.consumeItem(scope, it.itemId, it.name, online) }
+            mealPlans.clear(scope, plan.recommendationId)
+            refreshExpiring(force = true)
+        }
+    }
+
+    /** "Not this time" or dismiss: ends the plan without touching the inventory. */
+    fun onDismissPlan() {
+        val plan = planOf(_uiState.value.plan) ?: return
+        viewModelScope.launch { mealPlans.clear(scope, plan.recommendationId) }
+    }
+
+    private fun planOf(state: PlanState?): MealPlan? = when (state) {
+        is PlanState.Active -> state.plan
+        is PlanState.AskCooked -> state.plan
+        null -> null
     }
 
     /** Home became visible: profile, plus BQ2 when it is missing, stale, invalidated or from another day. */
     fun refresh() {
+        now.value = currentTimeMillis()
         refreshProfile()
         today.value = BogotaCalendar.today()
         refreshExpiring(force = false)
@@ -146,12 +206,14 @@ class HomeViewModel(
 
     companion object {
         private const val HOME_EXPIRING_LIMIT = 3
+        private const val PLAN_TICK_MILLIS = 30_000L
 
         fun factory(container: AppContainer, scope: AccountSessionScope): ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 HomeViewModel(
                     container.profileRepository,
                     container.inventoryRepository,
+                    container.mealPlanStore,
                     container.sessionCoordinator,
                     scope,
                     container.cachePolicy,
