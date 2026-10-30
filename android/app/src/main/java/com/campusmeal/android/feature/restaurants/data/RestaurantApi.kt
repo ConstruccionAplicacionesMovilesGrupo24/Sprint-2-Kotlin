@@ -73,4 +73,5 @@ data class MealDto(
     val name: String? = null,
     val price: Long? = null,
     val dietaryTags: List<String> = emptyList(),
+    val mealCategory: String? = null,
 )

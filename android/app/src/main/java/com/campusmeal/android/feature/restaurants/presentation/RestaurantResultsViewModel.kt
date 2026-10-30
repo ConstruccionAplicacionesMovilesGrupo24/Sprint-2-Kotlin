@@ -15,6 +15,8 @@ import com.campusmeal.android.feature.restaurants.domain.RestaurantSearchResult
 import com.campusmeal.android.feature.restaurants.domain.RouteEstimateSnapshot
 import com.campusmeal.android.feature.restaurants.domain.ResultSource
 import com.campusmeal.android.feature.restaurants.domain.RouteProviderStatus
+import com.campusmeal.android.core.outbox.OutboxRepository
+import com.campusmeal.android.core.outbox.UsageFeature
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -63,6 +65,7 @@ class RestaurantResultsViewModel(
     private val repository: RestaurantRepository,
     private val coordinator: AccountSessionCoordinator,
     private val scope: AccountSessionScope,
+    private val outboxRepository: OutboxRepository,
 ) : ViewModel() {
 
     private val _uiState =
@@ -108,10 +111,20 @@ class RestaurantResultsViewModel(
     fun search(
         request: RestaurantSearchRequestDto,
     ) {
-        // Coming back from a detail recomposes the route with the same request: keep its results and
-        // their time. A new search always has a new `requestedAt`, and retry() re-runs explicitly.
         if (request == lastRequest) return
+
         lastRequest = request
+
+        viewModelScope.launch {
+            outboxRepository.enqueueUsage(
+                scope = scope,
+                feature = UsageFeature.RESTAURANT_SEARCH,
+                zoneId = request.campusId.toAnalyticsZone(),
+                foodCategory = request.foodCategory,
+                budgetBand = request.maximumBudget.toBudgetBand(),
+            )
+        }
+
         load(request)
     }
 
@@ -202,6 +215,7 @@ class RestaurantResultsViewModel(
         fun factory(
             container: AppContainer,
             scope: AccountSessionScope,
+            
         ): ViewModelProvider.Factory =
             viewModelFactory {
 
@@ -212,8 +226,24 @@ class RestaurantResultsViewModel(
                         coordinator =
                             container.sessionCoordinator,
                         scope = scope,
+                        outboxRepository = container.outboxRepository,
                     )
                 }
             }
     }
-}
+}    
+
+internal fun String?.toAnalyticsZone(): String =
+    when (this) {
+        "campus-001" -> "bogota-centro"
+        "campus-002" -> "bogota-chapinero"
+        "campus-003" -> "bogota-teusaquillo"
+        else -> "unknown"
+    }
+
+internal fun Long.toBudgetBand(): String =
+    when {
+        this <= 15_000L -> "LOW"
+        this <= 25_000L -> "MEDIUM"
+        else -> "HIGH"
+    }

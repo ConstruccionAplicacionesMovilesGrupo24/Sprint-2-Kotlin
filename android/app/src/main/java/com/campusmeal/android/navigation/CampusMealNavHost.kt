@@ -340,11 +340,15 @@ fun CampusMealNavHost(
             composable<CampusMealRoute.RestaurantDetail> { entry ->
                 val route = entry.toRoute<CampusMealRoute.RestaurantDetail>()
                 // Only an estimate from the current search context, for this restaurant and session.
-                val estimate = selectedRoute
+                val matchingSelectedRoute = selectedRoute
                     ?.takeIf {
-                        it.scope == sessionScope && it.request == currentContext && it.estimate.restaurantId == route.restaurantId
+                        it.scope == sessionScope &&
+                            it.request == currentContext &&
+                            it.estimate.restaurantId == route.restaurantId
                     }
-                    ?.estimate
+
+                val estimate = matchingSelectedRoute?.estimate
+                val detailRequest = matchingSelectedRoute?.request ?: currentContext
                 RestaurantDetailRoute(
                     viewModel = viewModel(
                         factory = RestaurantDetailViewModel.factory(
@@ -352,6 +356,7 @@ fun CampusMealNavHost(
                             scope = sessionScope,
                             restaurantId = route.restaurantId,
                             routeEstimate = estimate,
+                            request = detailRequest,
                         ),
                     ),
                     onBack = { navController.popBackStack() },
