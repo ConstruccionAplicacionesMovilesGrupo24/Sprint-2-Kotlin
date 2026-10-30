@@ -39,6 +39,9 @@ interface ComparisonHistoryDao {
     @Query("SELECT * FROM comparison_history WHERE accountId = :accountId ORDER BY comparedAtEpochMillis DESC LIMIT 1")
     suspend fun latest(accountId: String): ComparisonHistoryEntity?
 
+    @Query("SELECT * FROM comparison_history WHERE accountId = :accountId AND recommendationId = :recommendationId")
+    suspend fun get(accountId: String, recommendationId: String): ComparisonHistoryEntity?
+
     /** Keeps the [keep] most recent comparisons of the account. */
     @Query(
         "DELETE FROM comparison_history WHERE accountId = :accountId AND recommendationId NOT IN (" +
@@ -76,6 +79,9 @@ class ComparisonHistoryStore(
 
     suspend fun latest(scope: AccountSessionScope): ComparisonHistoryEntity? =
         if (coordinator.isCurrent(scope)) dao.latest(scope.accountId) else null
+
+    suspend fun get(scope: AccountSessionScope, recommendationId: String): ComparisonHistoryEntity? =
+        if (coordinator.isCurrent(scope)) dao.get(scope.accountId, recommendationId) else null
 
     override suspend fun deleteAccount(accountId: String) = dao.delete(accountId)
 

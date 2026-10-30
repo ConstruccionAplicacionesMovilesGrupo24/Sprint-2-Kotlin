@@ -51,12 +51,14 @@ fun DecisionRoute(
     context: DecisionContext?,
     onBack: () -> Unit,
     onSetContext: () -> Unit,
+    /** Restaurant detail (menu and directions) for Walk/Order, recipes for Cook. */
+    onOpenChoice: (MealOption) -> Unit,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val selection by viewModel.selection.collectAsStateWithLifecycle()
 
     LaunchedEffect(context) {
-        if (context != null) viewModel.compare(context)
+        if (context != null) viewModel.onContext(context)
     }
 
     DecisionScreen(
@@ -64,7 +66,14 @@ fun DecisionRoute(
         selection = selection,
         onBack = onBack,
         onRetry = viewModel::retryCompare,
-        onSelect = viewModel::select,
+        onRecalculate = viewModel::recalculate,
+        onSelect = { recommendationId, option ->
+            // A first choice opens what comes next; a retry of a rejected event stays on the screen.
+            val first = selection.status == SelectionStatus.NONE
+            viewModel.select(recommendationId, option)
+            if (first) onOpenChoice(option)
+        },
+        onOpenChoice = onOpenChoice,
         onSetContext = onSetContext,
     )
 }
@@ -76,7 +85,9 @@ private fun DecisionScreen(
     selection: SelectionState,
     onBack: () -> Unit,
     onRetry: () -> Unit,
+    onRecalculate: () -> Unit,
     onSelect: (String, MealOption) -> Unit,
+    onOpenChoice: (MealOption) -> Unit,
     onSetContext: () -> Unit,
 ) {
     Scaffold(
@@ -98,9 +109,24 @@ private fun DecisionScreen(
                 )
                 DecisionUiState.Loading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
                 is DecisionUiState.Loaded -> when (val result = state.result) {
-                    is MealDecisionResult.Content -> DecisionContent(result.decision, 0, selection, onSelect)
-                    is MealDecisionResult.PartialContent ->
-                        DecisionContent(result.decision, result.skippedAlternatives, selection, onSelect)
+                    is MealDecisionResult.Content -> DecisionContent(
+                        result.decision,
+                        0,
+                        selection,
+                        onSelect,
+                        comparedAt = state.comparedAtEpochMillis,
+                        onRecalculate = onRecalculate,
+                        onOpenChoice = onOpenChoice,
+                    )
+                    is MealDecisionResult.PartialContent -> DecisionContent(
+                        result.decision,
+                        result.skippedAlternatives,
+                        selection,
+                        onSelect,
+                        comparedAt = state.comparedAtEpochMillis,
+                        onRecalculate = onRecalculate,
+                        onOpenChoice = onOpenChoice,
+                    )
                     is MealDecisionResult.Previous -> DecisionContent(
                         decision = result.decision,
                         skipped = result.skippedAlternatives,
@@ -137,11 +163,26 @@ private fun DecisionContent(
     onSelect: (String, MealOption) -> Unit,
     previous: MealDecisionResult.Previous? = null,
     onRetry: () -> Unit = {},
+    comparedAt: Long? = null,
+    onRecalculate: () -> Unit = {},
+    onOpenChoice: (MealOption) -> Unit = {},
 ) {
     LazyColumn(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        if (previous == null && comparedAt != null) {
+            item {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        "Compared ${formatSyncedAt(comparedAt)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.weight(1f),
+                    )
+                    OutlinedButton(onClick = onRecalculate) { Text("Recalculate") }
+                }
+            }
+        }
         if (previous != null) {
             item {
                 ElevatedCard(shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth()) {
@@ -165,7 +206,12 @@ private fun DecisionContent(
             }
         }
         items(decision.alternatives, key = { it.rank }) { alternative ->
-            AlternativeCard(alternative, selection, selectable = previous == null) { onSelect(decision.recommendationId, alternative.option) }
+            AlternativeCard(
+                alternative,
+                selection,
+                selectable = previous == null,
+                onOpen = { onOpenChoice(alternative.option) },
+            ) { onSelect(decision.recommendationId, alternative.option) }
         }
         if (previous == null) {
             item { SelectionFooter(selection, retry = { decision.alternatives.firstOrNull()?.let { onSelect(decision.recommendationId, it.option) } }) }
@@ -174,7 +220,13 @@ private fun DecisionContent(
 }
 
 @Composable
-private fun AlternativeCard(alternative: MealAlternative, selection: SelectionState, selectable: Boolean = true, onChoose: () -> Unit) {
+private fun AlternativeCard(
+    alternative: MealAlternative,
+    selection: SelectionState,
+    selectable: Boolean = true,
+    onOpen: () -> Unit = {},
+    onChoose: () -> Unit,
+) {
     val name = alternative.option.wireName()
     ElevatedCard(
         shape = RoundedCornerShape(14.dp),
@@ -207,6 +259,17 @@ private fun AlternativeCard(alternative: MealAlternative, selection: SelectionSt
                 Button(onClick = onChoose) { Text("Choose $name") }
             } else if (chosen) {
                 Text("Your choice", fontWeight = FontWeight.Bold)
+                if (selectable) {
+                    OutlinedButton(onClick = onOpen) {
+                        Text(
+                            when (alternative.option) {
+                                is MealOption.Cook -> "See recipes"
+                                is MealOption.Walk -> "Menu and directions"
+                                is MealOption.Order -> "See menu"
+                            },
+                        )
+                    }
+                }
             }
         }
     }

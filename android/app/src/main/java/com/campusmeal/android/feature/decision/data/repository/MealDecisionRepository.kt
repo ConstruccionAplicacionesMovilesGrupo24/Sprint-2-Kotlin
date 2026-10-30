@@ -19,6 +19,12 @@ import com.campusmeal.android.feature.decision.domain.model.MealDecisionResult
 interface MealDecisionRepository {
     /** Sent with the credentials of [scope] only; null credentials (scope ended) answer Unauthorized. */
     suspend fun compare(scope: AccountSessionScope, context: DecisionContext, requestedAtEpochMillis: Long): MealDecisionResult
+
+    /**
+     * The stored comparison [recommendationId] as a current result, or null. Only for a
+     * recommendation the caller knows is still recent; it never calls the backend.
+     */
+    suspend fun restore(scope: AccountSessionScope, recommendationId: String): MealDecisionResult?
 }
 
 /**
@@ -70,6 +76,14 @@ class NetworkMealDecisionRepository(
                 }
             is ApiResult.InvalidResponse -> failure(MealDecisionError.InvalidResponse)
         }
+    }
+
+    override suspend fun restore(scope: AccountSessionScope, recommendationId: String): MealDecisionResult? {
+        val entry = history.get(scope, recommendationId) ?: return null
+        val response = runCatching {
+            ApiClientFactory.json.decodeFromString(CompareMealOptionsResponseDto.serializer(), entry.responseJson)
+        }.getOrNull() ?: return null
+        return response.toResult().takeIf { it is MealDecisionResult.Content || it is MealDecisionResult.PartialContent }
     }
 
     private fun CompareMealOptionsResponseDto.toResult(): MealDecisionResult {

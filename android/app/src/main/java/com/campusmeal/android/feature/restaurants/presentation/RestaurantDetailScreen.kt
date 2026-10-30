@@ -1,5 +1,10 @@
 package com.campusmeal.android.feature.restaurants.presentation
 
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -28,6 +33,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -275,10 +281,20 @@ private fun DetailContent(
             ?.let { address ->
 
                 item {
-                    InfoCard(
-                        title = "Address",
-                        value = address,
-                    )
+                    val context = LocalContext.current
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        InfoCard(
+                            title = "Address",
+                            value = address,
+                        )
+                        // Hands the trip to the phone's maps app, on foot; the app never reads the position.
+                        Button(
+                            onClick = { openWalkingDirections(context, detail.summary.name, address) },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text("Directions (walking)")
+                        }
+                    }
                 }
             }
 
@@ -766,6 +782,20 @@ private fun Long.toCop(): String =
                 Locale.US,
                 this,
             ).replace(",", ".")
+
+/**
+ * Opens walking directions in the maps app (Google Maps' universal link; the browser if no maps app
+ * handles it). Only the restaurant's public name and address are sent, never the user's position.
+ */
+private fun openWalkingDirections(context: Context, name: String, address: String) {
+    val destination = Uri.encode("$name, $address, Bogotá")
+    val uri = Uri.parse("https://www.google.com/maps/dir/?api=1&destination=$destination&travelmode=walking")
+    try {
+        context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+    } catch (_: ActivityNotFoundException) {
+        Toast.makeText(context, "No app can open directions on this device.", Toast.LENGTH_SHORT).show()
+    }
+}
 
 private fun formatDetailTimestamp(
     epochMillis: Long,

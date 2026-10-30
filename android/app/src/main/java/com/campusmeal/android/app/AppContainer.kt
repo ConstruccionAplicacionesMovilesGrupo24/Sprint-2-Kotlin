@@ -34,6 +34,8 @@ import com.campusmeal.android.feature.analytics.data.FeatureAdoptionApi
 import com.campusmeal.android.feature.analytics.data.FeatureAdoptionRepository
 import com.campusmeal.android.feature.context.data.local.ContextPreferencesStore
 import com.campusmeal.android.feature.decision.data.local.ComparisonHistoryStore
+import com.campusmeal.android.feature.decision.data.local.MealPlanStore
+import com.campusmeal.android.feature.decision.data.local.RecentDecisionStore
 import com.campusmeal.android.feature.decision.data.remote.MealDecisionApi
 import com.campusmeal.android.feature.decision.data.remote.RecommendationEventsApi
 import com.campusmeal.android.feature.decision.data.repository.RecommendationEventReporter
@@ -106,6 +108,12 @@ interface AppContainer {
     /** Last meal context per account (no coordinates), restored after the app is closed. */
     val contextPreferencesStore: ContextPreferencesStore
 
+    /** Last current recommendation and choice per account, shown again for 5 minutes. */
+    val recentDecisionStore: RecentDecisionStore
+
+    /** The chosen alternative, shown on Home for the available lunch time. */
+    val mealPlanStore: MealPlanStore
+
     /** BQ3 usage admission, stored durably in the S3-09 outbox. */
     val recipeUsageRecorder: RecipeUsageRecorder
 }
@@ -170,6 +178,8 @@ class DefaultAppContainer(context: Context) : AppContainer {
                             recipeFilterStore,
                             contextPreferencesStore,
                             comparisonHistoryStore,
+                            recentDecisionStore,
+                            mealPlanStore,
                             featureAdoptionRepository,
                         ),
                     ),
@@ -284,6 +294,10 @@ class DefaultAppContainer(context: Context) : AppContainer {
     override val recipeFilterStore: RecipeFilterStore by lazy { RecipeFilterStore(preferences, sessionCoordinator) }
 
     override val contextPreferencesStore: ContextPreferencesStore by lazy { ContextPreferencesStore(preferences, sessionCoordinator) }
+
+    override val recentDecisionStore: RecentDecisionStore by lazy { RecentDecisionStore(preferences, sessionCoordinator) }
+
+    override val mealPlanStore: MealPlanStore by lazy { MealPlanStore(preferences, sessionCoordinator) }
 
     override val recipeUsageRecorder: RecipeUsageRecorder by lazy { OutboxRecipeUsageRecorder(outboxRepository) }
 

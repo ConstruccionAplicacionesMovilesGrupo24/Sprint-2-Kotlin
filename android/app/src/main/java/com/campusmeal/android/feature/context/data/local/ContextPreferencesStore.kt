@@ -23,16 +23,17 @@ import kotlinx.serialization.SerializationException
 /**
  * The last context an account validated, restored after the process ends.
  *
- * [manualCampus] is set only when the location was a manually chosen campus centre. A device fix is
- * never kept: after a restart that context needs a new location, so only the form is restored.
+ * [campus] is the campus of the location: the one chosen manually, or the one a device fix fell in.
+ * The device coordinates are never kept, so a restored context uses that campus centre. It is null
+ * only when the location was outside every campus; then only the form is restored.
  */
 data class SavedContext(
     val form: ContextForm,
-    val manualCampus: Campus?,
+    val campus: Campus?,
 ) {
     /** The full search context, rebuilt at [requestedAtEpochMillis]; null when the location must be asked again. */
     fun toRequest(requestedAtEpochMillis: Long = System.currentTimeMillis()): RestaurantSearchRequestDto? {
-        val campus = manualCampus ?: return null
+        val campus = campus ?: return null
         val budget = form.maximumBudget.toLongOrNull() ?: return null
         return MealContext(
             location = MealLocation.forCampus(campus),
@@ -45,9 +46,10 @@ data class SavedContext(
 }
 
 /**
- * `context.last.{accountId}`: the meal context of each account (time, budget, diet, delivery and,
- * for a manual campus, its id). **No coordinates are ever stored**: the campus centre is rebuilt from
- * [CampusCatalog]. Personal data: deleted on logout and when another account is activated.
+ * `context.last.{accountId}`: the meal context of each account (time, budget, diet, delivery and the
+ * campus id). It stays until the user sets a new context. **No coordinates are ever stored**: the
+ * campus centre is rebuilt from [CampusCatalog]. Personal data: deleted on logout and when another
+ * account is activated.
  */
 class ContextPreferencesStore(
     private val preferences: DataStore<Preferences>,
@@ -72,14 +74,14 @@ class ContextPreferencesStore(
                 dietaryPreferences = diet,
                 includeDelivery = stored.includeDelivery,
             ),
-            manualCampus = stored.manualCampusId?.let { id -> CampusCatalog.campuses.firstOrNull { it.id == id } },
+            campus = (stored.campusId ?: stored.manualCampusId)?.let { id -> CampusCatalog.campuses.firstOrNull { it.id == id } },
         )
     }
 
     /** Saves [request] for [scope] only while it is active, so a late write never lands in another session. */
     suspend fun write(scope: AccountSessionScope, request: RestaurantSearchRequestDto) {
         val stored = StoredContext(
-            manualCampusId = manualCampusIdOf(request),
+            campusId = CampusCatalog.campuses.firstOrNull { it.id == request.campusId }?.id,
             availableMinutes = request.availableMinutes,
             maximumBudget = request.maximumBudget,
             dietaryPreferences = request.dietaryPreferences.sorted(),
@@ -100,19 +102,12 @@ class ContextPreferencesStore(
         }
     }
 
-    /**
-     * The campus id only when the request used that campus centre exactly (manual selection, see
-     * [MealLocation.forCampus]). A device fix, even one inside a campus zone, returns null.
-     */
-    private fun manualCampusIdOf(request: RestaurantSearchRequestDto): String? {
-        val campus = CampusCatalog.campuses.firstOrNull { it.id == request.campusId } ?: return null
-        val atCentre = request.location.latitude == campus.latitude && request.location.longitude == campus.longitude
-        return campus.id.takeIf { atCentre }
-    }
-
     @Serializable
     private data class StoredContext(
-        val manualCampusId: String?,
+        /** Campus of the location, manual or from a device fix. */
+        val campusId: String? = null,
+        /** Written by the first version, which kept only a manually chosen campus. Read for compatibility. */
+        val manualCampusId: String? = null,
         val availableMinutes: Int,
         val maximumBudget: Long,
         val dietaryPreferences: List<String>,

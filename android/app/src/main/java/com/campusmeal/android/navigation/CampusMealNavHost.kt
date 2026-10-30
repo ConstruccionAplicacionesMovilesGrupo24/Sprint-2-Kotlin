@@ -47,6 +47,7 @@ import com.campusmeal.android.feature.context.data.remote.RestaurantSearchReques
 import com.campusmeal.android.feature.context.data.remote.requestedNow
 import com.campusmeal.android.feature.context.domain.DietaryPreference
 import com.campusmeal.android.feature.decision.data.mapper.toDecisionContext
+import com.campusmeal.android.feature.decision.domain.model.MealOption
 import com.campusmeal.android.feature.decision.presentation.DecisionRoute
 import com.campusmeal.android.feature.decision.presentation.DecisionViewModel
 import com.campusmeal.android.feature.home.HomeRoute
@@ -135,9 +136,9 @@ fun CampusMealNavHost(
 
     /*
      * The last validated context. In memory it may hold a device fix; on disk only its non-precise part
-     * is kept per account (ContextPreferencesStore: time, budget, diet, delivery and a manual campus,
-     * never coordinates). After a restart a manual-campus context is restored in full; one built from
-     * a device fix restores only the form, and the location is asked again.
+     * is kept per account (ContextPreferencesStore: time, budget, diet, delivery and the campus, never
+     * coordinates). After a restart it is restored at that campus centre and stays until the user sets
+     * a new one; only a location outside every campus restores the form alone.
      */
     var currentContext by remember { mutableStateOf<RestaurantSearchRequestDto?>(null) }
     val contextStore = container.contextPreferencesStore
@@ -238,6 +239,7 @@ fun CampusMealNavHost(
                     },
                     onOpenInventory = { openTab(TopLevel.INVENTORY) },
                     onOpenRecipes = { navController.navigate(CampusMealRoute.Recipes) },
+                    onOpenRestaurant = { restaurantId -> navController.navigate(CampusMealRoute.RestaurantDetail(restaurantId)) },
                 )
             }
 
@@ -375,6 +377,14 @@ fun CampusMealNavHost(
                     onSetContext = {
                         decideAfterContext = true
                         navController.navigate(CampusMealRoute.Context)
+                    },
+                    onOpenChoice = { option ->
+                        when (option) {
+                            // BQ3 recipes for the current inventory, diet and time, each with its steps.
+                            is MealOption.Cook -> navController.navigate(CampusMealRoute.Recipes)
+                            is MealOption.Walk -> navController.navigate(CampusMealRoute.RestaurantDetail(option.restaurant.id))
+                            is MealOption.Order -> navController.navigate(CampusMealRoute.RestaurantDetail(option.restaurant.id))
+                        }
                     },
                 )
             }
