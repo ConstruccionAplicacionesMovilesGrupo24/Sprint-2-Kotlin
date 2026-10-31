@@ -47,4 +47,9 @@ sealed interface CampusMealRoute {
     /** BQ6 feature-adoption report, ANALYST accounts only (the backend enforces it). */
     @Serializable
     data object AnalystReport : CampusMealRoute
+    
+    /** BQ9 zone-demand report, ANALYST accounts only. */
+    @Serializable
+    data object ZoneDemandReport : CampusMealRoute
+    
 }

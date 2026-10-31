@@ -15,10 +15,13 @@ import com.campusmeal.android.feature.restaurants.domain.RestaurantSearchResult
 import com.campusmeal.android.feature.restaurants.domain.RouteEstimateSnapshot
 import com.campusmeal.android.feature.restaurants.domain.ResultSource
 import com.campusmeal.android.feature.restaurants.domain.RouteProviderStatus
+import com.campusmeal.android.core.outbox.OutboxRepository
+import com.campusmeal.android.core.outbox.UsageFeature
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
 
 sealed interface RestaurantResultsUiState {
 
@@ -63,6 +66,7 @@ class RestaurantResultsViewModel(
     private val repository: RestaurantRepository,
     private val coordinator: AccountSessionCoordinator,
     private val scope: AccountSessionScope,
+    private val outboxRepository: OutboxRepository,
 ) : ViewModel() {
 
     private val _uiState =
@@ -77,6 +81,8 @@ class RestaurantResultsViewModel(
 
     /** The request whose results are on screen; null while none are. */
     private var shownRequest: RestaurantSearchRequestDto? = null
+    
+    private var loadJob: Job? = null
 
     /**
      * The estimate [restaurantId] has in the results currently shown, for the detail screen. Null when
@@ -108,29 +114,46 @@ class RestaurantResultsViewModel(
     fun search(
         request: RestaurantSearchRequestDto,
     ) {
-        // Coming back from a detail recomposes the route with the same request: keep its results and
-        // their time. A new search always has a new `requestedAt`, and retry() re-runs explicitly.
         if (request == lastRequest) return
+
         lastRequest = request
+
+        viewModelScope.launch {
+            outboxRepository.enqueueUsage(
+                scope = scope,
+                feature = UsageFeature.RESTAURANT_SEARCH,
+                zoneId = request.campusId.toAnalyticsZone(),
+                foodCategory = request.foodCategory,
+                budgetBand = request.maximumBudget.toBudgetBand(),
+            )
+        }
+
         load(request)
     }
 
     fun retry() {
         val request = lastRequest ?: return
-        load(request)
+        load(request, forceRefresh = true)
     }
 
     private fun load(
         request: RestaurantSearchRequestDto,
+        forceRefresh: Boolean = false,
     ) {
-        viewModelScope.launch {
+        loadJob?.cancel()
+
+        loadJob = viewModelScope.launch {
 
             _uiState.value =
                 RestaurantResultsUiState.Loading
             shownRequest = null
 
             val result =
-                repository.search(scope, request)
+                repository.search(
+                    scope = scope,
+                    request = request,
+                    forceRefresh = forceRefresh,
+                )
 
             if (!coordinator.isCurrent(scope)) return@launch
             // A newer search replaced this one: its late answer must not be shown (or handed to detail).
@@ -202,6 +225,7 @@ class RestaurantResultsViewModel(
         fun factory(
             container: AppContainer,
             scope: AccountSessionScope,
+            
         ): ViewModelProvider.Factory =
             viewModelFactory {
 
@@ -212,8 +236,24 @@ class RestaurantResultsViewModel(
                         coordinator =
                             container.sessionCoordinator,
                         scope = scope,
+                        outboxRepository = container.outboxRepository,
                     )
                 }
             }
     }
-}
+}    
+
+internal fun String?.toAnalyticsZone(): String =
+    when (this) {
+        "campus-001" -> "bogota-centro"
+        "campus-002" -> "bogota-chapinero"
+        "campus-003" -> "bogota-teusaquillo"
+        else -> "unknown"
+    }
+
+internal fun Long.toBudgetBand(): String =
+    when {
+        this <= 15_000L -> "LOW"
+        this <= 25_000L -> "MEDIUM"
+        else -> "HIGH"
+    }

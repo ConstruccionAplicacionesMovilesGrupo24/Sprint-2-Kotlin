@@ -32,11 +32,11 @@ interface UsageEventsApi {
 @Serializable
 data class UsageEventDto(
     val clientEventId: String,
-    /** `SESSION_STARTED` or `FEATURE_USED`. */
     val eventType: String,
-    /** Required for `FEATURE_USED`, omitted (null) for `SESSION_STARTED`. */
     val feature: String?,
     val platform: String,
-    /** ISO-8601 UTC instant ending in `Z`. */
     val occurredAt: String,
+    val zoneId: String? = null,
+    val foodCategory: String? = null,
+    val budgetBand: String? = null,
 )

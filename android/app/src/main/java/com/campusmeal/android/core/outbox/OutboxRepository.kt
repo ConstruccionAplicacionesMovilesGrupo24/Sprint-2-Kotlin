@@ -93,8 +93,11 @@ class OutboxRepository(
         feature: UsageFeature,
         clientEventId: String = UUID.randomUUID().toString(),
         occurredAtEpochMillis: Long = clock(),
+        zoneId: String? = null,
+        foodCategory: String? = null,
+        budgetBand: String? = null,
     ): OutboxAdmission =
-        admit(scope, OutboxKind.USAGE, null, clientEventId, occurredAtEpochMillis, usagePayload(clientEventId, FEATURE_USED, feature.name, occurredAtEpochMillis))
+        admit(scope, OutboxKind.USAGE, null, clientEventId, occurredAtEpochMillis, usagePayload(clientEventId, FEATURE_USED, feature.name, occurredAtEpochMillis, zoneId, foodCategory, budgetBand))
 
     /** `PENDING`, `SENDING`, `SENT`, `FAILED`, or null when the event does not exist. */
     fun observeStatus(clientEventId: String): Flow<String?> = dao.observeStatus(clientEventId)
@@ -200,7 +203,15 @@ class OutboxRepository(
         lastError = null,
     )
 
-    private fun usagePayload(clientEventId: String, eventType: String, feature: String?, occurredAtEpochMillis: Long): String =
+    private fun usagePayload(
+        clientEventId: String,
+        eventType: String,
+        feature: String?,
+        occurredAtEpochMillis: Long,
+        zoneId: String? = null,
+        foodCategory: String? = null,
+        budgetBand: String? = null,
+    ): String =
         json.encodeToString(
             UsageEventDto(
                 clientEventId = clientEventId,
@@ -208,6 +219,9 @@ class OutboxRepository(
                 feature = feature,
                 platform = PLATFORM,
                 occurredAt = isoUtc(occurredAtEpochMillis),
+                zoneId = zoneId,
+                foodCategory = foodCategory,
+                budgetBand = budgetBand,
             ),
         )
 

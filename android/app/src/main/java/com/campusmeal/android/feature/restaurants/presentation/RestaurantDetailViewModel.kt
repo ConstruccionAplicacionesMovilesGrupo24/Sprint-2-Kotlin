@@ -15,6 +15,9 @@ import com.campusmeal.android.feature.restaurants.domain.RestaurantDetail
 import com.campusmeal.android.feature.restaurants.domain.RestaurantDetailResult
 import com.campusmeal.android.feature.restaurants.domain.ResultSource
 import com.campusmeal.android.feature.restaurants.domain.RouteEstimateSnapshot
+import com.campusmeal.android.core.outbox.OutboxRepository
+import com.campusmeal.android.core.outbox.UsageFeature
+import com.campusmeal.android.feature.context.data.remote.RestaurantSearchRequestDto
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -60,6 +63,8 @@ class RestaurantDetailViewModel(
     private val restaurantId: String,
     private val routeEstimate: RouteEstimateSnapshot?,
     private val cachePolicy: CachePolicy,
+    private val request: RestaurantSearchRequestDto?,
+    private val outboxRepository: OutboxRepository,
 ) : ViewModel() {
 
     private var loadJob: Job? = null
@@ -73,14 +78,29 @@ class RestaurantDetailViewModel(
         _uiState.asStateFlow()
 
     init {
+        recordDetailOpening()
         load()
     }
 
     fun retry() {
-        load()
+        load(forceRefresh = true)
     }
 
-    private fun load() {
+    private fun recordDetailOpening() {
+        viewModelScope.launch {
+            outboxRepository.enqueueUsage(
+                scope = scope,
+                feature = UsageFeature.RESTAURANT_DETAIL,
+                zoneId = request?.campusId.toAnalyticsZone(),
+                foodCategory = request?.foodCategory,
+                budgetBand = request?.maximumBudget?.toBudgetBand(),
+            )
+            }
+        }
+
+    private fun load(
+            forceRefresh: Boolean = false,
+    ) {
         // A retry replaces the previous request; its late answer is dropped.
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
@@ -92,6 +112,7 @@ class RestaurantDetailViewModel(
                 repository.getRestaurant(
                     scope,
                     restaurantId,
+                    forceRefresh = forceRefresh,
                 )
 
             if (!coordinator.isCurrent(scope)) return@launch
@@ -139,6 +160,7 @@ class RestaurantDetailViewModel(
             scope: AccountSessionScope,
             restaurantId: String,
             routeEstimate: RouteEstimateSnapshot?,
+            request: RestaurantSearchRequestDto?,
         ): ViewModelProvider.Factory =
             viewModelFactory {
 
@@ -153,6 +175,8 @@ class RestaurantDetailViewModel(
                             restaurantId,
                         routeEstimate = routeEstimate,
                         cachePolicy = container.cachePolicy,
+                        request = request,
+                        outboxRepository = container.outboxRepository,
                     )
                 }
             }

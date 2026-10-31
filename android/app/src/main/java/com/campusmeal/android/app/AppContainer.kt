@@ -59,6 +59,8 @@ import com.campusmeal.android.feature.recipes.data.repository.OfflineFirstRecipe
 import com.campusmeal.android.feature.recipes.data.usage.OutboxRecipeUsageRecorder
 import com.campusmeal.android.feature.recipes.domain.RecipeRepository
 import com.campusmeal.android.feature.recipes.domain.RecipeUsageRecorder
+import com.campusmeal.android.feature.analytics.data.ZoneDemandApi
+import com.campusmeal.android.feature.analytics.data.ZoneDemandRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -93,6 +95,9 @@ interface AppContainer {
     val inventoryRepository: InventoryRepository
     val mealDecisionRepository: MealDecisionRepository
     val compareMealOptions: CompareMealOptionsUseCase
+    
+    /** S3-08: BQ9 zone-demand report for ANALYST accounts. */
+    val zoneDemandRepository: ZoneDemandRepository
 
     /** S3-09: durable delivery of BQ8 and BQ6 events (Room + WorkManager). */
     val outboxRepository: OutboxRepository
@@ -181,6 +186,7 @@ class DefaultAppContainer(context: Context) : AppContainer {
                             recentDecisionStore,
                             mealPlanStore,
                             featureAdoptionRepository,
+                            zoneDemandRepository,
                         ),
                     ),
                     AccountWorkCanceller(appContext),
@@ -250,6 +256,17 @@ class DefaultAppContainer(context: Context) : AppContainer {
             cachePolicy = cachePolicy,
         )
     }
+    
+    override val zoneDemandRepository: ZoneDemandRepository by lazy {
+    ZoneDemandRepository(
+        api = retrofit.create(ZoneDemandApi::class.java),
+        authorizationHeaderProvider = authorizationHeaderProvider,
+        coordinator = sessionCoordinator,
+        database = database,
+        preferences = preferences,
+        cachePolicy = cachePolicy,
+    )
+}
 
     override val compareMealOptions: CompareMealOptionsUseCase by lazy {
         CompareMealOptionsUseCase(mealDecisionRepository)
@@ -277,6 +294,8 @@ class DefaultAppContainer(context: Context) : AppContainer {
             authorizationHeaderProvider = authorizationHeaderProvider,
             preferences = preferences,
             coordinator = sessionCoordinator,
+            database = database,
+            cachePolicy = cachePolicy,
         )
     }
 

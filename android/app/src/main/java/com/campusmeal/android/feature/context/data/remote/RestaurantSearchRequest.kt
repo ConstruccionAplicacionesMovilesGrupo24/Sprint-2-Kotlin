@@ -16,6 +16,7 @@ data class RestaurantSearchRequestDto(
     val dietaryPreferences: List<String>,
     val includeDelivery: Boolean,
     val requestedAt: String,
+    val foodCategory: String? = null,
 )
 
 @Serializable
