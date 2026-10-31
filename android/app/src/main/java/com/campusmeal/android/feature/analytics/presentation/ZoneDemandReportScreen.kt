@@ -296,6 +296,92 @@ private fun ZoneDemandContent(
                 )
             }
         }
+        if (zone != null) {
+    Text(
+        "Categories",
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.Bold,
+    )
+
+    zone.categories
+        .sortedByDescending { it.selections ?: -1 }
+        .forEach { category ->
+            MetricRow(
+                label = category.category,
+                value = category.selections,
+            )
+        }
+
+    Text(
+        "Searched budget ranges",
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.Bold,
+    )
+
+    zone.searchedBudgetRanges.forEach { range ->
+        MetricRow(
+            label = range.range,
+            value = range.searches,
+        )
+    }
+
+    Text(
+        "Interaction price ranges",
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.Bold,
+    )
+
+    zone.interactionPriceRanges.forEach { range ->
+        Column {
+            Text(
+                range.range,
+                fontWeight = FontWeight.Bold,
+            )
+
+            MetricRow(
+                label = "Detail openings",
+                value = range.detailOpenings,
+            )
+
+            MetricRow(
+                label = "Selections",
+                value = range.selections,
+            )
+        }
+    }
+
+    Text(
+        "Demand by hour",
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.Bold,
+    )
+
+    zone.hours
+        .sortedBy { it.hour }
+        .forEach { hour ->
+            Column {
+                Text(
+                    String.format("%02d:00", hour.hour),
+                    fontWeight = FontWeight.Bold,
+                )
+
+                MetricRow(
+                    label = "Searches",
+                    value = hour.searches,
+                )
+
+                MetricRow(
+                    label = "Detail openings",
+                    value = hour.detailOpenings,
+                )
+
+                MetricRow(
+                    label = "Selections",
+                    value = hour.selections,
+                )
+            }
+        }
+}
 
         OutlinedButton(
             onClick = onRefresh,
