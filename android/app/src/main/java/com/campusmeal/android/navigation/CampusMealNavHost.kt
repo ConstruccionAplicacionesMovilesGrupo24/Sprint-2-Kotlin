@@ -65,6 +65,8 @@ import com.campusmeal.android.feature.restaurants.presentation.RestaurantDetailV
 import com.campusmeal.android.feature.restaurants.presentation.RestaurantResultsRoute
 import com.campusmeal.android.feature.restaurants.presentation.RestaurantResultsViewModel
 import com.campusmeal.android.feature.restaurants.presentation.SelectedRoute
+import com.campusmeal.android.feature.analytics.presentation.ZoneDemandReportRoute
+import com.campusmeal.android.feature.analytics.presentation.ZoneDemandReportViewModel
 
 /**
  * Signed-out graph.
@@ -401,6 +403,7 @@ fun CampusMealNavHost(
                     online = online,
                     onChangeContext = { navController.navigate(CampusMealRoute.Context) },
                     onOpenAnalystReport = { navController.navigate(CampusMealRoute.AnalystReport) },
+                    onOpenZoneDemandReport = { navController.navigate(CampusMealRoute.ZoneDemandReport)},
                     onLogout = onLogout,
                 )
             }
@@ -410,6 +413,21 @@ fun CampusMealNavHost(
                     viewModel = viewModel(factory = AnalystReportViewModel.factory(container, sessionScope)),
                     online = online,
                     onBack = { navController.popBackStack() },
+                )
+            }
+            composable<CampusMealRoute.ZoneDemandReport> {
+                ZoneDemandReportRoute(
+                    viewModel = viewModel(
+                        factory =
+                            ZoneDemandReportViewModel.factory(
+                                container,
+                                sessionScope,
+                            ),
+                    ),
+                    online = online,
+                    onBack = {
+                        navController.popBackStack()
+                    },
                 )
             }
         }
