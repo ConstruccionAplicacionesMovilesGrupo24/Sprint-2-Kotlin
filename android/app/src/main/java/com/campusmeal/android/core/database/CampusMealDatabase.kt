@@ -26,6 +26,8 @@ import com.campusmeal.android.feature.recipes.data.local.RecipeCatalogRecipeEnti
 import com.campusmeal.android.feature.restaurants.data.RestaurantCacheDao
 import com.campusmeal.android.feature.restaurants.data.RestaurantDetailCacheEntity
 import com.campusmeal.android.feature.restaurants.data.RestaurantSearchCacheEntity
+import com.campusmeal.android.feature.analytics.data.ZoneDemandReportDao
+import com.campusmeal.android.feature.analytics.data.ZoneDemandReportEntity
 
 /**
  * Local cache database. It holds no seed data; feature entities are added with their features.
@@ -48,8 +50,9 @@ import com.campusmeal.android.feature.restaurants.data.RestaurantSearchCacheEnti
         FeatureAdoptionReportEntity::class,
         RestaurantSearchCacheEntity::class,
         RestaurantDetailCacheEntity::class,
+        ZoneDemandReportEntity::class,
     ],
-    version = 8,
+    version = 9,
     exportSchema = true,
 )
 abstract class CampusMealDatabase : RoomDatabase() {
@@ -75,6 +78,8 @@ abstract class CampusMealDatabase : RoomDatabase() {
     abstract fun featureAdoptionReportDao(): FeatureAdoptionReportDao
 
     abstract fun restaurantCacheDao(): RestaurantCacheDao
+    
+    abstract fun zoneDemandReportDao(): ZoneDemandReportDao
 
     companion object {
         const val NAME = "campusmeal.db"
