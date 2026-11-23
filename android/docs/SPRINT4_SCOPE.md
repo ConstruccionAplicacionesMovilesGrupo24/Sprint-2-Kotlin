@@ -19,6 +19,8 @@ fields that need a physical phone are left empty on purpose: nothing below is a 
 | Room schema | v9, schemas 1–9 exported, migrations `MIGRATION_1_2` … `MIGRATION_8_9`, no destructive fallback | `CampusMealDatabase.kt`, `DatabaseMigrations.kt`, `app/schemas/` |
 | Latest backend migration | `1790700000000-AddBq9DemandContext.ts` | `src/database/migrations/` |
 | Backend roles | `USER`, `ANALYST` | `src/users/enums/user-role.enum.ts` |
+| Backend under test | `https://campusmeal-api.onrender.com/api/v1/` (Render + Neon) for debug and release builds; no local or tunnelled backend is used for Sprint 4 evidence | `GET /health` → 200, `database: up` (2026-11-23 19:46 UTC, ~42 s cold start) |
+| Deployed backend revision | Not verifiable from the API (no version endpoint); confirm the deployed commit in the Render dashboard before recording evidence | — |
 
 ### 1.1 Build results (2026-11-23, Windows 11, JDK Temurin 21.0.8)
 
@@ -28,7 +30,8 @@ fields that need a physical phone are left empty on purpose: nothing below is a 
 | Backend, baseline | `npm run build` and `npm run lint` | Success, no lint errors |
 
 Not executed yet (owner: Juan Pablo, before closing S4-01): the inherited flows on a physical phone against
-the deployed backend (§2.2). The release build was not produced in S4-01: it needs the signing settings and
+the Render + Neon backend (§2.2). Render's cold-start wake-up is recorded separately and never attributed to
+app behavior. The release build was not produced in S4-01: it needs the signing settings and
 belongs to S4-14.
 
 ## 2. Inherited Sprint 2/3 inventory
