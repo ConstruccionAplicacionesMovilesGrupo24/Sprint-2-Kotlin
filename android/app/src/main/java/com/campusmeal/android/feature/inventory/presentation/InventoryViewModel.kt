@@ -1,5 +1,6 @@
 package com.campusmeal.android.feature.inventory.presentation
 
+import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -7,10 +8,14 @@ import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.campusmeal.android.BuildConfig
 import com.campusmeal.android.app.AppContainer
 import com.campusmeal.android.core.common.BogotaCalendar
 import com.campusmeal.android.core.common.CachePolicy
 import com.campusmeal.android.core.common.Freshness
+import com.campusmeal.android.core.outbox.OutboxAdmission
+import com.campusmeal.android.core.outbox.OutboxRepository
+import com.campusmeal.android.core.outbox.UsageFeature
 import com.campusmeal.android.core.session.AccountSessionCoordinator
 import com.campusmeal.android.core.session.AccountSessionScope
 import com.campusmeal.android.feature.inventory.domain.model.CompleteInventorySnapshot
@@ -23,7 +28,9 @@ import com.campusmeal.android.feature.inventory.domain.model.MutationOutcome
 import com.campusmeal.android.feature.inventory.domain.model.PendingConsume
 import com.campusmeal.android.feature.inventory.domain.model.SubmitOutcome
 import com.campusmeal.android.feature.inventory.domain.repository.InventoryRepository
+import java.util.UUID
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -35,6 +42,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /** Why the last refresh did not update the snapshot. The stored snapshot, if any, is still shown. */
 sealed interface RefreshProblem {
@@ -108,9 +116,13 @@ data class InventoryUiState(
  *
  * The screen renders Room immediately and refreshes in the background when the snapshot is missing,
  * stale, invalidated or from another Bogotá date. Writes only happen on an explicit Save or Consume.
+ *
+ * BQ6 (S4-01): one `FEATURE_USED { feature: INVENTORY }` per visit, admitted to the durable outbox
+ * when a synchronized snapshot (possibly empty) is on screen. See [onMainContentShown].
  */
 class InventoryViewModel(
     private val repository: InventoryRepository,
+    private val outbox: OutboxRepository,
     private val coordinator: AccountSessionCoordinator,
     private val scope: AccountSessionScope,
     private val cachePolicy: CachePolicy,
@@ -135,6 +147,12 @@ class InventoryViewModel(
 
     private var refreshJob: Job? = null
     private var draftSaveJob: Job? = null
+
+    /**
+     * One id per visit (this back-stack entry), kept across configuration changes, tab switches that
+     * restore the entry, and process recreation. It is the usage event's `clientEventId`.
+     */
+    private val visitId: String = savedState[VISIT_ID] ?: UUID.randomUUID().toString().also { savedState[VISIT_ID] = it }
 
     private val local = combine(
         repository.observeCompleteInventory(scope),
@@ -169,6 +187,32 @@ class InventoryViewModel(
 
     fun setOnline(online: Boolean) {
         this.online = online
+    }
+
+    /**
+     * The inventory's main content is on screen: a synchronized snapshot, including a synchronized
+     * empty inventory. "Never synchronized on this device" is not a use of the feature and is not
+     * recorded. Offline use with a stored snapshot counts (Sprint 3 contract for `FEATURE_USED`).
+     *
+     * Offered to the outbox once per visit; recomposition, refreshes, drafts, consumes, the Bogotá
+     * midnight re-check and returning from Recipes never repeat it. Because [visitId] is the
+     * `clientEventId`, a second admission of the same visit (process recreation) still stores one row.
+     */
+    fun onMainContentShown() {
+        if (savedState.get<Boolean>(USAGE_OFFERED) == true) return
+        savedState[USAGE_OFFERED] = true
+        val occurredAt = currentTimeMillis()
+        viewModelScope.launch {
+            // A short local Room write: leaving the screen right away must not lose a visit that was shown.
+            val admission = withContext(NonCancellable) {
+                outbox.enqueueUsage(scope, UsageFeature.INVENTORY, clientEventId = visitId, occurredAtEpochMillis = occurredAt)
+            }
+            when (admission) {
+                OutboxAdmission.Admitted -> if (BuildConfig.DEBUG) Log.d(USAGE_LOG_TAG, "FEATURE_USED(INVENTORY) admitted to the outbox")
+                // Never retried or presented as recorded: the outbox's own policy decided (session ended, full).
+                is OutboxAdmission.Rejected -> Log.i(USAGE_LOG_TAG, "FEATURE_USED(INVENTORY) not admitted: ${admission.reason}")
+            }
+        }
     }
 
     /** Connectivity returned while the screen is visible: retry a failed or due refresh once. */
@@ -488,12 +532,16 @@ class InventoryViewModel(
         private const val MIDNIGHT_MARGIN_MILLIS = 1_000L
         private const val EDITOR_DRAFT_ID = "inventory.editor.draftId"
         private const val EDITOR_TARGET_ID = "inventory.editor.targetItemId"
+        private const val VISIT_ID = "inventory.visitId"
+        private const val USAGE_OFFERED = "inventory.usageOffered"
+        private const val USAGE_LOG_TAG = "CampusMealUsage"
         private val EMPTY_FIELDS = DraftFields(name = "", quantityText = "", unit = "", expirationDateText = "")
 
         fun factory(container: AppContainer, scope: AccountSessionScope): ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 InventoryViewModel(
                     repository = container.inventoryRepository,
+                    outbox = container.outboxRepository,
                     coordinator = container.sessionCoordinator,
                     scope = scope,
                     cachePolicy = container.cachePolicy,

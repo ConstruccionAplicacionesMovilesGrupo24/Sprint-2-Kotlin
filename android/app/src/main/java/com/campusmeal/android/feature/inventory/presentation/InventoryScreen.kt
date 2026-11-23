@@ -95,6 +95,9 @@ fun InventoryRoute(
         onStopOrDispose { }
     }
     ReconnectEffect(online, viewModel::onReconnected)
+    // BQ6: a synchronized snapshot (even an empty one) is the main content; "never synced" is not.
+    val mainContentShown = state.loaded && state.snapshot != null
+    LaunchedEffect(mainContentShown) { if (mainContentShown) viewModel.onMainContentShown() }
 
     InventoryScreen(
         state = state,
