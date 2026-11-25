@@ -23,7 +23,15 @@ Cost: recipes × ingredients × usable rows set lookups. For the stress dataset 
 70 % of 500 rows usable) that is roughly half a million row checks per evaluation. Sprint 3 work (evaluation on `Dispatchers.Default`, cooperative
 cancellation, 5-result memo) is unchanged and is not counted as part of this optimization.
 
-## 2. Change (one dedicated commit, `RecipeEvaluator.kt` only)
+## 2. Change ([`97eed47`](https://github.com/ConstruccionAplicacionesMovilesGrupo24/Sprint-2-Kotlin/commit/97eed472ff0df37bfeedd5ae266a14eede6af20c))
+
+Source links: [before](https://github.com/ConstruccionAplicacionesMovilesGrupo24/Sprint-2-Kotlin/blob/df0a40e/android/app/src/main/java/com/campusmeal/android/feature/recipes/domain/RecipeEvaluator.kt)
+· [after](https://github.com/ConstruccionAplicacionesMovilesGrupo24/Sprint-2-Kotlin/blob/97eed472ff0df37bfeedd5ae266a14eede6af20c/android/app/src/main/java/com/campusmeal/android/feature/recipes/domain/RecipeEvaluator.kt)
+· [diff](https://github.com/ConstruccionAplicacionesMovilesGrupo24/Sprint-2-Kotlin/compare/df0a40e...97eed47).
+
+The only change to the app or its build between the two measured variants is `RecipeEvaluator.kt`
+(`git diff --stat df0a40e 97eed47 -- android/app android/gradle` lists that file alone). The same commit also adds this
+document, the evidence folder and `scripts/profiling/{sections,summary}.js`, which are not part of the APK.
 
 A `UsableIndex` is built once per `evaluateBq3` call: usable-row positions grouped by normalized name. Each
 ingredient resolves its `matchingKeys` through the map instead of scanning every row.
@@ -73,7 +81,7 @@ Same phone, APK build type, account, datasets, date and workload; only the optim
 
 | | Before | After |
 |---|---|---|
-| Git | `df0a40e` | `df0a40e` + optimization commit |
+| Git | `df0a40e` | `97eed47` |
 | APK SHA-256 | `153cf5c5…a3ae3d6` | `4d972484…1e6fc50c` |
 | Phone | Samsung SM-S948U1, Android 17, API 37 | same |
 | Conditions | `compile -m speed`, 3 warmup runs, airplane mode, warm Recipes visit, charging over USB | same |
@@ -129,7 +137,7 @@ node scripts/profiling/sections.js run-*.perfetto-trace > sections.csv && node s
 
 ## 7. Acceptance (S4-05)
 
-- [ ] Dedicated optimization commit and exact before/after source links (commit pending; before = `df0a40e`).
+- [x] Dedicated optimization change and exact before/after source links (§2: `df0a40e` → `97eed47`; the evaluator is the only app change, the commit also carries docs and evidence).
 - [x] Equivalent outputs, preserved cancellation/session behavior and no regression on representative data (§3, §4.2).
 - [x] Original profiler captures, raw timings, median/range and improvement calculation published (§4, evidence folder).
 - [x] Measured benefit exceeding observed run variation (stress, §4.1).

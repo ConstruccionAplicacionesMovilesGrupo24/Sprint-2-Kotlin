@@ -5,7 +5,7 @@ Filled in from `SPRINT4_PROFILING_PROTOCOL.md` §4. Raw values: `representative/
 
 | Field | Value |
 |---|---|
-| Issue / variant / Git SHA | S4-05 / **after** / `df0a40e` + the dedicated optimization commit (only `RecipeEvaluator.kt`; record its SHA here when committed) |
+| Issue / variant / Git SHA | S4-05 / **after** / `97eed472ff0df37bfeedd5ae266a14eede6af20c`. Between `df0a40e` and it, the only change under `android/app` and the Gradle files is `RecipeEvaluator.kt` (`git diff --stat df0a40e 97eed47 -- android/app android/gradle`); the commit also adds this evidence, the docs and the profiling scripts, none of which is in the APK |
 | Phone, Android version, API level | Samsung SM-S948U1, Android 17, API 37 (same phone as "before") |
 | APK version and SHA-256 | `0.4.0-profile`, `4d9724840631304d20e9dbed8e47e8c8f9aca1bc793534d76f719e5f1e6fc50c`; installed over the "before" APK, data kept |
 | Compilation mode, warmup runs, measured runs | `cmd package compile -m speed -f` after install. 3 discarded warmup runs per dataset. Representative: 10 measured runs (same count as "before"). Stress: 5 measured runs (8.8 % spread) |
