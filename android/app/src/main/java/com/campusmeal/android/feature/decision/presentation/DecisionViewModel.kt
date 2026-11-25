@@ -130,7 +130,6 @@ class DecisionViewModel(
         lastContext?.let(::compare)
     }
 
-    // Comparación cancelable: cancela el Job anterior y sube un número de request.
     private fun launchComparison(context: DecisionContext, allowRestore: Boolean) {
         lastContext = context
         _selection.value = SelectionState()
@@ -139,12 +138,11 @@ class DecisionViewModel(
         compareJob?.cancel()
         val request = ++compareRequest
         val loadId = loadTimer.start()
-        // Corrutina en viewModelScope = Dispatchers.Main.immediate. Retrofit y Room (suspend) hacen su trabajo en sus propios hilos: Main no se bloquea.
         compareJob = viewModelScope.launch {
             _uiState.value = DecisionUiState.Loading
             if (allowRestore && restoreRecent(context, request, loadId)) return@launch
             val result = compareMealOptions(scope, context)
-            // Cancelación cooperativa: una respuesta que ya llegó no se frena con cancel(); el número de request la descarta.
+            // Cancellation is cooperative: also drop an answer that is no longer the latest request.
             if (request != compareRequest || !coordinator.isCurrent(scope)) {
                 loadTimer.discard(loadId)
                 return@launch
@@ -157,7 +155,7 @@ class DecisionViewModel(
             val comparedAt = if (shown != null) currentTimeMillis() else null
             finishLoad(loadId, result)
             _uiState.value = DecisionUiState.Loaded(result, comparedAt, loadId)
-            //Captura de uso para BQ6: una comparación explícita = un uso de MEAL_COMPARISON.
+            // BQ6: one use per explicit comparison request (a recomposition never reaches here).
             outbox.enqueueUsage(scope, UsageFeature.MEAL_COMPARISON)
             if (shown != null && comparedAt != null) {
                 RecentDecisionStore.contextKey(context)?.let { key ->
