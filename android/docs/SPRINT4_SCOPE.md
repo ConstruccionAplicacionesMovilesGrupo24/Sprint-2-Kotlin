@@ -92,18 +92,26 @@ on the device (`OnConflictStrategy.IGNORE`) and once on the server (`ON CONFLICT
 DO NOTHING`). The backend already accepts `feature = INVENTORY` (`usage-feature.enum.ts`). No Room or backend
 migration is needed.
 
-### 3.3 Device checks (pending)
+### 3.3 Device checks
+
+Executed on 2026-11-25 (times UTC) on a Samsung SM-S948U1, Android 17 (API 37), with the `profile` build of `main`
+`c141c3c` (APK SHA-256 `65157ad62a6cf2bed2f64aca434a58d9ac95ee13342cbdb2942777874449ec01`, application id
+`com.campusmeal.android.profile`, release-derived and not debuggable). Accounts: the analyst (50 inventory items) and a
+fresh test account `s4-evidence-4d88ca@campusmeal.local` (empty inventory). Device side: screens and the S4-10
+synchronization center. Server side: one read-only query of `usage_events` (feature `INVENTORY`, `occurred_at ≥ 18:30Z`)
+approved by the owner; it returned exactly the 6 rows below and nothing else.
+
 
 | Scenario | Expected | Device / Android / APK | Observed | Status |
 |---|---|---|---|---|
-| Open Inventory online with items | One `FEATURE_USED(INVENTORY) admitted` log; one row on the server | | | Pending |
-| Rotate, refresh, open Recipes and return, switch to Decide and back | No second admission | | | Pending |
-| Home → Inventory → Home → Inventory | Two events (two visits) | | | Pending |
-| Airplane mode with a stored snapshot, open Inventory, kill the process, restore network | Event stays `PENDING`, delivered once after reopening | | | Pending |
-| Fresh install offline (no snapshot) | No event; "not synced" state | | | Pending |
-| Synchronized empty inventory | One event | | | Pending |
-| Pending event, logout, login as another account | Event sent only after the original account signs in again | | | Pending |
-| BQ6 report for the month | `INVENTORY` use counts include the new events | | | Pending |
+| Open Inventory online with items | One `FEATURE_USED(INVENTORY) admitted` log; one row on the server | SM-S948U1 / 17 (API 37) / `0.4.0-profile` from `c141c3c`, `65157ad6…` | Inventory "Updated 13:36"; server: one row occurred 18:36:33Z, received 18:36:34Z (the profile build has no debug log; the row is the proof) | Done |
+| Rotate, refresh, open Recipes and return, switch to Decide and back | No second admission | SM-S948U1 / 17 (API 37) / `0.4.0-profile` from `c141c3c`, `65157ad6…` | 18:36:40–18:37:17Z: no INVENTORY row on the server | Done |
+| Home → Inventory → Home → Inventory | Two events (two visits) | SM-S948U1 / 17 (API 37) / `0.4.0-profile` from `c141c3c`, `65157ad6…` | Two rows: 18:37:36Z and 18:37:48Z | Done |
+| Airplane mode with a stored snapshot, open Inventory, kill the process, restore network | Event stays `PENDING`, delivered once after reopening | SM-S948U1 / 17 (API 37) / `0.4.0-profile` from `c141c3c`, `65157ad6…` | After reopening offline: sync center "3 waiting"; airplane off at 18:38:33Z → "0 waiting"; one row occurred 18:38:03Z, **received 18:38:33Z** | Done |
+| Fresh install offline (no snapshot) | No event; "not synced" state | SM-S948U1 / 17 (API 37) / `0.4.0-profile` from `c141c3c`, `65157ad6…` | App data cleared, test account signed in, airplane on: "Not synced on this device yet · You're offline"; "0 waiting"; no row for the test account 18:43:06–18:43:42Z | Done |
+| Synchronized empty inventory | One event | SM-S948U1 / 17 (API 37) / `0.4.0-profile` from `c141c3c`, `65157ad6…` | "Your inventory is empty"; one row for the test account, occurred and received 18:43:46Z | Done |
+| Pending event, logout, login as another account | Event sent only after the original account signs in again | SM-S948U1 / 17 (API 37) / `0.4.0-profile` from `c141c3c`, `65157ad6…` | Analyst offline → "1 waiting" (occurred 18:39:37Z), logout; test account signed in 18:40:32–~18:41:30Z: not received; analyst signed in again → **received 18:41:38Z** | Done |
+| BQ6 report for the month | `INVENTORY` use counts include the new events | API as analyst, `month=2026-11` | `INVENTORY`: 4 of 5 monthly active users with fewer than 2 uses; the analyst (5 INVENTORY events) is no longer among them, the test account (1) is | Done |
 
 ## 4. Business questions (original wording, unchanged)
 
@@ -340,7 +348,7 @@ commits.
 - [x] Baseline SHAs and build results recorded (§1).
 - [x] Inherited feature inventory and outstanding checks recorded, each with an owner and a resolution (§2).
 - [x] Inventory usage event implemented, once per visit, through the durable outbox (§3).
-- [ ] Inventory usage event verified on a physical phone, online, offline and across restart (§3.3).
+- [x] Inventory usage event verified on a physical phone, online, offline and across restart (§3.3).
 - [x] Original BQ text, types and owners recorded (§4).
 - [x] Additive API contracts, outbox kinds, retention, bounds and migration order proposed (§5–§9).
 - [ ] Contracts approved by the reviewer (Natalia) and acknowledged by Daniel for §5.3, §6 and §7.

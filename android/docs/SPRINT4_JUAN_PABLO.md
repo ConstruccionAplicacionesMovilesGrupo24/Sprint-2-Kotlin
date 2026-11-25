@@ -122,24 +122,27 @@ demo ANALYST (Green Bowl) dated 2026-11-25, plus the rejected attempt that store
 Not executed: the 403 path in the UI (USER accounts do not see the entry; covered by the same logic as BQ9 and
 by S4-03 check 14) and a forced lost acknowledgement (covered by backend idempotency, S4-03 check 11).
 
-## 5. Physical-device evidence (pending, owner: Juan Pablo)
+## 5. Physical-device evidence
 
-Same APK on a phone, against Render + Neon. Fill device, Android version, APK SHA-256 and observation.
+2026-11-25 (UTC times), Samsung SM-S948U1, Android 17 (API 37), `profile` build of `main` `c141c3c` (APK SHA-256
+`65157ad62a6cf2bed2f64aca434a58d9ac95ee13342cbdb2942777874449ec01`, `com.campusmeal.android.profile`, release-derived,
+not debuggable, installed next to the distributed app). Against Render + Neon. Accounts: analyst and the fresh test
+account `s4-evidence-4d88ca@campusmeal.local`. Server checks through the public review summary.
 
 | Scenario | Expected | Device / Android / APK | Observed | Status |
 |---|---|---|---|---|
-| Upgrade from the installed 0.4.0 app with pending items | No crash, data kept | | | Pending |
-| Offline draft → kill app → restore | Draft restored | | | Pending |
-| Offline submit → restart → reconnect | Sent once (201), summary updated | | | Pending |
-| Account change with a pending review | Never sent as the other account | | | Pending |
-| BQ13 windows A and B with synthetic data | As in E12–E13 | | | Pending |
-| BQ13 offline reopen | Saved report and filters | | | Pending |
+| Upgrade from the installed 0.4.0 app with pending items | No crash, data kept | SM-S948U1 / 17 | **Not executable here:** the installed 0.4.0 is release-signed and the release keystore is not on this machine, so no build can update it in place (uninstalling would erase its data). The same v9 → v10 upgrade passed on the emulator (§4 E1–E2). Owner of the release key: run it with the S4-14 release APK | Blocked |
+| Offline draft → kill app → restore | Draft restored | SM-S948U1 / 17 / `65157ad6…` | Quinoa Corner, airplane on: Overall 4, Portion 3, Taste 5; force-stop; reopened offline → the three scores selected | Done |
+| Offline submit → restart → reconnect | Sent once (201), summary updated | SM-S948U1 / 17 / `65157ad6…` | Submitted offline → "Queued"; force-stop, reopened offline → sync center "Restaurant review · Pending"; reconnected → "0 waiting"; server summary 7 → **8 reviews from 8 students**; card "Updated 13:24 · 8 reviews from 8 students" | Done |
+| Account change with a pending review | Never sent as the other account | SM-S948U1 / 17 / `65157ad6…` | Test account queued a Green Bowl review offline, logged out; analyst signed in online for 40 s: server still **9**, analyst sync center "0 waiting"; test account signed in again: server **10** | Done |
+| BQ13 windows A and B with synthetic data | As in E12–E13 | SM-S948U1 / 17 / `65157ad6…` | A: FRESH 64.3 % (9/14), STALE 27.3 % (3/11), UNKNOWN 0.0 % (0/5), ρ = 0.89 (n 5), per restaurant 6/8, 3/6, 2/6, 1/5, 0/5. B: Green Bowl recommendations and reviews hidden; Andean Flavor "0 exposures, no selection rate"; Quinoa Corner and The Garden UNKNOWN; Sushi Rápido 13 days. Real-only A: all UNKNOWN | Done |
+| BQ13 offline reopen | Saved report and filters | SM-S948U1 / 17 / `65157ad6…` | Airplane on, force-stop, reopen: window B `2026-11-07…13` restored, "Saved Nov 25, 13:35" | Done |
 
 ## 6. S4-04 acceptance
 
 - [x] Two independently navigable destinations, with back navigation and loading/empty/error/offline states (§2.1; E3, E14, E15).
-- [x] A review created offline survives restart and is stored once by the backend after reconnection (E4–E6). Phone evidence pending (§5).
+- [x] A review created offline survives restart and is stored once by the backend after reconnection (E4–E6), and on the phone (§5).
 - [x] Changing accounts never publishes or sends the prior account's review as the new user (E9–E10).
 - [x] BQ13 matches S4-03 and distinguishes unknown, zero and suppressed (E12–E14).
 - [x] Local storage, caching, concurrency and connectivity code by Juan Pablo (§2.2–§2.4).
-- [ ] This document links the PR and **physical-device** evidence (§5 pending).
+- [x] This document links the PRs and the **physical-device** evidence (§5). The in-place upgrade from the release-signed 0.4.0 is blocked by the release key (S4-14).
