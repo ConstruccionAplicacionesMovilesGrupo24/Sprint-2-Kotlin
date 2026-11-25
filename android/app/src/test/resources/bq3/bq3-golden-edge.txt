@@ -1,0 +1,175 @@
+## diet=[] maxMinutes=180
+matchIds=r10,r01,r02,r08,r09,r03,r12
+summary=NoMatchSummary(missingIngredient=2, insufficientQuantity=1, unitNotComparable=2, dietMismatch=0, tooLong=0)
+recipe r01 dietOk=true timeOk=true priority=2026-11-26 matches=true
+  Arroz | AVAILABLE | available=250.0 (4643000109586448384) | required=200.0 (4641240890982006784) | g | matched=  ARROZ ␟arroz blanco | earliest=2026-11-27
+  Pollo | AVAILABLE | available=300.0 (4643985272004935680) | required=300.0 (4643985272004935680) | g | matched=Pollo | earliest=2026-11-26
+  Cebolla | AVAILABLE | available=2.0 (4611686018427387904) | required=1.0 (4607182418800017408) | unit | matched=Cebólla | earliest=2026-12-10
+recipe r02 dietOk=true timeOk=true priority=2026-11-28 matches=true
+  Leche | AVAILABLE | available=1000.0 (4652007308841189376) | required=1000.0 (4652007308841189376) | ml | matched=Leche␟leche | earliest=2026-11-28
+  Avena | AVAILABLE | available=500.0 (4647503709213818880) | required=80.0 (4635329916471083008) | g | matched=Avena | earliest=2027-01-15
+recipe r03 dietOk=true timeOk=true priority=2026-12-01 matches=true
+  Harina | AVAILABLE | available=150.0 (4639481672377565184) | required=150.0 (4639481672377565184) | g | matched=Harina | earliest=2026-12-20
+  Huevo | AVAILABLE | available=4.0 (4616189618054758400) | required=2.0 (4611686018427387904) | unit | matched=Huevo | earliest=2026-12-01
+recipe r04 dietOk=true timeOk=true priority=null matches=false
+  Pan | UNIT_NOT_COMPARABLE | available=0.0 (0) | required=2.0 (4611686018427387904) | unit | matched= | earliest=null
+recipe r05 dietOk=true timeOk=true priority=null matches=false
+  Espinaca | MISSING | available=0.0 (0) | required=100.0 (4636737291354636288) | g | matched= | earliest=null
+  Limón | MISSING | available=0.0 (0) | required=1.0 (4607182418800017408) | unit | matched= | earliest=null
+recipe r06 dietOk=true timeOk=true priority=null matches=false
+  Lenteja | MISSING | available=0.0 (0) | required=250.0 (4643000109586448384) | g | matched= | earliest=null
+  Zanahoria | MISSING | available=0.0 (0) | required=2.0 (4611686018427387904) | unit | matched= | earliest=null
+recipe r07 dietOk=true timeOk=true priority=2026-12-01 matches=false
+  Huevo | INSUFFICIENT | available=4.0 (4616189618054758400) | required=6.0 (4618441417868443648) | unit | matched=Huevo | earliest=2026-12-01
+recipe r09 dietOk=true timeOk=true priority=2026-11-30 matches=true
+  Arroz | AVAILABLE | available=150.0 (4639481672377565184) | required=100.0 (4636737291354636288) | g | matched=  ARROZ  | earliest=2026-11-30
+recipe r08 dietOk=true timeOk=true priority=2026-11-30 matches=true
+  Arroz | AVAILABLE | available=150.0 (4639481672377565184) | required=100.0 (4636737291354636288) | g | matched=  ARROZ  | earliest=2026-11-30
+recipe r10 dietOk=true timeOk=true priority=2026-11-25 matches=true
+  Tomate | AVAILABLE | available=400.0 (4645744490609377280) | required=300.0 (4643985272004935680) | g | matched=Tomate␟Tomate  chonto␟tomate | earliest=2026-11-25
+  Cebolla | AVAILABLE | available=2.0 (4611686018427387904) | required=1.0 (4607182418800017408) | unit | matched=Cebólla | earliest=2026-12-10
+recipe r11 dietOk=true timeOk=true priority=null matches=false
+  Yogur | UNIT_NOT_COMPARABLE | available=0.0 (0) | required=200.0 (4641240890982006784) | ml | matched= | earliest=null
+  Fresa | UNIT_NOT_COMPARABLE | available=0.0 (0) | required=100.0 (4636737291354636288) | g | matched= | earliest=null
+recipe r12 dietOk=true timeOk=true priority=null matches=true
+
+## diet=[] maxMinutes=30
+matchIds=r10,r02,r08,r09,r12
+summary=NoMatchSummary(missingIngredient=2, insufficientQuantity=1, unitNotComparable=2, dietMismatch=0, tooLong=3)
+recipe r01 dietOk=true timeOk=false priority=2026-11-26 matches=false
+  Arroz | AVAILABLE | available=250.0 (4643000109586448384) | required=200.0 (4641240890982006784) | g | matched=  ARROZ ␟arroz blanco | earliest=2026-11-27
+  Pollo | AVAILABLE | available=300.0 (4643985272004935680) | required=300.0 (4643985272004935680) | g | matched=Pollo | earliest=2026-11-26
+  Cebolla | AVAILABLE | available=2.0 (4611686018427387904) | required=1.0 (4607182418800017408) | unit | matched=Cebólla | earliest=2026-12-10
+recipe r02 dietOk=true timeOk=true priority=2026-11-28 matches=true
+  Leche | AVAILABLE | available=1000.0 (4652007308841189376) | required=1000.0 (4652007308841189376) | ml | matched=Leche␟leche | earliest=2026-11-28
+  Avena | AVAILABLE | available=500.0 (4647503709213818880) | required=80.0 (4635329916471083008) | g | matched=Avena | earliest=2027-01-15
+recipe r03 dietOk=true timeOk=false priority=2026-12-01 matches=false
+  Harina | AVAILABLE | available=150.0 (4639481672377565184) | required=150.0 (4639481672377565184) | g | matched=Harina | earliest=2026-12-20
+  Huevo | AVAILABLE | available=4.0 (4616189618054758400) | required=2.0 (4611686018427387904) | unit | matched=Huevo | earliest=2026-12-01
+recipe r04 dietOk=true timeOk=true priority=null matches=false
+  Pan | UNIT_NOT_COMPARABLE | available=0.0 (0) | required=2.0 (4611686018427387904) | unit | matched= | earliest=null
+recipe r05 dietOk=true timeOk=true priority=null matches=false
+  Espinaca | MISSING | available=0.0 (0) | required=100.0 (4636737291354636288) | g | matched= | earliest=null
+  Limón | MISSING | available=0.0 (0) | required=1.0 (4607182418800017408) | unit | matched= | earliest=null
+recipe r06 dietOk=true timeOk=false priority=null matches=false
+  Lenteja | MISSING | available=0.0 (0) | required=250.0 (4643000109586448384) | g | matched= | earliest=null
+  Zanahoria | MISSING | available=0.0 (0) | required=2.0 (4611686018427387904) | unit | matched= | earliest=null
+recipe r07 dietOk=true timeOk=true priority=2026-12-01 matches=false
+  Huevo | INSUFFICIENT | available=4.0 (4616189618054758400) | required=6.0 (4618441417868443648) | unit | matched=Huevo | earliest=2026-12-01
+recipe r09 dietOk=true timeOk=true priority=2026-11-30 matches=true
+  Arroz | AVAILABLE | available=150.0 (4639481672377565184) | required=100.0 (4636737291354636288) | g | matched=  ARROZ  | earliest=2026-11-30
+recipe r08 dietOk=true timeOk=true priority=2026-11-30 matches=true
+  Arroz | AVAILABLE | available=150.0 (4639481672377565184) | required=100.0 (4636737291354636288) | g | matched=  ARROZ  | earliest=2026-11-30
+recipe r10 dietOk=true timeOk=true priority=2026-11-25 matches=true
+  Tomate | AVAILABLE | available=400.0 (4645744490609377280) | required=300.0 (4643985272004935680) | g | matched=Tomate␟Tomate  chonto␟tomate | earliest=2026-11-25
+  Cebolla | AVAILABLE | available=2.0 (4611686018427387904) | required=1.0 (4607182418800017408) | unit | matched=Cebólla | earliest=2026-12-10
+recipe r11 dietOk=true timeOk=true priority=null matches=false
+  Yogur | UNIT_NOT_COMPARABLE | available=0.0 (0) | required=200.0 (4641240890982006784) | ml | matched= | earliest=null
+  Fresa | UNIT_NOT_COMPARABLE | available=0.0 (0) | required=100.0 (4636737291354636288) | g | matched= | earliest=null
+recipe r12 dietOk=true timeOk=true priority=null matches=true
+
+## diet=[VEGETARIAN] maxMinutes=60
+matchIds=r02,r12
+summary=NoMatchSummary(missingIngredient=2, insufficientQuantity=1, unitNotComparable=2, dietMismatch=7, tooLong=1)
+recipe r01 dietOk=false timeOk=true priority=2026-11-26 matches=false
+  Arroz | AVAILABLE | available=250.0 (4643000109586448384) | required=200.0 (4641240890982006784) | g | matched=  ARROZ ␟arroz blanco | earliest=2026-11-27
+  Pollo | AVAILABLE | available=300.0 (4643985272004935680) | required=300.0 (4643985272004935680) | g | matched=Pollo | earliest=2026-11-26
+  Cebolla | AVAILABLE | available=2.0 (4611686018427387904) | required=1.0 (4607182418800017408) | unit | matched=Cebólla | earliest=2026-12-10
+recipe r02 dietOk=true timeOk=true priority=2026-11-28 matches=true
+  Leche | AVAILABLE | available=1000.0 (4652007308841189376) | required=1000.0 (4652007308841189376) | ml | matched=Leche␟leche | earliest=2026-11-28
+  Avena | AVAILABLE | available=500.0 (4647503709213818880) | required=80.0 (4635329916471083008) | g | matched=Avena | earliest=2027-01-15
+recipe r03 dietOk=true timeOk=false priority=2026-12-01 matches=false
+  Harina | AVAILABLE | available=150.0 (4639481672377565184) | required=150.0 (4639481672377565184) | g | matched=Harina | earliest=2026-12-20
+  Huevo | AVAILABLE | available=4.0 (4616189618054758400) | required=2.0 (4611686018427387904) | unit | matched=Huevo | earliest=2026-12-01
+recipe r04 dietOk=false timeOk=true priority=null matches=false
+  Pan | UNIT_NOT_COMPARABLE | available=0.0 (0) | required=2.0 (4611686018427387904) | unit | matched= | earliest=null
+recipe r05 dietOk=false timeOk=true priority=null matches=false
+  Espinaca | MISSING | available=0.0 (0) | required=100.0 (4636737291354636288) | g | matched= | earliest=null
+  Limón | MISSING | available=0.0 (0) | required=1.0 (4607182418800017408) | unit | matched= | earliest=null
+recipe r06 dietOk=false timeOk=true priority=null matches=false
+  Lenteja | MISSING | available=0.0 (0) | required=250.0 (4643000109586448384) | g | matched= | earliest=null
+  Zanahoria | MISSING | available=0.0 (0) | required=2.0 (4611686018427387904) | unit | matched= | earliest=null
+recipe r07 dietOk=true timeOk=true priority=2026-12-01 matches=false
+  Huevo | INSUFFICIENT | available=4.0 (4616189618054758400) | required=6.0 (4618441417868443648) | unit | matched=Huevo | earliest=2026-12-01
+recipe r09 dietOk=false timeOk=true priority=2026-11-30 matches=false
+  Arroz | AVAILABLE | available=150.0 (4639481672377565184) | required=100.0 (4636737291354636288) | g | matched=  ARROZ  | earliest=2026-11-30
+recipe r08 dietOk=false timeOk=true priority=2026-11-30 matches=false
+  Arroz | AVAILABLE | available=150.0 (4639481672377565184) | required=100.0 (4636737291354636288) | g | matched=  ARROZ  | earliest=2026-11-30
+recipe r10 dietOk=false timeOk=true priority=2026-11-25 matches=false
+  Tomate | AVAILABLE | available=400.0 (4645744490609377280) | required=300.0 (4643985272004935680) | g | matched=Tomate␟Tomate  chonto␟tomate | earliest=2026-11-25
+  Cebolla | AVAILABLE | available=2.0 (4611686018427387904) | required=1.0 (4607182418800017408) | unit | matched=Cebólla | earliest=2026-12-10
+recipe r11 dietOk=true timeOk=true priority=null matches=false
+  Yogur | UNIT_NOT_COMPARABLE | available=0.0 (0) | required=200.0 (4641240890982006784) | ml | matched= | earliest=null
+  Fresa | UNIT_NOT_COMPARABLE | available=0.0 (0) | required=100.0 (4636737291354636288) | g | matched= | earliest=null
+recipe r12 dietOk=true timeOk=true priority=null matches=true
+
+## diet=[VEGAN, GLUTEN_FREE] maxMinutes=45
+matchIds=r10,r12
+summary=NoMatchSummary(missingIngredient=2, insufficientQuantity=1, unitNotComparable=2, dietMismatch=9, tooLong=1)
+recipe r01 dietOk=false timeOk=true priority=2026-11-26 matches=false
+  Arroz | AVAILABLE | available=250.0 (4643000109586448384) | required=200.0 (4641240890982006784) | g | matched=  ARROZ ␟arroz blanco | earliest=2026-11-27
+  Pollo | AVAILABLE | available=300.0 (4643985272004935680) | required=300.0 (4643985272004935680) | g | matched=Pollo | earliest=2026-11-26
+  Cebolla | AVAILABLE | available=2.0 (4611686018427387904) | required=1.0 (4607182418800017408) | unit | matched=Cebólla | earliest=2026-12-10
+recipe r02 dietOk=false timeOk=true priority=2026-11-28 matches=false
+  Leche | AVAILABLE | available=1000.0 (4652007308841189376) | required=1000.0 (4652007308841189376) | ml | matched=Leche␟leche | earliest=2026-11-28
+  Avena | AVAILABLE | available=500.0 (4647503709213818880) | required=80.0 (4635329916471083008) | g | matched=Avena | earliest=2027-01-15
+recipe r03 dietOk=false timeOk=false priority=2026-12-01 matches=false
+  Harina | AVAILABLE | available=150.0 (4639481672377565184) | required=150.0 (4639481672377565184) | g | matched=Harina | earliest=2026-12-20
+  Huevo | AVAILABLE | available=4.0 (4616189618054758400) | required=2.0 (4611686018427387904) | unit | matched=Huevo | earliest=2026-12-01
+recipe r04 dietOk=false timeOk=true priority=null matches=false
+  Pan | UNIT_NOT_COMPARABLE | available=0.0 (0) | required=2.0 (4611686018427387904) | unit | matched= | earliest=null
+recipe r05 dietOk=true timeOk=true priority=null matches=false
+  Espinaca | MISSING | available=0.0 (0) | required=100.0 (4636737291354636288) | g | matched= | earliest=null
+  Limón | MISSING | available=0.0 (0) | required=1.0 (4607182418800017408) | unit | matched= | earliest=null
+recipe r06 dietOk=false timeOk=true priority=null matches=false
+  Lenteja | MISSING | available=0.0 (0) | required=250.0 (4643000109586448384) | g | matched= | earliest=null
+  Zanahoria | MISSING | available=0.0 (0) | required=2.0 (4611686018427387904) | unit | matched= | earliest=null
+recipe r07 dietOk=false timeOk=true priority=2026-12-01 matches=false
+  Huevo | INSUFFICIENT | available=4.0 (4616189618054758400) | required=6.0 (4618441417868443648) | unit | matched=Huevo | earliest=2026-12-01
+recipe r09 dietOk=false timeOk=true priority=2026-11-30 matches=false
+  Arroz | AVAILABLE | available=150.0 (4639481672377565184) | required=100.0 (4636737291354636288) | g | matched=  ARROZ  | earliest=2026-11-30
+recipe r08 dietOk=false timeOk=true priority=2026-11-30 matches=false
+  Arroz | AVAILABLE | available=150.0 (4639481672377565184) | required=100.0 (4636737291354636288) | g | matched=  ARROZ  | earliest=2026-11-30
+recipe r10 dietOk=true timeOk=true priority=2026-11-25 matches=true
+  Tomate | AVAILABLE | available=400.0 (4645744490609377280) | required=300.0 (4643985272004935680) | g | matched=Tomate␟Tomate  chonto␟tomate | earliest=2026-11-25
+  Cebolla | AVAILABLE | available=2.0 (4611686018427387904) | required=1.0 (4607182418800017408) | unit | matched=Cebólla | earliest=2026-12-10
+recipe r11 dietOk=false timeOk=true priority=null matches=false
+  Yogur | UNIT_NOT_COMPARABLE | available=0.0 (0) | required=200.0 (4641240890982006784) | ml | matched= | earliest=null
+  Fresa | UNIT_NOT_COMPARABLE | available=0.0 (0) | required=100.0 (4636737291354636288) | g | matched= | earliest=null
+recipe r12 dietOk=true timeOk=true priority=null matches=true
+
+## diet=[GLUTEN_FREE] maxMinutes=15
+matchIds=r02,r12
+summary=NoMatchSummary(missingIngredient=2, insufficientQuantity=1, unitNotComparable=2, dietMismatch=7, tooLong=6)
+recipe r01 dietOk=false timeOk=false priority=2026-11-26 matches=false
+  Arroz | AVAILABLE | available=250.0 (4643000109586448384) | required=200.0 (4641240890982006784) | g | matched=  ARROZ ␟arroz blanco | earliest=2026-11-27
+  Pollo | AVAILABLE | available=300.0 (4643985272004935680) | required=300.0 (4643985272004935680) | g | matched=Pollo | earliest=2026-11-26
+  Cebolla | AVAILABLE | available=2.0 (4611686018427387904) | required=1.0 (4607182418800017408) | unit | matched=Cebólla | earliest=2026-12-10
+recipe r02 dietOk=true timeOk=true priority=2026-11-28 matches=true
+  Leche | AVAILABLE | available=1000.0 (4652007308841189376) | required=1000.0 (4652007308841189376) | ml | matched=Leche␟leche | earliest=2026-11-28
+  Avena | AVAILABLE | available=500.0 (4647503709213818880) | required=80.0 (4635329916471083008) | g | matched=Avena | earliest=2027-01-15
+recipe r03 dietOk=false timeOk=false priority=2026-12-01 matches=false
+  Harina | AVAILABLE | available=150.0 (4639481672377565184) | required=150.0 (4639481672377565184) | g | matched=Harina | earliest=2026-12-20
+  Huevo | AVAILABLE | available=4.0 (4616189618054758400) | required=2.0 (4611686018427387904) | unit | matched=Huevo | earliest=2026-12-01
+recipe r04 dietOk=false timeOk=true priority=null matches=false
+  Pan | UNIT_NOT_COMPARABLE | available=0.0 (0) | required=2.0 (4611686018427387904) | unit | matched= | earliest=null
+recipe r05 dietOk=true timeOk=true priority=null matches=false
+  Espinaca | MISSING | available=0.0 (0) | required=100.0 (4636737291354636288) | g | matched= | earliest=null
+  Limón | MISSING | available=0.0 (0) | required=1.0 (4607182418800017408) | unit | matched= | earliest=null
+recipe r06 dietOk=false timeOk=false priority=null matches=false
+  Lenteja | MISSING | available=0.0 (0) | required=250.0 (4643000109586448384) | g | matched= | earliest=null
+  Zanahoria | MISSING | available=0.0 (0) | required=2.0 (4611686018427387904) | unit | matched= | earliest=null
+recipe r07 dietOk=true timeOk=true priority=2026-12-01 matches=false
+  Huevo | INSUFFICIENT | available=4.0 (4616189618054758400) | required=6.0 (4618441417868443648) | unit | matched=Huevo | earliest=2026-12-01
+recipe r09 dietOk=false timeOk=false priority=2026-11-30 matches=false
+  Arroz | AVAILABLE | available=150.0 (4639481672377565184) | required=100.0 (4636737291354636288) | g | matched=  ARROZ  | earliest=2026-11-30
+recipe r08 dietOk=false timeOk=false priority=2026-11-30 matches=false
+  Arroz | AVAILABLE | available=150.0 (4639481672377565184) | required=100.0 (4636737291354636288) | g | matched=  ARROZ  | earliest=2026-11-30
+recipe r10 dietOk=true timeOk=false priority=2026-11-25 matches=false
+  Tomate | AVAILABLE | available=400.0 (4645744490609377280) | required=300.0 (4643985272004935680) | g | matched=Tomate␟Tomate  chonto␟tomate | earliest=2026-11-25
+  Cebolla | AVAILABLE | available=2.0 (4611686018427387904) | required=1.0 (4607182418800017408) | unit | matched=Cebólla | earliest=2026-12-10
+recipe r11 dietOk=false timeOk=true priority=null matches=false
+  Yogur | UNIT_NOT_COMPARABLE | available=0.0 (0) | required=200.0 (4641240890982006784) | ml | matched= | earliest=null
+  Fresa | UNIT_NOT_COMPARABLE | available=0.0 (0) | required=100.0 (4636737291354636288) | g | matched= | earliest=null
+recipe r12 dietOk=true timeOk=true priority=null matches=true
+

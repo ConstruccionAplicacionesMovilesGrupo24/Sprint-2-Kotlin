@@ -100,9 +100,12 @@ fun evaluateBq3(
         }
     }
 
+    // S4-05: one lookup by normalized name per evaluation, instead of scanning every usable row for each
+    // ingredient of every recipe. It lives only inside this call.
+    val index = UsableIndex(usable)
     val evaluations = recipes.map { recipe ->
         checkCancelled()
-        evaluateRecipe(recipe, usable, selectedDiet, maxPreparationMinutes, checkCancelled)
+        evaluateRecipe(recipe, index, selectedDiet, maxPreparationMinutes, checkCancelled)
     }
 
     val matchIds = evaluations
@@ -131,14 +134,14 @@ private fun RecipeEvaluation.requiredChecks() = ingredients.filterNot { it.ingre
 
 private fun evaluateRecipe(
     recipe: Recipe,
-    usable: List<UsableRow>,
+    index: UsableIndex,
     selectedDiet: Set<DietaryPreference>,
     maxPreparationMinutes: Int,
     checkCancelled: () -> Unit,
 ): RecipeEvaluation {
     val checks = recipe.ingredients.map { ingredient ->
         checkCancelled()
-        checkIngredient(ingredient, usable)
+        checkIngredient(ingredient, index)
     }
     val priorityDate = checks
         .filter { !it.ingredient.optional }
@@ -153,9 +156,9 @@ private fun evaluateRecipe(
     )
 }
 
-private fun checkIngredient(ingredient: RecipeIngredient, usable: List<UsableRow>): IngredientCheck {
-    val keys = ingredient.matchingKeys
-    val named = usable.filter { it.normalizedName in keys }
+private fun checkIngredient(ingredient: RecipeIngredient, index: UsableIndex): IngredientCheck {
+    // Same rows, in the same inventory order, as filtering the whole usable list by matchingKeys.
+    val named = index.rowsMatching(ingredient.matchingKeys)
     val dimension = ingredient.unit.dimension
     // Only rows whose unit converts within the ingredient's dimension contribute; others never subtract.
     val comparable = named.filter { it.unit?.dimension == dimension }
@@ -182,6 +185,40 @@ private fun checkIngredient(ingredient: RecipeIngredient, usable: List<UsableRow
 private const val QUANTITY_TOLERANCE = 1e-9
 
 private data class UsableRow(val item: InventoryItem, val normalizedName: String, val unit: InventoryUnit?)
+
+/**
+ * S4-05: usable rows grouped by normalized name, each group in inventory order. A row has exactly one normalized
+ * name, so the groups of different keys never share a row: an alias never counts a row twice. When several keys
+ * match, their positions are merged back into inventory order, so quantities are summed in the original order
+ * (identical floating-point totals) and matched names keep the original order.
+ */
+private class UsableIndex(private val rows: List<UsableRow>) {
+
+    private val positionsByName: Map<String, IntArray> = HashMap<String, MutableList<Int>>().let { groups ->
+        rows.forEachIndexed { position, row -> groups.getOrPut(row.normalizedName) { ArrayList(2) }.add(position) }
+        groups.mapValues { (_, positions) -> positions.toIntArray() }
+    }
+
+    fun rowsMatching(keys: Set<String>): List<UsableRow> {
+        var only: IntArray? = null
+        var merged: IntArray? = null
+        for (key in keys) {
+            val positions = positionsByName[key] ?: continue
+            when {
+                only == null && merged == null -> only = positions
+                else -> {
+                    merged = (merged ?: checkNotNull(only)) + positions
+                    only = null
+                }
+            }
+        }
+        merged?.let { positions ->
+            positions.sort()
+            return positions.map(rows::get)
+        }
+        return only?.map(rows::get) ?: emptyList()
+    }
+}
 
 /** An inventory unit after the fixed alias table, with the factor to its dimension's base unit. */
 internal data class InventoryUnit(val dimension: UnitDimension, val toBase: Double)

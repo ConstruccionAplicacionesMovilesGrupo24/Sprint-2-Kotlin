@@ -32,6 +32,7 @@ import com.campusmeal.android.feature.recipes.domain.RecipeRepository
 import com.campusmeal.android.feature.recipes.domain.RecipeUsageRecorder
 import com.campusmeal.android.feature.recipes.domain.UsageAdmission
 import com.campusmeal.android.feature.recipes.domain.evaluateBq3
+import com.campusmeal.android.feature.recipes.domain.Bq3ProfilingDataset
 import com.campusmeal.android.feature.recipes.domain.model.PREPARATION_MINUTES_RANGE
 import com.campusmeal.android.feature.recipes.domain.model.RecipeCatalogSnapshot
 import java.util.UUID
@@ -334,10 +335,13 @@ class RecipesViewModel(
         memo[input.key]?.let { return it }
         val result = withContext(Dispatchers.Default) {
             val job = coroutineContext.job
+            // S4-05 measurement only: a synthetic dataset selected at launch in the profile build (null otherwise).
+            // Generated outside the trace section, so only the evaluation is measured.
+            val synthetic = Bq3ProfilingDataset.current(input.today)
             traceSection(TraceSections.BQ3_EVALUATE) {
                 evaluateBq3(
-                    recipes = input.catalog.catalog.recipes,
-                    inventory = input.inventory.items,
+                    recipes = synthetic?.recipes ?: input.catalog.catalog.recipes,
+                    inventory = synthetic?.inventory ?: input.inventory.items,
                     selectedDiet = input.filters.dietaryPreferences,
                     maxPreparationMinutes = input.filters.maxPreparationMinutes,
                     todayIsoDate = input.today,

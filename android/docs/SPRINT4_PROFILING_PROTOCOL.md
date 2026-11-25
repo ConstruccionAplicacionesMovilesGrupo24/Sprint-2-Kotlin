@@ -107,7 +107,7 @@ was demonstrated.
 
 | Pair | Owner | "Before" capture | Status |
 |---|---|---|---|
-| S4-05 | Juan Pablo | | Pending |
+| S4-05 | Juan Pablo | `df0a40e`, 2026-11-25, SM-S948U1 (API 37): representative 2.043 ms (1.861–2.299, 10 runs), stress 28.412 ms (26.497–29.484, 5 runs). `docs/evidence/sprint4/s4-05-bq3/before/` | Captured |
 | S4-08 | Natalia | | Pending |
 | S4-11 | Daniel | | Pending (after S4-10, which adds the event traffic) |
 
