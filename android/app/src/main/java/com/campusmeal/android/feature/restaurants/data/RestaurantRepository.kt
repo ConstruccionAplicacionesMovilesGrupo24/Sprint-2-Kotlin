@@ -19,6 +19,9 @@ import com.campusmeal.android.feature.restaurants.domain.ResultSource
 import kotlinx.serialization.SerializationException
 import com.campusmeal.android.core.common.CachePolicy
 import com.campusmeal.android.core.common.Freshness
+import com.campusmeal.android.core.common.TraceSections
+import com.campusmeal.android.core.common.traceAsyncSection
+import com.campusmeal.android.core.common.traceSection
 import com.campusmeal.android.core.database.CampusMealDatabase
 import com.campusmeal.android.feature.restaurants.data.RestaurantSearchCacheEntity
 
@@ -258,17 +261,21 @@ class NetworkRestaurantRepository(
         if (!coordinator.isCurrent(scope)) return null
 
         val entity =
-            cacheDao.getSearch(
-                accountId = scope.accountId,
-                contextKey = contextKey,
-            ) ?: return null
+            traceAsyncSection(TraceSections.RESTAURANT_CACHE_READ) {
+                cacheDao.getSearch(
+                    accountId = scope.accountId,
+                    contextKey = contextKey,
+                )
+            } ?: return null
 
         return try {
             val response =
-                json.decodeFromString(
-                    RestaurantSearchResponseDto.serializer(),
-                    entity.responseJson,
-                )
+                traceSection(TraceSections.RESTAURANT_CACHE_DECODE) {
+                    json.decodeFromString(
+                        RestaurantSearchResponseDto.serializer(),
+                        entity.responseJson,
+                    )
+                }
 
             val results =
                 response.toResultsOrNull(
@@ -286,10 +293,12 @@ class NetworkRestaurantRepository(
         contextKey: String,
     ): RestaurantSearchResult.Success? {
         val entity =
-            cacheDao.getSearch(
-                accountId = scope.accountId,
-                contextKey = contextKey,
-            ) ?: return null
+            traceAsyncSection(TraceSections.RESTAURANT_CACHE_READ) {
+                cacheDao.getSearch(
+                    accountId = scope.accountId,
+                    contextKey = contextKey,
+                )
+            } ?: return null
 
         if (
             Freshness.synced(
@@ -310,17 +319,21 @@ class NetworkRestaurantRepository(
         if (!coordinator.isCurrent(scope)) return null
 
         val entity =
-            cacheDao.getDetail(
-                accountId = scope.accountId,
-                restaurantId = restaurantId,
-            ) ?: return null
+            traceAsyncSection(TraceSections.RESTAURANT_CACHE_READ) {
+                cacheDao.getDetail(
+                    accountId = scope.accountId,
+                    restaurantId = restaurantId,
+                )
+            } ?: return null
 
         return try {
             val response =
-                json.decodeFromString(
-                    RestaurantDetailResponseDto.serializer(),
-                    entity.responseJson,
-                )
+                traceSection(TraceSections.RESTAURANT_CACHE_DECODE) {
+                    json.decodeFromString(
+                        RestaurantDetailResponseDto.serializer(),
+                        entity.responseJson,
+                    )
+                }
 
             val detail =
                 response.toDetailOrNull(
@@ -338,10 +351,12 @@ class NetworkRestaurantRepository(
         restaurantId: String,
     ): RestaurantDetailResult.Success? {
         val entity =
-            cacheDao.getDetail(
-                accountId = scope.accountId,
-                restaurantId = restaurantId,
-            ) ?: return null
+            traceAsyncSection(TraceSections.RESTAURANT_CACHE_READ) {
+                cacheDao.getDetail(
+                    accountId = scope.accountId,
+                    restaurantId = restaurantId,
+                )
+            } ?: return null
 
         if (
             Freshness.synced(

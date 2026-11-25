@@ -2,6 +2,9 @@ package com.campusmeal.android.core.outbox
 
 import android.util.Log
 import com.campusmeal.android.BuildConfig
+import com.campusmeal.android.core.common.TraceSections
+import com.campusmeal.android.core.common.traceAsyncSection
+import com.campusmeal.android.core.common.traceSection
 import com.campusmeal.android.core.database.CampusMealDatabase
 import com.campusmeal.android.core.network.ApiClientFactory
 import com.campusmeal.android.core.network.ApiResult
@@ -72,7 +75,7 @@ class OutboxRepository(
         selectedAlternative: String?,
         clientEventId: String,
         occurredAtEpochMillis: Long,
-    ): OutboxAdmission {
+    ): OutboxAdmission = traceAsyncSection(TraceSections.OUTBOX_ENQUEUE) {
         val dto = RecommendationEventDto(
             clientEventId = clientEventId,
             recommendationId = recommendationId,
@@ -81,7 +84,7 @@ class OutboxRepository(
             platform = PLATFORM,
             occurredAt = isoUtc(occurredAtEpochMillis),
         )
-        return admit(scope, OutboxKind.RECOMMENDATION, recommendationId, clientEventId, occurredAtEpochMillis, json.encodeToString(dto))
+        admit(scope, OutboxKind.RECOMMENDATION, recommendationId, clientEventId, occurredAtEpochMillis, json.encodeToString(dto))
     }
 
     /**
@@ -96,8 +99,9 @@ class OutboxRepository(
         zoneId: String? = null,
         foodCategory: String? = null,
         budgetBand: String? = null,
-    ): OutboxAdmission =
+    ): OutboxAdmission = traceAsyncSection(TraceSections.OUTBOX_ENQUEUE) {
         admit(scope, OutboxKind.USAGE, null, clientEventId, occurredAtEpochMillis, usagePayload(clientEventId, FEATURE_USED, feature.name, occurredAtEpochMillis, zoneId, foodCategory, budgetBand))
+    }
 
     /** `PENDING`, `SENDING`, `SENT`, `FAILED`, or null when the event does not exist. */
     fun observeStatus(clientEventId: String): Flow<String?> = dao.observeStatus(clientEventId)
@@ -268,9 +272,11 @@ class OutboxRepository(
     }
 
     private fun isoUtc(epochMillis: Long): String =
-        SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US)
-            .apply { timeZone = TimeZone.getTimeZone("UTC") }
-            .format(Date(epochMillis))
+        traceSection(TraceSections.OUTBOX_ISO_UTC) {
+            SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US)
+                .apply { timeZone = TimeZone.getTimeZone("UTC") }
+                .format(Date(epochMillis))
+        }
 
     private companion object {
         const val TAG = "CampusMealOutbox"

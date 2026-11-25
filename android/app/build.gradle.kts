@@ -69,6 +69,17 @@ android {
             if (releaseSigningConfigured) signingConfig = signingConfigs.getByName("release")
             buildConfigField("String", "API_BASE_URL", "\"${releaseApiBaseUrl.orEmpty()}\"")
         }
+        // S4-02: what is measured. Derived from release (not debuggable, same minification), but readable
+        // by the profilers and signed with the local debug key, so every member can build it without the
+        // release keystore. It installs next to the distributed app and never touches its data.
+        create("profile") {
+            initWith(getByName("release"))
+            isProfileable = true
+            applicationIdSuffix = ".profile"
+            versionNameSuffix = "-profile"
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += "release"
+        }
     }
 
     compileOptions {
@@ -94,10 +105,11 @@ ksp {
 
 // Release artifacts must point at an explicitly configured HTTPS backend; there is no fallback.
 // They must also be signed: an unsigned APK cannot be installed from Firebase App Distribution.
+// The profile build follows the same backend rule; it is signed with the debug key instead.
 tasks.configureEach {
-    if (name == "preReleaseBuild") {
+    if (name == "preReleaseBuild" || name == "preProfileBuild") {
         val url = releaseApiBaseUrl
-        val signed = releaseSigningConfigured
+        val signed = releaseSigningConfigured || name == "preProfileBuild"
         doFirst {
             check(!url.isNullOrBlank() && url.startsWith("https://") && url.endsWith("/")) {
                 "Release builds require campusmeal.releaseApiBaseUrl (or CAMPUSMEAL_RELEASE_API_BASE_URL) " +

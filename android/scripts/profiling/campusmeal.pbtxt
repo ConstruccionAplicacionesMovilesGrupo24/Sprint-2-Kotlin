@@ -1,0 +1,19 @@
+# Perfetto system trace for the Sprint 4 paired measurements (docs/SPRINT4_PROFILING_PROTOCOL.md).
+# Do not change it between the "before" and the "after" of a pair.
+buffers { size_kb: 65536 fill_policy: RING_BUFFER }
+data_sources {
+  config {
+    name: "linux.ftrace"
+    ftrace_config {
+      ftrace_events: "sched/sched_switch"
+      ftrace_events: "sched/sched_waking"
+      ftrace_events: "power/cpu_frequency"
+      ftrace_events: "ftrace/print"
+      atrace_categories: "view"
+      atrace_categories: "dalvik"
+      atrace_apps: "com.campusmeal.android.profile"
+    }
+  }
+}
+data_sources { config { name: "linux.process_stats" process_stats_config { scan_all_processes_on_start: true } } }
+duration_ms: 30000
