@@ -51,5 +51,16 @@ sealed interface CampusMealRoute {
     /** BQ9 zone-demand report, ANALYST accounts only. */
     @Serializable
     data object ZoneDemandReport : CampusMealRoute
+
+    /** S4-04: structured review of one restaurant (USER). Opened from the restaurant detail. */
+    @Serializable
+    data class ReviewMeal(
+        val restaurantId: String,
+        val restaurantName: String,
+    ) : CampusMealRoute
+
+    /** S4-04: BQ13 partner-health report, ANALYST accounts only (the backend enforces it). */
+    @Serializable
+    data object PartnerHealthReport : CampusMealRoute
     
 }

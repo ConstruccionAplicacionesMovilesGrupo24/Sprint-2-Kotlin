@@ -67,6 +67,12 @@ import com.campusmeal.android.feature.restaurants.presentation.RestaurantResults
 import com.campusmeal.android.feature.restaurants.presentation.SelectedRoute
 import com.campusmeal.android.feature.analytics.presentation.ZoneDemandReportRoute
 import com.campusmeal.android.feature.analytics.presentation.ZoneDemandReportViewModel
+import com.campusmeal.android.feature.analytics.presentation.PartnerHealthRoute
+import com.campusmeal.android.feature.analytics.presentation.PartnerHealthViewModel
+import com.campusmeal.android.feature.reviews.presentation.RestaurantReviewsSection
+import com.campusmeal.android.feature.reviews.presentation.RestaurantReviewsViewModel
+import com.campusmeal.android.feature.reviews.presentation.ReviewMealRoute
+import com.campusmeal.android.feature.reviews.presentation.ReviewMealViewModel
 
 /**
  * Signed-out graph.
@@ -351,6 +357,10 @@ fun CampusMealNavHost(
 
                 val estimate = matchingSelectedRoute?.estimate
                 val detailRequest = matchingSelectedRoute?.request ?: currentContext
+                // S4-04: the review summary has its own ViewModel on this entry, cached and refreshed on its own.
+                val reviewsViewModel: RestaurantReviewsViewModel = viewModel(
+                    factory = RestaurantReviewsViewModel.factory(container, sessionScope, route.restaurantId),
+                )
                 RestaurantDetailRoute(
                     viewModel = viewModel(
                         factory = RestaurantDetailViewModel.factory(
@@ -370,6 +380,27 @@ fun CampusMealNavHost(
                             navController.popBackStack()
                         }
                     },
+                    reviewsSection = { restaurantName ->
+                        RestaurantReviewsSection(
+                            viewModel = reviewsViewModel,
+                            online = online,
+                            onWriteReview = {
+                                navController.navigate(CampusMealRoute.ReviewMeal(route.restaurantId, restaurantName))
+                            },
+                        )
+                    },
+                )
+            }
+
+            composable<CampusMealRoute.ReviewMeal> { entry ->
+                val route = entry.toRoute<CampusMealRoute.ReviewMeal>()
+                ReviewMealRoute(
+                    viewModel = viewModel(
+                        factory = ReviewMealViewModel.factory(container, sessionScope, route.restaurantId, route.restaurantName),
+                    ),
+                    restaurantName = route.restaurantName,
+                    online = online,
+                    onBack = { navController.popBackStack() },
                 )
             }
 
@@ -404,6 +435,7 @@ fun CampusMealNavHost(
                     onChangeContext = { navController.navigate(CampusMealRoute.Context) },
                     onOpenAnalystReport = { navController.navigate(CampusMealRoute.AnalystReport) },
                     onOpenZoneDemandReport = { navController.navigate(CampusMealRoute.ZoneDemandReport)},
+                    onOpenPartnerHealthReport = { navController.navigate(CampusMealRoute.PartnerHealthReport) },
                     onLogout = onLogout,
                 )
             }
@@ -428,6 +460,14 @@ fun CampusMealNavHost(
                     onBack = {
                         navController.popBackStack()
                     },
+                )
+            }
+
+            composable<CampusMealRoute.PartnerHealthReport> {
+                PartnerHealthRoute(
+                    viewModel = viewModel(factory = PartnerHealthViewModel.factory(container, sessionScope)),
+                    online = online,
+                    onBack = { navController.popBackStack() },
                 )
             }
         }

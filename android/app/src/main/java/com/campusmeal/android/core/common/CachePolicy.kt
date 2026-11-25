@@ -14,4 +14,8 @@ data class CachePolicy(
     val restaurantSearch: Duration = 5.minutes,
     val restaurantDetail: Duration = 30.minutes,
     val analyticsReport: Duration = 15.minutes,
+    /** S4-04: public review summary of a restaurant; also invalidated by a confirmed review. */
+    val reviewSummary: Duration = 15.minutes,
+    /** S4-04: BQ13 partner-health report. */
+    val partnerHealthReport: Duration = 15.minutes,
 )

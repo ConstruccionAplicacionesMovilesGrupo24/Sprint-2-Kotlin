@@ -28,6 +28,12 @@ import com.campusmeal.android.feature.restaurants.data.RestaurantDetailCacheEnti
 import com.campusmeal.android.feature.restaurants.data.RestaurantSearchCacheEntity
 import com.campusmeal.android.feature.analytics.data.ZoneDemandReportDao
 import com.campusmeal.android.feature.analytics.data.ZoneDemandReportEntity
+import com.campusmeal.android.feature.analytics.data.PartnerHealthReportDao
+import com.campusmeal.android.feature.analytics.data.PartnerHealthReportEntity
+import com.campusmeal.android.feature.reviews.data.ReviewDao
+import com.campusmeal.android.feature.reviews.data.ReviewDraftEntity
+import com.campusmeal.android.feature.reviews.data.ReviewSubmissionEntity
+import com.campusmeal.android.feature.reviews.data.ReviewSummaryCacheEntity
 
 /**
  * Local cache database. It holds no seed data; feature entities are added with their features.
@@ -51,8 +57,12 @@ import com.campusmeal.android.feature.analytics.data.ZoneDemandReportEntity
         RestaurantSearchCacheEntity::class,
         RestaurantDetailCacheEntity::class,
         ZoneDemandReportEntity::class,
+        ReviewDraftEntity::class,
+        ReviewSubmissionEntity::class,
+        ReviewSummaryCacheEntity::class,
+        PartnerHealthReportEntity::class,
     ],
-    version = 9,
+    version = 10,
     exportSchema = true,
 )
 abstract class CampusMealDatabase : RoomDatabase() {
@@ -80,6 +90,10 @@ abstract class CampusMealDatabase : RoomDatabase() {
     abstract fun restaurantCacheDao(): RestaurantCacheDao
     
     abstract fun zoneDemandReportDao(): ZoneDemandReportDao
+
+    abstract fun reviewDao(): ReviewDao
+
+    abstract fun partnerHealthReportDao(): PartnerHealthReportDao
 
     companion object {
         const val NAME = "campusmeal.db"

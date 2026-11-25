@@ -60,6 +60,7 @@ fun RestaurantDetailRoute(
     viewModel: RestaurantDetailViewModel,
     onBack: () -> Unit,
     onRefreshRoute: (() -> Unit)?,
+    reviewsSection: (@Composable (restaurantName: String) -> Unit)? = null,
 ) {
     val state by
     viewModel.uiState.collectAsStateWithLifecycle()
@@ -69,6 +70,7 @@ fun RestaurantDetailRoute(
         onBack = onBack,
         onRetry = viewModel::retry,
         onRefreshRoute = onRefreshRoute,
+        reviewsSection = reviewsSection,
     )
 }
 
@@ -79,6 +81,7 @@ fun RestaurantDetailScreen(
     onBack: () -> Unit,
     onRetry: () -> Unit,
     onRefreshRoute: (() -> Unit)? = null,
+    reviewsSection: (@Composable (restaurantName: String) -> Unit)? = null,
 ) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -137,6 +140,7 @@ fun RestaurantDetailScreen(
                     detail = state.detail,
                     route = state.route,
                     onRefreshRoute = onRefreshRoute,
+                    reviewsSection = reviewsSection,
                     modifier =
                         Modifier.padding(
                             innerPadding,
@@ -209,6 +213,7 @@ private fun DetailContent(
     detail: RestaurantDetail,
     route: DetailRoute?,
     onRefreshRoute: (() -> Unit)?,
+    reviewsSection: (@Composable (restaurantName: String) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -331,6 +336,11 @@ private fun DetailContent(
                 route = route,
                 onRefreshRoute = onRefreshRoute,
             )
+        }
+
+        // S4-04: student review summary and the entry to the review form (owned by feature/reviews).
+        reviewsSection?.let { section ->
+            item(key = "reviews") { section(detail.summary.name) }
         }
 
         item {

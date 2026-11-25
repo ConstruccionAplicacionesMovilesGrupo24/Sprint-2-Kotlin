@@ -45,6 +45,10 @@ interface OutboxDao {
     @Query("SELECT status FROM outbox_events WHERE clientEventId = :id")
     fun observeStatus(id: String): Flow<String?>
 
+    /** One account's rows of one kind, to show their delivery state (for example the review screen). */
+    @Query("SELECT * FROM outbox_events WHERE accountId = :accountId AND kind = :kind")
+    fun observeKind(accountId: String, kind: String): Flow<List<OutboxEventEntity>>
+
     /** Delivered events are kept briefly so the UI can show "sent", then dropped. */
     @Query("DELETE FROM outbox_events WHERE status = 'SENT' AND createdAtEpochMillis < :before")
     suspend fun purgeSentBefore(before: Long)

@@ -39,6 +39,25 @@ object OutboxKind {
 
     /** `POST analytics/usage-events` (BQ6 sessions and feature uses). */
     const val USAGE = "USAGE"
+
+    /**
+     * `POST restaurants/:id/reviews` (S4-04, BQ13 input). Payload is the versioned envelope
+     * `{"v":1,"restaurantId":…,"body":{…}}`; the row's `clientEventId` is the review's `clientReviewId`.
+     */
+    const val REVIEW = "REVIEW"
+}
+
+/**
+ * Told about the definitive outcome of an event, after its row was updated. Runs on the drain worker:
+ * local work only.
+ */
+interface OutboxDeliveryListener {
+
+    /** The backend acknowledged [event] (2xx; for reviews, 201 created or 200 idempotent replay). */
+    suspend fun onDelivered(event: OutboxEventEntity) = Unit
+
+    /** The backend rejected [event] definitively; [reason] is `HTTP <code>` plus the API error code when known. */
+    suspend fun onRejected(event: OutboxEventEntity, reason: String) = Unit
 }
 
 object OutboxStatus {
