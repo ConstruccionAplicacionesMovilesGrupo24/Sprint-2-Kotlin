@@ -61,6 +61,10 @@ import com.campusmeal.android.feature.recipes.domain.RecipeRepository
 import com.campusmeal.android.feature.recipes.domain.RecipeUsageRecorder
 import com.campusmeal.android.feature.analytics.data.ZoneDemandApi
 import com.campusmeal.android.feature.analytics.data.ZoneDemandRepository
+import com.campusmeal.android.feature.analytics.data.PartnerHealthApi
+import com.campusmeal.android.feature.analytics.data.PartnerHealthRepository
+import com.campusmeal.android.feature.reviews.data.ReviewApi
+import com.campusmeal.android.feature.reviews.data.ReviewRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -99,7 +103,13 @@ interface AppContainer {
     /** S3-08: BQ9 zone-demand report for ANALYST accounts. */
     val zoneDemandRepository: ZoneDemandRepository
 
-    /** S3-09: durable delivery of BQ8 and BQ6 events (Room + WorkManager). */
+    /** S4-04: review drafts, submissions (through the outbox) and cached public summaries. */
+    val reviewRepository: ReviewRepository
+
+    /** S4-04: BQ13 partner-health report for ANALYST accounts. */
+    val partnerHealthRepository: PartnerHealthRepository
+
+    /** S3-09: durable delivery of BQ8 and BQ6 events (Room + WorkManager); S4-04 reviews. */
     val outboxRepository: OutboxRepository
     val recommendationEventReporter: RecommendationEventReporter
     val restaurantRepository: RestaurantRepository
@@ -187,6 +197,8 @@ class DefaultAppContainer(context: Context) : AppContainer {
                             mealPlanStore,
                             featureAdoptionRepository,
                             zoneDemandRepository,
+                            reviewRepository,
+                            partnerHealthRepository,
                         ),
                     ),
                     AccountWorkCanceller(appContext),
@@ -278,9 +290,34 @@ class DefaultAppContainer(context: Context) : AppContainer {
             database = database,
             recommendationApi = retrofit.create(RecommendationEventsApi::class.java),
             usageApi = retrofit.create(UsageEventsApi::class.java),
+            // Idempotent by clientReviewId (200 on replay), so the regular client is safe here too.
+            reviewApi = retrofit.create(ReviewApi::class.java),
             authorizationHeaderProvider = authorizationHeaderProvider,
             coordinator = sessionCoordinator,
             scheduler = WorkManagerOutboxScheduler(appContext),
+            deliveryListeners = { listOf(reviewRepository) },
+        )
+    }
+
+    override val reviewRepository: ReviewRepository by lazy {
+        ReviewRepository(
+            api = retrofit.create(ReviewApi::class.java),
+            outbox = outboxRepository,
+            authorizationHeaderProvider = authorizationHeaderProvider,
+            coordinator = sessionCoordinator,
+            database = database,
+            cachePolicy = cachePolicy,
+        )
+    }
+
+    override val partnerHealthRepository: PartnerHealthRepository by lazy {
+        PartnerHealthRepository(
+            api = retrofit.create(PartnerHealthApi::class.java),
+            authorizationHeaderProvider = authorizationHeaderProvider,
+            coordinator = sessionCoordinator,
+            database = database,
+            preferences = preferences,
+            cachePolicy = cachePolicy,
         )
     }
 

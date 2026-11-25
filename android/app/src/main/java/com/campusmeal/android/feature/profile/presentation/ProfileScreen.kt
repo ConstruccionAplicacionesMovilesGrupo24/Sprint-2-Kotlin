@@ -50,6 +50,7 @@ fun ProfileRoute(
     onChangeContext: () -> Unit,
     onOpenAnalystReport: () -> Unit,
     onOpenZoneDemandReport: () -> Unit,
+    onOpenPartnerHealthReport: () -> Unit,
     onLogout: () -> Unit,
 ) {
     val user by viewModel.user.collectAsStateWithLifecycle()
@@ -104,6 +105,12 @@ fun ProfileRoute(
                     onClick = onOpenZoneDemandReport,
                 ) {
                     Text("BQ9 · Zone demand")
+                }
+
+                TextButton(
+                    onClick = onOpenPartnerHealthReport,
+                ) {
+                    Text("BQ13 · Partner health")
                 }
             }
         }

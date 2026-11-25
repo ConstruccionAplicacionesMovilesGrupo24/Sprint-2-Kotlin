@@ -203,5 +203,48 @@ object DatabaseMigrations {
     }
 }
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
+    /**
+     * v9 -> v10 (S4-04): review drafts, submitted reviews, the review-summary cache and the BQ13 report cache.
+     * Purely additive: drafts, pending outbox rows and every earlier cache survive the upgrade.
+     */
+    val MIGRATION_9_10 = object : Migration(9, 10) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `review_drafts` (" +
+                    "`accountId` TEXT NOT NULL, `restaurantId` TEXT NOT NULL, `restaurantName` TEXT NOT NULL, " +
+                    "`overall` INTEGER, `portion` INTEGER, `taste` INTEGER, `freshness` INTEGER, `value` INTEGER, " +
+                    "`waitMinutesText` TEXT NOT NULL, `updatedAtEpochMillis` INTEGER NOT NULL, " +
+                    "PRIMARY KEY(`accountId`, `restaurantId`))",
+            )
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `review_submissions` (" +
+                    "`clientReviewId` TEXT NOT NULL, `accountId` TEXT NOT NULL, `restaurantId` TEXT NOT NULL, " +
+                    "`restaurantName` TEXT NOT NULL, `overall` INTEGER NOT NULL, `portion` INTEGER NOT NULL, " +
+                    "`taste` INTEGER NOT NULL, `freshness` INTEGER NOT NULL, `value` INTEGER NOT NULL, " +
+                    "`waitMinutes` INTEGER NOT NULL, `occurredAtEpochMillis` INTEGER NOT NULL, `reviewDate` TEXT NOT NULL, " +
+                    "`createdAtEpochMillis` INTEGER NOT NULL, `deliveredAtEpochMillis` INTEGER, `rejectionReason` TEXT, " +
+                    "PRIMARY KEY(`clientReviewId`))",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_review_submissions_accountId_restaurantId` " +
+                    "ON `review_submissions` (`accountId`, `restaurantId`)",
+            )
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `review_summary_cache` (" +
+                    "`accountId` TEXT NOT NULL, `restaurantId` TEXT NOT NULL, `contractVersion` INTEGER NOT NULL, " +
+                    "`responseJson` TEXT NOT NULL, `fetchedAtEpochMillis` INTEGER NOT NULL, " +
+                    "`accessedAtEpochMillis` INTEGER NOT NULL, `invalidatedAtEpochMillis` INTEGER, " +
+                    "PRIMARY KEY(`accountId`, `restaurantId`, `contractVersion`))",
+            )
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `partner_health_reports` (" +
+                    "`accountId` TEXT NOT NULL, `fromDate` TEXT NOT NULL, `toDate` TEXT NOT NULL, " +
+                    "`includeSynthetic` INTEGER NOT NULL, `contractVersion` INTEGER NOT NULL, " +
+                    "`responseJson` TEXT NOT NULL, `fetchedAtEpochMillis` INTEGER NOT NULL, " +
+                    "PRIMARY KEY(`accountId`, `fromDate`, `toDate`, `includeSynthetic`, `contractVersion`))",
+            )
+        }
+    }
+
+    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
 }

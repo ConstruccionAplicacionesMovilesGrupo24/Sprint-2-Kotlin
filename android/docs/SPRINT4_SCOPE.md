@@ -20,7 +20,7 @@ fields that need a physical phone are left empty on purpose: nothing below is a 
 | Latest backend migration | `1790700000000-AddBq9DemandContext.ts` | `src/database/migrations/` |
 | Backend roles | `USER`, `ANALYST` | `src/users/enums/user-role.enum.ts` |
 | Backend under test | `https://campusmeal-api.onrender.com/api/v1/` (Render + Neon) for debug and release builds; no local or tunnelled backend is used for Sprint 4 evidence | `GET /health` → 200, `database: up` (2026-11-23 19:46 UTC, ~42 s cold start) |
-| Deployed backend revision | Not verifiable from the API (no version endpoint); confirm the deployed commit in the Render dashboard before recording evidence | — |
+| Deployed backend revision | `82ea227` at baseline (confirmed by the team in Render, 2026-11-24); since 2026-11-25 `da297a4` (S4-03, PR #24) with Neon migration `1790800000000` applied. `7ca52c7` (PR #25) only adds docs and a demo script, no runtime change | Render dashboard; new routes answer 401 without a token; `migration:show` on Neon |
 
 ### 1.1 Build results (2026-11-23, Windows 11, JDK Temurin 21.0.8)
 
@@ -134,6 +134,10 @@ Common rules for every new endpoint:
 
 ### 5.1 Juan Pablo — reviews and BQ13 (S4-03, S4-04)
 
+> **Implemented in S4-03 (backend `da297a4`).** The contract below is the S4-01 proposal; the implemented
+> differences are listed in §5.1.1 and specified field by field in CampusMealBack
+> `docs/SPRINT4_BQ13_REVIEWS.md` and `docs/API_CONTRACT.md` §14.
+
 **`POST /api/v1/restaurants/:id/reviews`** (`@Auth()`)
 
 ```json
@@ -198,6 +202,20 @@ cutoff, `STALE` = revisions exist but none in that window, `UNKNOWN` = no revisi
   review mean) across restaurants with non-suppressed values; `INSUFFICIENT_DATA` with fewer than 5 such
   restaurants or a constant variable. Always labeled observational, with sample sizes and coverage dates.
 
+#### 5.1.1 Implemented differences (S4-03), consumed by Android in S4-04
+
+| Proposal | Implemented | Why |
+|---|---|---|
+| `revisionsInWindow` | `revisionsInRange` (counted over `[from, to]`) and a separate `freshnessWindow {days, from, to}` | The report range and the 7-day freshness window are different intervals |
+| `lastRevisionAt` | `lastRevisionAt` (instant) and `lastRevisionDate` (Bogotá date) | Day counts use the calendar date |
+| Suppression "fewer than 5 users" | 0 users is a real zero; 1–4 suppressed | Zero and suppressed must be distinguishable |
+| `GET …/reviews` returns `recent` | `recent` is empty while the summary is suppressed | Individual rows would reveal the withheld mean |
+| — | `includeSynthetic` query parameter (default `false`) on both reads, echoed with `includesSyntheticData` | Students never see demo rows as real; analysts opt in |
+| — | `cutoff`, `revisionHistoryStartsAt`, `minDistinctUsers`, `limitations[]` in the report | Coverage and limits travel with the data |
+| Per-restaurant flat fields | `recommendations {…}` and `reviews {…}` objects, `associations[]` | Each group carries its own `suppressed` flag |
+| `revision_note` | `note` (≤ 200), plus `meal_name`, `previous_value`, `new_value` | A removed meal keeps its name; the change is auditable |
+| — | Error code `RESTAURANT_NOT_FOUND` | Stable code the outbox can show |
+
 ### 5.2 Natalia — BQ10 and alternatives (S4-06, S4-07)
 
 Frozen essentials; the field-level DTO is written by Natalia in `docs/SPRINT4_BQ10.md` and linked here.
@@ -247,6 +265,12 @@ Frozen essentials; field-level DTO in `docs/SPRINT4_BQ1.md`.
   through a PR against that integration, Daniel the `PERFORMANCE` branch.
 - `REVIEW` acknowledgement: `201` or `200` → `SENT`, and the review summary cache for that restaurant is
   invalidated. `409` → `FAILED` with the code shown to the user.
+- **Implemented in S4-04.** Daniel's S4-10 integration did not exist yet, so the `REVIEW` branch was added
+  directly to the existing `OutboxRepository.send` (same drain, same unique WorkManager chain, no new worker).
+  Two additive hooks: `enqueueReview(…, inSameTransaction)` stores the outbox row together with the caller's
+  rows in one Room transaction, and `OutboxDeliveryListener` reports the definitive outcome to the review store.
+  A permanent failure keeps `HTTP <code>` plus the API error code (enum only, never the message) in
+  `lastError`. `RECOMMENDATION` and `USAGE` payloads are unchanged. S4-10 rebases on this.
 
 ## 7. Retention policy (G-6)
 
@@ -292,6 +316,11 @@ schema JSON, adds the migration to `DatabaseMigrations.ALL`, and is checked by u
 that has drafts and pending outbox rows. Expected order by dependency, not a reservation:
 reviews/BQ13 cache (S4-04) → alternatives/BQ10 cache (S4-07) → BQ1 cache (S4-10). The `EXPIRED` status
 needs no schema change.
+
+**Taken:** v10 by S4-04 (`MIGRATION_9_10`: `review_drafts`, `review_submissions`, `review_summary_cache`,
+`partner_health_reports`; purely additive). Checked by installing the S4-04 APK over the `main` (v9) APK on
+an emulator that had a session, a cached restaurant detail and pending outbox rows: `user_version` 10, all
+rows kept, no crash (`SPRINT4_JUAN_PABLO.md` §4). The next schema PR takes v11.
 
 **Backend.** Each owner adds additive migrations with timestamps after `1790700000000`. Deploy to Render/Neon
 before the dependent Android acceptance. `npm run build`, `npm run lint` and `migration:run` on a fresh

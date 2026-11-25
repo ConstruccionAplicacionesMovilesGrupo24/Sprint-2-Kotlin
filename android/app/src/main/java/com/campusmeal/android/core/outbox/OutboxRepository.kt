@@ -16,6 +16,10 @@ import com.campusmeal.android.core.session.AuthorizationHeaderProvider
 import com.campusmeal.android.core.session.DeactivationReason
 import com.campusmeal.android.feature.decision.data.remote.RecommendationEventDto
 import com.campusmeal.android.feature.decision.data.remote.RecommendationEventsApi
+import com.campusmeal.android.feature.reviews.data.CreateReviewRequestDto
+import com.campusmeal.android.feature.reviews.data.ReviewApi
+import com.campusmeal.android.feature.reviews.data.ReviewOutboxPayload
+import androidx.room.withTransaction
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -39,7 +43,7 @@ sealed interface OutboxAdmission {
 
 /**
  * Durable, at-least-once delivery of analytics events (S3-09): BQ8 recommendation events and BQ6 usage
- * events.
+ * events; since S4-04 also structured restaurant reviews ([OutboxKind.REVIEW]), through the same drain.
  *
  * An event is written to Room first, inside the [AccountSessionCoordinator] lock and only while its
  * scope is still active. A unique WorkManager chain per account then sends it with its stable
@@ -49,13 +53,16 @@ sealed interface OutboxAdmission {
  * the rows, which are sent the next time the same account is activated.
  */
 class OutboxRepository(
-    database: CampusMealDatabase,
+    private val database: CampusMealDatabase,
     private val recommendationApi: RecommendationEventsApi,
     private val usageApi: UsageEventsApi,
+    private val reviewApi: ReviewApi,
     private val authorizationHeaderProvider: AuthorizationHeaderProvider,
     private val coordinator: AccountSessionCoordinator,
     private val scheduler: OutboxScheduler,
     private val clock: () -> Long = System::currentTimeMillis,
+    /** Resolved lazily: listeners (such as the review store) may depend on this repository. */
+    private val deliveryListeners: () -> List<OutboxDeliveryListener> = { emptyList() },
 ) : AccountLifecycleListener {
 
     private val dao = database.outboxDao()
@@ -103,6 +110,23 @@ class OutboxRepository(
         admit(scope, OutboxKind.USAGE, null, clientEventId, occurredAtEpochMillis, usagePayload(clientEventId, FEATURE_USED, feature.name, occurredAtEpochMillis, zoneId, foodCategory, budgetBand))
     }
 
+    /**
+     * Admits one restaurant review (S4-04). [inSameTransaction] runs in the same Room transaction as the
+     * outbox insert (the caller stores its submission record and deletes the draft there), so either both
+     * exist or neither does. `clientEventId` is the review's `clientReviewId`: a resend after a lost
+     * acknowledgement is answered 200 by the backend with the same receipt.
+     */
+    suspend fun enqueueReview(
+        scope: AccountSessionScope,
+        restaurantId: String,
+        body: CreateReviewRequestDto,
+        occurredAtEpochMillis: Long,
+        inSameTransaction: suspend () -> Unit,
+    ): OutboxAdmission {
+        val payload = json.encodeToString(ReviewOutboxPayload(ReviewOutboxPayload.VERSION, restaurantId, body))
+        return admit(scope, OutboxKind.REVIEW, null, body.clientReviewId, occurredAtEpochMillis, payload, inSameTransaction)
+    }
+
     /** `PENDING`, `SENDING`, `SENT`, `FAILED`, or null when the event does not exist. */
     fun observeStatus(clientEventId: String): Flow<String?> = dao.observeStatus(clientEventId)
 
@@ -146,7 +170,10 @@ class OutboxRepository(
                 val authorization = authorizationHeaderProvider.getAuthorizationHeader(scope) ?: return DrainResult.DONE
                 dao.markSending(event.clientEventId)
                 when (val outcome = send(event, authorization)) {
-                    Outcome.Accepted -> dao.markSent(event.clientEventId)
+                    Outcome.Accepted -> {
+                        dao.markSent(event.clientEventId)
+                        deliveryListeners().forEach { it.onDelivered(event) }
+                    }
                     is Outcome.Transient -> {
                         dao.markPending(event.clientEventId, outcome.reason)
                         return DrainResult.RETRY
@@ -156,7 +183,10 @@ class OutboxRepository(
                         dao.markPending(event.clientEventId, "HTTP 401")
                         return DrainResult.DONE
                     }
-                    is Outcome.Permanent -> dao.markFailed(event.clientEventId, outcome.reason)
+                    is Outcome.Permanent -> {
+                        dao.markFailed(event.clientEventId, outcome.reason)
+                        deliveryListeners().forEach { it.onRejected(event, outcome.reason) }
+                    }
                 }
             }
         }
@@ -169,13 +199,17 @@ class OutboxRepository(
         clientEventId: String,
         occurredAtEpochMillis: Long,
         payloadJson: String,
+        inSameTransaction: (suspend () -> Unit)? = null,
     ): OutboxAdmission {
         val stored = coordinator.runIfCurrent(scope) {
-            if (dao.pendingCount(scope.accountId) >= MAX_PENDING_PER_ACCOUNT) return@runIfCurrent false
-            if (dao.insert(row(scope.accountId, kind, recommendationId, clientEventId, occurredAtEpochMillis, payloadJson)) == -1L) {
-                dao.requeue(clientEventId)
+            database.withTransaction {
+                if (dao.pendingCount(scope.accountId) >= MAX_PENDING_PER_ACCOUNT) return@withTransaction false
+                if (dao.insert(row(scope.accountId, kind, recommendationId, clientEventId, occurredAtEpochMillis, payloadJson)) == -1L) {
+                    dao.requeue(clientEventId)
+                }
+                inSameTransaction?.invoke()
+                true
             }
-            true
         }
         return when (stored) {
             null -> OutboxAdmission.Rejected("session changed")
@@ -241,13 +275,20 @@ class OutboxRepository(
                     val dto = json.decodeFromString<UsageEventDto>(event.payloadJson)
                     suspend { usageApi.send(authorization, dto) }
                 }
+                OutboxKind.REVIEW -> {
+                    val envelope = json.decodeFromString<ReviewOutboxPayload>(event.payloadJson)
+                    // A newer app wrote a format this one cannot send: fail visibly instead of guessing.
+                    if (envelope.v != ReviewOutboxPayload.VERSION) return Outcome.Permanent("unreadable payload")
+                    suspend { reviewApi.submit(authorization, envelope.restaurantId, envelope.body) }
+                }
                 else -> return Outcome.Permanent("unknown kind")
             }
         } catch (_: SerializationException) {
             return Outcome.Permanent("unreadable payload")
         }
 
-        val status = when (val result = apiCall(call)) {
+        val result = apiCall(call)
+        val status = when (result) {
             is ApiResult.Success -> result.data.code()
             ApiResult.Unauthorized -> 401
             is ApiResult.HttpError -> result.code
@@ -260,7 +301,13 @@ class OutboxRepository(
             status == null || status in 500..599 || status == 429 || status == 408 ->
                 Outcome.Transient(status?.let { "HTTP $it" } ?: "network error")
             status == 401 -> Outcome.SessionRejected
-            else -> Outcome.Permanent("HTTP $status")
+            else -> {
+                // Only the API's error code is kept (an enum such as REVIEW_ALREADY_SUBMITTED_TODAY), never the message.
+                val errorCode = (result as? ApiResult.Success)?.data?.errorBody()
+                    ?.let { body -> runCatching { body.string() }.getOrNull() }
+                    ?.let { ERROR_CODE.find(it)?.groupValues?.get(1) }
+                Outcome.Permanent(listOfNotNull("HTTP $status", errorCode).joinToString(" "))
+            }
         }
     }
 
@@ -288,5 +335,6 @@ class OutboxRepository(
         const val BATCH_SIZE = 20
         const val MAX_PENDING_PER_ACCOUNT = 1_000
         const val RETENTION_DAYS = 80L
+        val ERROR_CODE = Regex(""""code"\s*:\s*"([A-Z_]{1,64})"""")
     }
 }
