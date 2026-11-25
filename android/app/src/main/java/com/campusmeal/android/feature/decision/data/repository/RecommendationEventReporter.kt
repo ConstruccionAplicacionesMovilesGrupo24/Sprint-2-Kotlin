@@ -50,7 +50,7 @@ class RecommendationEventReporter(private val outbox: OutboxRepository) {
         outbox.observeStatus(clientEventId).map { status ->
             when (status) {
                 OutboxStatus.SENT -> EventDelivery.SENT
-                OutboxStatus.FAILED -> EventDelivery.FAILED
+                OutboxStatus.FAILED, OutboxStatus.EXPIRED -> EventDelivery.FAILED
                 else -> EventDelivery.PENDING
             }
         }

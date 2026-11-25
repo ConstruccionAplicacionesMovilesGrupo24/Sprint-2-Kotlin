@@ -26,10 +26,12 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.campusmeal.android.core.common.formatSyncedAt
 import com.campusmeal.android.feature.decision.domain.model.DecisionContext
@@ -59,6 +61,19 @@ fun DecisionRoute(
 
     LaunchedEffect(context) {
         if (context != null) viewModel.onContext(context)
+    }
+
+    // BQ1: the frame after the one that drew this load's content, once per load.
+    val loadId = (state as? DecisionUiState.Loaded)?.loadId
+    LaunchedEffect(loadId) {
+        if (loadId != null) {
+            withFrameNanos { }
+            viewModel.onContentRendered(loadId)
+        }
+    }
+    LifecycleStartEffect(viewModel) {
+        viewModel.onScreenVisible(true)
+        onStopOrDispose { viewModel.onScreenVisible(false) }
     }
 
     DecisionScreen(

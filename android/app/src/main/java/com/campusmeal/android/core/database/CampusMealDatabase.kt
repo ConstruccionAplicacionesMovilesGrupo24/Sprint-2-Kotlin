@@ -30,6 +30,8 @@ import com.campusmeal.android.feature.analytics.data.ZoneDemandReportDao
 import com.campusmeal.android.feature.analytics.data.ZoneDemandReportEntity
 import com.campusmeal.android.feature.analytics.data.PartnerHealthReportDao
 import com.campusmeal.android.feature.analytics.data.PartnerHealthReportEntity
+import com.campusmeal.android.feature.analytics.data.PerformanceReportDao
+import com.campusmeal.android.feature.analytics.data.PerformanceReportEntity
 import com.campusmeal.android.feature.reviews.data.ReviewDao
 import com.campusmeal.android.feature.reviews.data.ReviewDraftEntity
 import com.campusmeal.android.feature.reviews.data.ReviewSubmissionEntity
@@ -61,8 +63,9 @@ import com.campusmeal.android.feature.reviews.data.ReviewSummaryCacheEntity
         ReviewSubmissionEntity::class,
         ReviewSummaryCacheEntity::class,
         PartnerHealthReportEntity::class,
+        PerformanceReportEntity::class,
     ],
-    version = 10,
+    version = 11,
     exportSchema = true,
 )
 abstract class CampusMealDatabase : RoomDatabase() {
@@ -94,6 +97,8 @@ abstract class CampusMealDatabase : RoomDatabase() {
     abstract fun reviewDao(): ReviewDao
 
     abstract fun partnerHealthReportDao(): PartnerHealthReportDao
+
+    abstract fun performanceReportDao(): PerformanceReportDao
 
     companion object {
         const val NAME = "campusmeal.db"

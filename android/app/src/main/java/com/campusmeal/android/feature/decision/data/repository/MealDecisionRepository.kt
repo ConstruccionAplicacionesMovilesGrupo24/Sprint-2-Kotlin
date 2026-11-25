@@ -14,6 +14,7 @@ import com.campusmeal.android.feature.decision.data.remote.MealDecisionApi
 import com.campusmeal.android.feature.decision.domain.model.DecisionContext
 import com.campusmeal.android.feature.decision.domain.model.MealDecisionError
 import com.campusmeal.android.feature.decision.domain.model.MealDecisionResult
+import java.io.InterruptedIOException
 
 /** The BQ5 boundary the ViewModel depends on. */
 interface MealDecisionRepository {
@@ -67,7 +68,9 @@ class NetworkMealDecisionRepository(
                 }
             }
             ApiResult.Unauthorized -> MealDecisionResult.Unauthorized
-            is ApiResult.NetworkUnavailable -> previousOr(scope, MealDecisionError.BackendUnavailable(null))
+            // OkHttp reports its connect, read and call timeouts as InterruptedIOException (or a subclass).
+            is ApiResult.NetworkUnavailable ->
+                previousOr(scope, MealDecisionError.BackendUnavailable(null, timedOut = response.cause is InterruptedIOException))
             is ApiResult.HttpError ->
                 if (response.code in 500..599) {
                     previousOr(scope, MealDecisionError.BackendUnavailable(response.code))

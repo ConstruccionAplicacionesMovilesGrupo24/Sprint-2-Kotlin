@@ -31,6 +31,10 @@ data class OutboxEventEntity(
     val status: String,
     val attempts: Int,
     val lastError: String?,
+    /** Start of the latest delivery attempt; null before the first one. */
+    val lastAttemptAtEpochMillis: Long? = null,
+    /** When it became SENT, FAILED or EXPIRED; null while it is still open. */
+    val closedAtEpochMillis: Long? = null,
 )
 
 object OutboxKind {
@@ -45,6 +49,9 @@ object OutboxKind {
      * `{"v":1,"restaurantId":…,"body":{…}}`; the row's `clientEventId` is the review's `clientReviewId`.
      */
     const val REVIEW = "REVIEW"
+
+    /** `POST analytics/performance-events` (BQ1). Payload is [PerformanceOutboxPayload]. */
+    const val PERFORMANCE = "PERFORMANCE"
 }
 
 /**
@@ -67,4 +74,7 @@ object OutboxStatus {
 
     /** Rejected definitively by the backend (4xx). Kept for diagnosis and an explicit retry. */
     const val FAILED = "FAILED"
+
+    /** Never delivered within the age the backend accepts. Kept visible until dismissed or purged. */
+    const val EXPIRED = "EXPIRED"
 }

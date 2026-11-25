@@ -9,6 +9,6 @@ class CampusMealApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        container = DefaultAppContainer(this)
+        container = DefaultAppContainer(this).also { it.installTelemetry(this) }
     }
 }

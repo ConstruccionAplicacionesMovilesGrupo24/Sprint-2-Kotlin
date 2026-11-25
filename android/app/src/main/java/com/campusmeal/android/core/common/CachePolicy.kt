@@ -18,4 +18,6 @@ data class CachePolicy(
     val reviewSummary: Duration = 15.minutes,
     /** S4-04: BQ13 partner-health report. */
     val partnerHealthReport: Duration = 15.minutes,
+    /** S4-10: BQ1 performance report. */
+    val performanceReport: Duration = 15.minutes,
 )

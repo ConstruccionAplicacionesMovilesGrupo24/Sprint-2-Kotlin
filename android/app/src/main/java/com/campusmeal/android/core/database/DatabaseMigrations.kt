@@ -246,5 +246,28 @@ object DatabaseMigrations {
         }
     }
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
+    /**
+     * v10 -> v11 (S4-10): when an outbox event was last attempted and when it closed (synchronization
+     * center and retention), and the BQ1 report cache. Additive: pending rows keep their state. Events that
+     * had already failed start their visible period now, so the upgrade never deletes one silently.
+     */
+    val MIGRATION_10_11 = object : Migration(10, 11) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE `outbox_events` ADD COLUMN `lastAttemptAtEpochMillis` INTEGER")
+            db.execSQL("ALTER TABLE `outbox_events` ADD COLUMN `closedAtEpochMillis` INTEGER")
+            db.execSQL(
+                "UPDATE `outbox_events` SET `closedAtEpochMillis` = CAST(strftime('%s', 'now') AS INTEGER) * 1000 " +
+                    "WHERE `status` = 'FAILED'",
+            )
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `performance_reports` (" +
+                    "`accountId` TEXT NOT NULL, `fromDate` TEXT NOT NULL, `toDate` TEXT NOT NULL, " +
+                    "`includeSynthetic` INTEGER NOT NULL, `contractVersion` INTEGER NOT NULL, " +
+                    "`responseJson` TEXT NOT NULL, `fetchedAtEpochMillis` INTEGER NOT NULL, " +
+                    "PRIMARY KEY(`accountId`, `fromDate`, `toDate`, `includeSynthetic`, `contractVersion`))",
+            )
+        }
+    }
+
+    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
 }
