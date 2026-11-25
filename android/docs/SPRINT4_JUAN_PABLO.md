@@ -15,7 +15,8 @@ No local or tunnelled backend was used.
 | S4-01 | Sprint-2-Kotlin | #52 (scope, inventory usage event) | Merged (`dd2f89d`) |
 | S4-03 | CampusMealBack | #24 (reviews, menu revisions, BQ13 endpoint) | Merged (`da297a4`), deployed to Render, migration applied on Neon |
 | S4-03 | CampusMealBack | #25 (Render evidence, visible demo reviews) | Merged (`7ca52c7`) |
-| S4-04 | Sprint-2-Kotlin | _this PR_ (`sprint4/s4-04-reviews-partner-health`) | Open |
+| S4-04 | Sprint-2-Kotlin | #54 (`sprint4/s4-04-reviews-partner-health`) | Merged (`b5dceee`) |
+| S4-05 | Sprint-2-Kotlin | `sprint4/s4-05-bq3-lookup`: harness `df0a40e`, optimization commit pending | Open — evidence in `SPRINT4_MICROOPT_JP.md` |
 
 ## 2. S4-04 — what was built
 

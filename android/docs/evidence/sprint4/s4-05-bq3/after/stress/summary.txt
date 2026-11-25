@@ -1,0 +1,4 @@
+sections.csv cm.bq3.evaluate: 30 evaluations in 5 runs
+  all evaluations  median 17.564 ms  min 15.371  max 21.621
+  per-run medians  run-01=17.669  run-02=17.132  run-03=18.622  run-04=17.276  run-05=18.682
+  median of runs   17.669 ms  range 17.132–18.682  (spread 8.773 % of median)
