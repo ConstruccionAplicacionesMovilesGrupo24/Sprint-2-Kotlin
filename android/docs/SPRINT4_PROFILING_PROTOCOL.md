@@ -112,7 +112,7 @@ was demonstrated.
 |---|---|---|---|
 | S4-05 | Juan Pablo | `df0a40e`, 2026-11-25, SM-S948U1 (API 37): representative 2.043 ms (1.861–2.299, 10 runs), stress 28.412 ms (26.497–29.484, 5 runs). `docs/evidence/sprint4/s4-05-bq3/before/` | Captured |
 | S4-08 | Natalia | | Pending |
-| S4-11 | Daniel | | Pending (after S4-10, which adds the event traffic) |
+| S4-11 | Daniel | `dad0a47`, 2026-11-25, API 37 emulator (4 vCPU, 4 GB; no Android phone available): `cm.outbox.isoUtc` representative 0.136 ms (0.092–0.244, 10 runs), stress 0.073 ms (0.016–0.099, 10 runs). `docs/evidence/sprint4/s4-11-iso-utc/before/` | Captured |
 
 ## 6. References
 

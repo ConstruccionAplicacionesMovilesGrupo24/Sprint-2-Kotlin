@@ -1,0 +1,10 @@
+run-01 S4-11 burst mode=stress events=500 admitted=500 wallMs=1470.391 earliest=2026-12-31T23:59:50Z latest=2027-01-01T00:08:27Z payloadSha256=46bee4e0573aa6bbc92a3e15c360e03ba01a5fdf1337733eb68812fadf85fa1c
+run-02 S4-11 burst mode=stress events=500 admitted=500 wallMs=2511.477 earliest=2026-12-31T23:59:50Z latest=2027-01-01T00:08:27Z payloadSha256=46bee4e0573aa6bbc92a3e15c360e03ba01a5fdf1337733eb68812fadf85fa1c
+run-03 S4-11 burst mode=stress events=500 admitted=500 wallMs=2956.967 earliest=2026-12-31T23:59:50Z latest=2027-01-01T00:08:27Z payloadSha256=46bee4e0573aa6bbc92a3e15c360e03ba01a5fdf1337733eb68812fadf85fa1c
+run-04 S4-11 burst mode=stress events=500 admitted=500 wallMs=2145.473 earliest=2026-12-31T23:59:50Z latest=2027-01-01T00:08:27Z payloadSha256=46bee4e0573aa6bbc92a3e15c360e03ba01a5fdf1337733eb68812fadf85fa1c
+run-05 S4-11 burst mode=stress events=500 admitted=500 wallMs=404.728 earliest=2026-12-31T23:59:50Z latest=2027-01-01T00:08:27Z payloadSha256=46bee4e0573aa6bbc92a3e15c360e03ba01a5fdf1337733eb68812fadf85fa1c
+run-06 S4-11 burst mode=stress events=500 admitted=500 wallMs=2306.553 earliest=2026-12-31T23:59:50Z latest=2027-01-01T00:08:27Z payloadSha256=46bee4e0573aa6bbc92a3e15c360e03ba01a5fdf1337733eb68812fadf85fa1c
+run-07 S4-11 burst mode=stress events=500 admitted=500 wallMs=2343.547 earliest=2026-12-31T23:59:50Z latest=2027-01-01T00:08:27Z payloadSha256=46bee4e0573aa6bbc92a3e15c360e03ba01a5fdf1337733eb68812fadf85fa1c
+run-08 S4-11 burst mode=stress events=500 admitted=500 wallMs=1883.293 earliest=2026-12-31T23:59:50Z latest=2027-01-01T00:08:27Z payloadSha256=46bee4e0573aa6bbc92a3e15c360e03ba01a5fdf1337733eb68812fadf85fa1c
+run-09 S4-11 burst mode=stress events=500 admitted=500 wallMs=2692.852 earliest=2026-12-31T23:59:50Z latest=2027-01-01T00:08:27Z payloadSha256=46bee4e0573aa6bbc92a3e15c360e03ba01a5fdf1337733eb68812fadf85fa1c
+run-10 S4-11 burst mode=stress events=500 admitted=500 wallMs=1908.501 earliest=2026-12-31T23:59:50Z latest=2027-01-01T00:08:27Z payloadSha256=46bee4e0573aa6bbc92a3e15c360e03ba01a5fdf1337733eb68812fadf85fa1c

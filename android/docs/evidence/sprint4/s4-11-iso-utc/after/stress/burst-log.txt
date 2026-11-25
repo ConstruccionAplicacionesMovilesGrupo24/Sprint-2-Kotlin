@@ -1,0 +1,10 @@
+run-01 S4-11 burst mode=stress events=500 admitted=500 wallMs=409.448 earliest=2026-12-31T23:59:50Z latest=2027-01-01T00:08:27Z payloadSha256=46bee4e0573aa6bbc92a3e15c360e03ba01a5fdf1337733eb68812fadf85fa1c
+run-02 S4-11 burst mode=stress events=500 admitted=500 wallMs=1795.000 earliest=2026-12-31T23:59:50Z latest=2027-01-01T00:08:27Z payloadSha256=46bee4e0573aa6bbc92a3e15c360e03ba01a5fdf1337733eb68812fadf85fa1c
+run-03 S4-11 burst mode=stress events=500 admitted=500 wallMs=1775.321 earliest=2026-12-31T23:59:50Z latest=2027-01-01T00:08:27Z payloadSha256=46bee4e0573aa6bbc92a3e15c360e03ba01a5fdf1337733eb68812fadf85fa1c
+run-04 S4-11 burst mode=stress events=500 admitted=500 wallMs=2139.915 earliest=2026-12-31T23:59:50Z latest=2027-01-01T00:08:27Z payloadSha256=46bee4e0573aa6bbc92a3e15c360e03ba01a5fdf1337733eb68812fadf85fa1c
+run-05 S4-11 burst mode=stress events=500 admitted=500 wallMs=1630.241 earliest=2026-12-31T23:59:50Z latest=2027-01-01T00:08:27Z payloadSha256=46bee4e0573aa6bbc92a3e15c360e03ba01a5fdf1337733eb68812fadf85fa1c
+run-06 S4-11 burst mode=stress events=500 admitted=500 wallMs=769.667 earliest=2026-12-31T23:59:50Z latest=2027-01-01T00:08:27Z payloadSha256=46bee4e0573aa6bbc92a3e15c360e03ba01a5fdf1337733eb68812fadf85fa1c
+run-07 S4-11 burst mode=stress events=500 admitted=500 wallMs=1844.511 earliest=2026-12-31T23:59:50Z latest=2027-01-01T00:08:27Z payloadSha256=46bee4e0573aa6bbc92a3e15c360e03ba01a5fdf1337733eb68812fadf85fa1c
+run-08 S4-11 burst mode=stress events=500 admitted=500 wallMs=2188.459 earliest=2026-12-31T23:59:50Z latest=2027-01-01T00:08:27Z payloadSha256=46bee4e0573aa6bbc92a3e15c360e03ba01a5fdf1337733eb68812fadf85fa1c
+run-09 S4-11 burst mode=stress events=500 admitted=500 wallMs=3140.764 earliest=2026-12-31T23:59:50Z latest=2027-01-01T00:08:27Z payloadSha256=46bee4e0573aa6bbc92a3e15c360e03ba01a5fdf1337733eb68812fadf85fa1c
+run-10 S4-11 burst mode=stress events=500 admitted=500 wallMs=1490.118 earliest=2026-12-31T23:59:50Z latest=2027-01-01T00:08:27Z payloadSha256=46bee4e0573aa6bbc92a3e15c360e03ba01a5fdf1337733eb68812fadf85fa1c
