@@ -23,7 +23,11 @@ work = "2.11.2"
 
 coil = "3.6.2"
 
+# JVM-only equivalence check of the BQ3 evaluator (S4-05); no instrumented tests.
+junit = "4.13.2"
+
 [libraries]
+junit = { group = "junit", name = "junit", version.ref = "junit" }
 # Android and Compose
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
