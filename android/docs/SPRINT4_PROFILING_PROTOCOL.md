@@ -35,7 +35,9 @@ Do not enable R8 for Sprint 4: if only the "after" were minified, the difference
 | Installs and opens | API 37 emulator | Started, no entry in the crash buffer |
 | System trace readable | `scripts/profiling/campusmeal.pbtxt`, API 37 emulator | 3.7 MB trace with `Choreographer#doFrame` and Compose slices of the app |
 
-The emulator only proves the tooling. **Measurements are taken on a physical phone** (§3); none is recorded yet.
+Measurements are taken on a physical phone when the owner has one (§3). An owner without an Android phone may measure a pair
+on the emulator: both variants then use the same AVD on the same host, and the report states it as a limitation (timings
+include host scheduling and are not representative of a phone in absolute terms; only the paired comparison is used).
 
 ## 2. Trace sections
 
@@ -55,7 +57,8 @@ the denominator that keeps an isolated gain in `isoUtc` from being exaggerated.
 
 ## 3. Conditions of a pair
 
-1. One physical phone for both variants, API 29 or later, battery above 50 %, charging, battery saver off, not hot.
+1. One device for both variants, API 29 or later: a physical phone (battery above 50 %, charging, battery saver off, not hot)
+   or, only when the owner has no Android phone, the same emulator AVD on the same host (on power, no other heavy work).
 2. The same commit except for one dedicated optimization commit. The "before" is a functional baseline that already includes
    the new Sprint 4 features; take it **before** the optimization is merged.
 3. Same account, same dataset, same date. Write down the number of recipes, inventory rows and cached restaurants.
@@ -69,7 +72,7 @@ the denominator that keeps an isolated gain in `isoUtc` from being exaggerated.
 |---|---|
 | S4-05 | Recipes open; alternate the maximum preparation time between two fixed values 6 times, never repeating a value the 5-result memo still holds |
 | S4-08 | With a fresh cached search: open results, open one cached detail, go back; 5 times |
-| S4-11 | Representative: 5 comparisons/visits. Stress: the synthetic admission burst added in S4-11, in a disposable dataset |
+| S4-11 | `scripts/profiling/s4-11-burst.sh`, in a disposable database without account or network (conditions 3, 4 and 7 do not apply). Representative: the admissions of 5 meal comparisons (usage, impression, selection and load telemetry: 20 events). Stress: 500 events. Both after a 50-event warmup in the same process |
 
 ### 3.1 Recording
 

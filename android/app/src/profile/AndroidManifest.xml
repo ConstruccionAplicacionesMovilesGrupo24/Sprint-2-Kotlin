@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    S4-11: only the `profile` build contains this activity. It admits a synthetic burst of outbox events into a
+    disposable database so the admission path can be traced without an account, a backend or the network.
+    Exported so `adb shell am start` can launch it; it never reads or writes the app's own data.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <activity
+            android:name="com.campusmeal.android.profiling.OutboxBurstActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.DeviceDefault.Light.NoActionBar" />
+    </application>
+
+</manifest>
