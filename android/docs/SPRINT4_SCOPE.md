@@ -281,10 +281,12 @@ removed silently.
 
 Policy for Sprint 4 (implemented by Daniel in S4-10, since the sync center is where it becomes visible):
 
-1. Pending and failed rows are never deleted silently. After 80 days a `PENDING` row becomes `EXPIRED`
-   (new status value, no schema change: `status` is a string) with `lastError = "expired before delivery"`.
+1. Pending and failed rows are never deleted silently. 80 days after it happened (`occurredAt`, the date the
+   backend checks) a `PENDING` row becomes `EXPIRED` (new status value) with
+   `lastError = "expired before delivery"`.
 2. `EXPIRED` and `FAILED` rows are listed in the synchronization center and can be dismissed by the user;
-   they are purged 30 days after expiring/failing.
+   they are purged 30 days after expiring/failing. That date and the last attempt are two new nullable
+   columns of `outbox_events` (Room v11, S4-10).
 3. `SENT` rows keep the 1-day purge.
 4. Review rows follow the review endpoint's 30-day `occurredAt` limit: a `REVIEW` still pending after 30 days
    becomes `EXPIRED` and is shown on the review screen as "could not be delivered".
@@ -302,7 +304,7 @@ Policy for Sprint 4 (implemented by Daniel in S4-10, since the sync center is wh
 | Alternatives | Room | 20 queries per account | 5 min | account + campus + category + time + budget + diet + contractVersion (no coordinates) |
 | BQ10 report | Room | 20 queries per account | 15 min | account + zone + from + to + contractVersion |
 | BQ1 report | Room | 20 queries per account | 15 min | account + from + to + contractVersion |
-| Crash marker | Small file in `noBackupFilesDir`, written synchronously by the handler | 1 marker | until durably admitted | session id |
+| Crash marker | Small file in `noBackupFilesDir`, written synchronously by the handler | 5 markers, one per crashed session (S4-10: a crash loop before the import would otherwise be undercounted) | until durably admitted | session id |
 
 All account-owned writes check the captured session scope; late responses are dropped when the scope or query
 changed. A 403 deletes the matching report and blocks cached access. Logout/account change clears read caches

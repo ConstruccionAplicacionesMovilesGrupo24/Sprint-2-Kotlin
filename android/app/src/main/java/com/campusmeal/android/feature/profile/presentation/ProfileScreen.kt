@@ -51,6 +51,8 @@ fun ProfileRoute(
     onOpenAnalystReport: () -> Unit,
     onOpenZoneDemandReport: () -> Unit,
     onOpenPartnerHealthReport: () -> Unit,
+    onOpenPerformanceReport: () -> Unit,
+    onOpenSyncCenter: () -> Unit,
     onLogout: () -> Unit,
 ) {
     val user by viewModel.user.collectAsStateWithLifecycle()
@@ -112,7 +114,20 @@ fun ProfileRoute(
                 ) {
                     Text("BQ13 · Partner health")
                 }
+
+                TextButton(
+                    onClick = onOpenPerformanceReport,
+                ) {
+                    Text("BQ1 · App performance")
+                }
             }
+        }
+
+        Section("Synchronization", action = "Open", onAction = onOpenSyncCenter) {
+            Text(
+                "What is waiting to be sent, what could not be delivered and what needs your review.",
+                color = MaterialTheme.campusMealColors.textSecondary,
+            )
         }
 
         Section("About") {

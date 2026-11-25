@@ -69,6 +69,10 @@ import com.campusmeal.android.feature.analytics.presentation.ZoneDemandReportRou
 import com.campusmeal.android.feature.analytics.presentation.ZoneDemandReportViewModel
 import com.campusmeal.android.feature.analytics.presentation.PartnerHealthRoute
 import com.campusmeal.android.feature.analytics.presentation.PartnerHealthViewModel
+import com.campusmeal.android.feature.analytics.presentation.PerformanceHealthRoute
+import com.campusmeal.android.feature.analytics.presentation.PerformanceHealthViewModel
+import com.campusmeal.android.feature.sync.SynchronizationCenterRoute
+import com.campusmeal.android.feature.sync.SynchronizationCenterViewModel
 import com.campusmeal.android.feature.reviews.presentation.RestaurantReviewsSection
 import com.campusmeal.android.feature.reviews.presentation.RestaurantReviewsViewModel
 import com.campusmeal.android.feature.reviews.presentation.ReviewMealRoute
@@ -436,6 +440,8 @@ fun CampusMealNavHost(
                     onOpenAnalystReport = { navController.navigate(CampusMealRoute.AnalystReport) },
                     onOpenZoneDemandReport = { navController.navigate(CampusMealRoute.ZoneDemandReport)},
                     onOpenPartnerHealthReport = { navController.navigate(CampusMealRoute.PartnerHealthReport) },
+                    onOpenPerformanceReport = { navController.navigate(CampusMealRoute.PerformanceReport) },
+                    onOpenSyncCenter = { navController.navigate(CampusMealRoute.SyncCenter) },
                     onLogout = onLogout,
                 )
             }
@@ -460,6 +466,24 @@ fun CampusMealNavHost(
                     onBack = {
                         navController.popBackStack()
                     },
+                )
+            }
+
+            composable<CampusMealRoute.PerformanceReport> {
+                PerformanceHealthRoute(
+                    viewModel = viewModel(factory = PerformanceHealthViewModel.factory(container, sessionScope)),
+                    online = online,
+                    onBack = { navController.popBackStack() },
+                )
+            }
+
+            composable<CampusMealRoute.SyncCenter> {
+                SynchronizationCenterRoute(
+                    viewModel = viewModel(factory = SynchronizationCenterViewModel.factory(container, sessionScope)),
+                    online = online,
+                    // The inventory screen owns drafts and uncertain writes: they are only resolved there.
+                    onOpenInventory = { openTab(TopLevel.INVENTORY) },
+                    onBack = { navController.popBackStack() },
                 )
             }
 

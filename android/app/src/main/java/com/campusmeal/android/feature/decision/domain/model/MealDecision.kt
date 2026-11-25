@@ -94,7 +94,7 @@ sealed interface MealDecisionError {
     data object InvalidContext : MealDecisionError
 
     /** Connectivity failure or HTTP 5xx. Null [httpCode] means no HTTP response. */
-    data class BackendUnavailable(val httpCode: Int?) : MealDecisionError
+    data class BackendUnavailable(val httpCode: Int?, val timedOut: Boolean = false) : MealDecisionError
 
     /** Any other non-2xx status except 401. */
     data class Http(val code: Int) : MealDecisionError

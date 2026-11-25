@@ -290,6 +290,7 @@ class ReviewRepository(
             row == null -> SubmissionState.NOT_DELIVERED
             row.status == OutboxStatus.SENT -> SubmissionState.SENT
             row.status == OutboxStatus.FAILED -> SubmissionState.REJECTED
+            row.status == OutboxStatus.EXPIRED -> SubmissionState.NOT_DELIVERED
             row.status == OutboxStatus.SENDING -> SubmissionState.SENDING
             row.attempts > 0 -> SubmissionState.UNCONFIRMED
             else -> SubmissionState.QUEUED

@@ -1,15 +1,18 @@
 package com.campusmeal.android.feature.decision.presentation
 
+import android.os.SystemClock
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.campusmeal.android.app.AppContainer
+import com.campusmeal.android.core.outbox.ComparisonLoadOutcome
 import com.campusmeal.android.core.outbox.OutboxRepository
 import com.campusmeal.android.core.outbox.UsageFeature
 import com.campusmeal.android.core.session.AccountSessionCoordinator
 import com.campusmeal.android.core.session.AccountSessionScope
+import com.campusmeal.android.core.telemetry.PerformanceTelemetry
 import com.campusmeal.android.feature.decision.data.local.MealPlan
 import com.campusmeal.android.feature.decision.data.local.MealPlanStore
 import com.campusmeal.android.feature.decision.data.local.PlanIngredient
@@ -21,6 +24,7 @@ import com.campusmeal.android.feature.decision.data.repository.RecommendationEve
 import com.campusmeal.android.feature.decision.data.repository.RecommendationEventReporter
 import com.campusmeal.android.feature.decision.domain.CompareMealOptionsUseCase
 import com.campusmeal.android.feature.decision.domain.model.DecisionContext
+import com.campusmeal.android.feature.decision.domain.model.MealDecisionError
 import com.campusmeal.android.feature.decision.domain.model.MealDecisionResult
 import com.campusmeal.android.feature.decision.domain.model.MealOption
 import java.util.concurrent.TimeUnit
@@ -34,7 +38,12 @@ sealed interface DecisionUiState {
     data object Loading : DecisionUiState
 
     /** [comparedAtEpochMillis] is set for a current result: when the backend produced it. */
-    data class Loaded(val result: MealDecisionResult, val comparedAtEpochMillis: Long? = null) : DecisionUiState
+    data class Loaded(
+        val result: MealDecisionResult,
+        val comparedAtEpochMillis: Long? = null,
+        /** The load that produced it, so the screen can report when it was drawn (BQ1). */
+        val loadId: String? = null,
+    ) : DecisionUiState
 }
 
 /**
@@ -63,6 +72,7 @@ class DecisionViewModel(
     private val outbox: OutboxRepository,
     private val recentDecisions: RecentDecisionStore,
     private val mealPlans: MealPlanStore,
+    private val telemetry: PerformanceTelemetry,
     private val coordinator: AccountSessionCoordinator,
     /** The session this screen belongs to: results of another session are never shown or reported. */
     private val scope: AccountSessionScope,
@@ -83,6 +93,15 @@ class DecisionViewModel(
     /** The comparison in flight. A new request cancels it, so a late answer never replaces a newer one. */
     private var compareJob: Job? = null
     private var compareRequest = 0L
+
+    /** BQ1: one event per load, never per recomposition. */
+    private val loadTimer = ComparisonLoadTimer(
+        monotonicMillis = SystemClock::elapsedRealtime,
+        wallClockMillis = currentTimeMillis,
+        onFinished = { load ->
+            telemetry.recordLoad(scope, load.loadId, load.outcome, load.durationMs, load.startedAtEpochMillis)
+        },
+    )
 
     /**
      * The screen asks for its context every time it enters composition (coming back from another
@@ -111,6 +130,7 @@ class DecisionViewModel(
         lastContext?.let(::compare)
     }
 
+    // Comparación cancelable: cancela el Job anterior y sube un número de request.
     private fun launchComparison(context: DecisionContext, allowRestore: Boolean) {
         lastContext = context
         _selection.value = SelectionState()
@@ -118,20 +138,26 @@ class DecisionViewModel(
         selectionJob?.cancel()
         compareJob?.cancel()
         val request = ++compareRequest
+        val loadId = loadTimer.start()
+        // Corrutina en viewModelScope = Dispatchers.Main.immediate. Retrofit y Room (suspend) hacen su trabajo en sus propios hilos: Main no se bloquea.
         compareJob = viewModelScope.launch {
             _uiState.value = DecisionUiState.Loading
-            if (allowRestore && restoreRecent(context, request)) return@launch
+            if (allowRestore && restoreRecent(context, request, loadId)) return@launch
             val result = compareMealOptions(scope, context)
-            // Cancellation is cooperative: also drop an answer that is no longer the latest request.
-            if (request != compareRequest || !coordinator.isCurrent(scope)) return@launch
+            // Cancelación cooperativa: una respuesta que ya llegó no se frena con cancel(); el número de request la descarta.
+            if (request != compareRequest || !coordinator.isCurrent(scope)) {
+                loadTimer.discard(loadId)
+                return@launch
+            }
             val shown = when (result) {
                 is MealDecisionResult.Content -> result.decision
                 is MealDecisionResult.PartialContent -> result.decision
                 else -> null
             }
             val comparedAt = if (shown != null) currentTimeMillis() else null
-            _uiState.value = DecisionUiState.Loaded(result, comparedAt)
-            // BQ6: one use per explicit comparison request (a recomposition never reaches here).
+            finishLoad(loadId, result)
+            _uiState.value = DecisionUiState.Loaded(result, comparedAt, loadId)
+            //Captura de uso para BQ6: una comparación explícita = un uso de MEAL_COMPARISON.
             outbox.enqueueUsage(scope, UsageFeature.MEAL_COMPARISON)
             if (shown != null && comparedAt != null) {
                 RecentDecisionStore.contextKey(context)?.let { key ->
@@ -150,14 +176,18 @@ class DecisionViewModel(
      * its choice. Its impression and selection were already recorded with stable ids, so nothing new
      * is sent. Returns false when there is nothing recent to restore.
      */
-    private suspend fun restoreRecent(context: DecisionContext, request: Long): Boolean {
+    private suspend fun restoreRecent(context: DecisionContext, request: Long, loadId: String): Boolean {
         val key = RecentDecisionStore.contextKey(context) ?: return false
         val recent = recentDecisions.read(scope)?.takeIf { it.contextKey == key && isRecent(it.comparedAtEpochMillis) }
             ?: return false
         val result = repository.restore(scope, recent.recommendationId) ?: return false
-        if (request != compareRequest || !coordinator.isCurrent(scope)) return true
+        if (request != compareRequest || !coordinator.isCurrent(scope)) {
+            loadTimer.discard(loadId)
+            return true
+        }
         impressionsSent.add(recent.recommendationId)
-        _uiState.value = DecisionUiState.Loaded(result, recent.comparedAtEpochMillis)
+        loadTimer.contentReady(loadId, ComparisonLoadOutcome.CACHED_RESTORE)
+        _uiState.value = DecisionUiState.Loaded(result, recent.comparedAtEpochMillis, loadId)
         val alternative = recent.selectedAlternative
         val eventId = recent.selectionEventId
         val occurredAt = recent.selectionOccurredAtEpochMillis
@@ -168,6 +198,36 @@ class DecisionViewModel(
             observeSelection(event)
         }
         return true
+    }
+
+    /** The content of [loadId] is on screen. */
+    fun onContentRendered(loadId: String) = loadTimer.rendered(loadId)
+
+    /** The screen was left (or the app went to the background): an open load can no longer be timed. */
+    fun onScreenVisible(visible: Boolean) {
+        telemetry.onComparisonVisible(visible)
+        if (!visible) loadTimer.cancel()
+    }
+
+    override fun onCleared() {
+        loadTimer.cancel()
+    }
+
+    private fun finishLoad(loadId: String, result: MealDecisionResult) {
+        when (result) {
+            // "Nothing fits" is also a backend answer that the user was waiting for.
+            is MealDecisionResult.Content, is MealDecisionResult.PartialContent, is MealDecisionResult.NoAvailableAlternatives ->
+                loadTimer.contentReady(loadId, ComparisonLoadOutcome.FRESH_NETWORK)
+            is MealDecisionResult.Previous -> loadTimer.contentReady(loadId, ComparisonLoadOutcome.OFFLINE_HISTORY)
+            MealDecisionResult.Unauthorized -> loadTimer.failed(loadId, ComparisonLoadOutcome.ERROR)
+            is MealDecisionResult.Failure -> when (val error = result.error) {
+                // Refused before any request: not a load.
+                MealDecisionError.InvalidContext -> loadTimer.discard(loadId)
+                is MealDecisionError.BackendUnavailable ->
+                    loadTimer.failed(loadId, if (error.timedOut) ComparisonLoadOutcome.TIMEOUT else ComparisonLoadOutcome.ERROR)
+                is MealDecisionError.Http, MealDecisionError.InvalidResponse -> loadTimer.failed(loadId, ComparisonLoadOutcome.ERROR)
+            }
+        }
     }
 
     fun select(recommendationId: String, option: MealOption) {
@@ -264,6 +324,7 @@ class DecisionViewModel(
                     container.outboxRepository,
                     container.recentDecisionStore,
                     container.mealPlanStore,
+                    container.performanceTelemetry,
                     container.sessionCoordinator,
                     scope,
                 )

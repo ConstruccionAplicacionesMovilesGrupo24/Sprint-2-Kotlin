@@ -63,6 +63,14 @@ import com.campusmeal.android.feature.analytics.data.ZoneDemandApi
 import com.campusmeal.android.feature.analytics.data.ZoneDemandRepository
 import com.campusmeal.android.feature.analytics.data.PartnerHealthApi
 import com.campusmeal.android.feature.analytics.data.PartnerHealthRepository
+import com.campusmeal.android.feature.analytics.data.PerformanceHealthApi
+import com.campusmeal.android.feature.analytics.data.PerformanceHealthRepository
+import com.campusmeal.android.core.outbox.PerformanceEventsApi
+import com.campusmeal.android.core.telemetry.CrashMarkerStore
+import com.campusmeal.android.core.telemetry.FatalCrashHandler
+import com.campusmeal.android.core.telemetry.PerformanceTelemetry
+import android.app.Application
+import java.io.File
 import com.campusmeal.android.feature.reviews.data.ReviewApi
 import com.campusmeal.android.feature.reviews.data.ReviewRepository
 import kotlinx.coroutines.CoroutineScope
@@ -109,7 +117,13 @@ interface AppContainer {
     /** S4-04: BQ13 partner-health report for ANALYST accounts. */
     val partnerHealthRepository: PartnerHealthRepository
 
-    /** S3-09: durable delivery of BQ8 and BQ6 events (Room + WorkManager); S4-04 reviews. */
+    /** S4-10: BQ1 performance report for ANALYST accounts. */
+    val performanceHealthRepository: PerformanceHealthRepository
+
+    /** S4-10: app sessions, fatal crashes and comparison loads (BQ1). */
+    val performanceTelemetry: PerformanceTelemetry
+
+    /** S3-09: durable delivery of BQ8 and BQ6 events (Room + WorkManager); S4-04 reviews, S4-10 BQ1 telemetry. */
     val outboxRepository: OutboxRepository
     val recommendationEventReporter: RecommendationEventReporter
     val restaurantRepository: RestaurantRepository
@@ -199,6 +213,7 @@ class DefaultAppContainer(context: Context) : AppContainer {
                             zoneDemandRepository,
                             reviewRepository,
                             partnerHealthRepository,
+                            performanceHealthRepository,
                         ),
                     ),
                     AccountWorkCanceller(appContext),
@@ -292,6 +307,7 @@ class DefaultAppContainer(context: Context) : AppContainer {
             usageApi = retrofit.create(UsageEventsApi::class.java),
             // Idempotent by clientReviewId (200 on replay), so the regular client is safe here too.
             reviewApi = retrofit.create(ReviewApi::class.java),
+            performanceApi = retrofit.create(PerformanceEventsApi::class.java),
             authorizationHeaderProvider = authorizationHeaderProvider,
             coordinator = sessionCoordinator,
             scheduler = WorkManagerOutboxScheduler(appContext),
@@ -319,6 +335,37 @@ class DefaultAppContainer(context: Context) : AppContainer {
             preferences = preferences,
             cachePolicy = cachePolicy,
         )
+    }
+
+    override val performanceHealthRepository: PerformanceHealthRepository by lazy {
+        PerformanceHealthRepository(
+            api = retrofit.create(PerformanceHealthApi::class.java),
+            authorizationHeaderProvider = authorizationHeaderProvider,
+            coordinator = sessionCoordinator,
+            database = database,
+            preferences = preferences,
+            cachePolicy = cachePolicy,
+        )
+    }
+
+    private val crashMarkerStore = CrashMarkerStore(File(appContext.noBackupFilesDir, "crash-markers"))
+
+    private val crashHandler = FatalCrashHandler(crashMarkerStore)
+
+    override val performanceTelemetry: PerformanceTelemetry by lazy {
+        PerformanceTelemetry(
+            outbox = outboxRepository,
+            coordinator = sessionCoordinator,
+            markers = crashMarkerStore,
+            crashHandler = crashHandler,
+            backgroundScope = applicationScope,
+        )
+    }
+
+    /** Called once, from `Application.onCreate`. */
+    fun installTelemetry(application: Application) {
+        crashHandler.install()
+        performanceTelemetry.install(application)
     }
 
     override val recommendationEventReporter: RecommendationEventReporter by lazy {
