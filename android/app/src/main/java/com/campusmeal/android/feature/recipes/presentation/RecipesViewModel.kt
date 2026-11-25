@@ -13,6 +13,8 @@ import com.campusmeal.android.app.AppContainer
 import com.campusmeal.android.core.common.BogotaCalendar
 import com.campusmeal.android.core.common.CachePolicy
 import com.campusmeal.android.core.common.Freshness
+import com.campusmeal.android.core.common.TraceSections
+import com.campusmeal.android.core.common.traceSection
 import com.campusmeal.android.core.session.AccountSessionCoordinator
 import com.campusmeal.android.core.session.AccountSessionScope
 import com.campusmeal.android.feature.context.domain.DietaryPreference
@@ -332,14 +334,16 @@ class RecipesViewModel(
         memo[input.key]?.let { return it }
         val result = withContext(Dispatchers.Default) {
             val job = coroutineContext.job
-            evaluateBq3(
-                recipes = input.catalog.catalog.recipes,
-                inventory = input.inventory.items,
-                selectedDiet = input.filters.dietaryPreferences,
-                maxPreparationMinutes = input.filters.maxPreparationMinutes,
-                todayIsoDate = input.today,
-                checkCancelled = { job.ensureActive() },
-            )
+            traceSection(TraceSections.BQ3_EVALUATE) {
+                evaluateBq3(
+                    recipes = input.catalog.catalog.recipes,
+                    inventory = input.inventory.items,
+                    selectedDiet = input.filters.dietaryPreferences,
+                    maxPreparationMinutes = input.filters.maxPreparationMinutes,
+                    todayIsoDate = input.today,
+                    checkCancelled = { job.ensureActive() },
+                )
+            }
         }
         memo[input.key] = result
         return result
