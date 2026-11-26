@@ -65,6 +65,12 @@ sealed interface CampusMealRoute {
 
     /** S4-10: BQ1 app-performance report, ANALYST accounts only (the backend enforces it). */
     @Serializable
+    data object AlternativeMeals : CampusMealRoute
+
+    @Serializable
+    data object SupplyGapReport : CampusMealRoute
+
+    @Serializable
     data object PerformanceReport : CampusMealRoute
 
     /** S4-10: local work of the account: pending, delivered and failed events, and unfinished inventory writes. */

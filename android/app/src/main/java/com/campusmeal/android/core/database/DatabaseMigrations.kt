@@ -269,5 +269,16 @@ object DatabaseMigrations {
         }
     }
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
+    val MIGRATION_11_12 = object : Migration(11, 12) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `bq10_snapshots` (" +
+                    "`accountId` TEXT NOT NULL, `kind` TEXT NOT NULL, `queryKey` TEXT NOT NULL, " +
+                    "`contractVersion` INTEGER NOT NULL, `responseJson` TEXT NOT NULL, `fetchedAtEpochMillis` INTEGER NOT NULL, " +
+                    "PRIMARY KEY(`accountId`, `kind`, `queryKey`, `contractVersion`))",
+            )
+        }
+    }
+
+    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12)
 }

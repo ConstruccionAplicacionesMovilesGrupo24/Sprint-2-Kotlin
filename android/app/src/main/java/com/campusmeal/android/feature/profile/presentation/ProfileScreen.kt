@@ -51,6 +51,7 @@ fun ProfileRoute(
     onOpenAnalystReport: () -> Unit,
     onOpenZoneDemandReport: () -> Unit,
     onOpenPartnerHealthReport: () -> Unit,
+    onOpenSupplyGapReport: () -> Unit = {},
     onOpenPerformanceReport: () -> Unit,
     onOpenSyncCenter: () -> Unit,
     onLogout: () -> Unit,
@@ -113,6 +114,10 @@ fun ProfileRoute(
                     onClick = onOpenPartnerHealthReport,
                 ) {
                     Text("BQ13 · Partner health")
+                }
+
+                TextButton(onClick = onOpenSupplyGapReport) {
+                    Text("BQ10 · Supply gaps")
                 }
 
                 TextButton(
