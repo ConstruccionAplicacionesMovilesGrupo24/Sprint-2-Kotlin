@@ -46,12 +46,12 @@ class SynchronizationCenterViewModel(
     val state: StateFlow<SynchronizationCenterState> =
         combine(
             outbox.observeCounts(scope.accountId),
-            outbox.observeOpen(scope.accountId),
-            outbox.observeSent(scope.accountId),
+            // One snapshot for both lists: an event never appears twice (it is the LazyColumn key).
+            outbox.observeActivity(scope.accountId),
             inventory.observeDrafts(scope),
             inventory.observePendingConsumes(scope),
-        ) { counts, open, sent, drafts, consumes ->
-            SynchronizationCenterState(counts, open, sent, drafts, consumes, loaded = true)
+        ) { counts, activity, drafts, consumes ->
+            SynchronizationCenterState(counts, activity.open, activity.sent, drafts, consumes, loaded = true)
         }
             .filter { coordinator.isCurrent(scope) }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SynchronizationCenterState())

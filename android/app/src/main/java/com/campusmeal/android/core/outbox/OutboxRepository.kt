@@ -154,9 +154,9 @@ class OutboxRepository(
 
     // Synchronization center (S4-10): account-scoped, bounded, never the payloads.
 
-    fun observeOpen(accountId: String): Flow<List<OutboxItem>> = dao.observeOpen(accountId, MAX_OPEN_ITEMS)
-
-    fun observeSent(accountId: String): Flow<List<OutboxItem>> = dao.observeSent(accountId, MAX_SENT_ITEMS)
+    /** Open and recently sent events of one account from a single snapshot (see [OutboxDao.observeActivity]). */
+    fun observeActivity(accountId: String): Flow<OutboxActivity> =
+        dao.observeActivity(accountId, MAX_OPEN_ITEMS, MAX_SENT_ITEMS).map(OutboxActivity::of)
 
     fun observeCounts(accountId: String): Flow<Map<String, Int>> =
         dao.observeCounts(accountId).map { counts -> counts.associate { it.status to it.total } }
