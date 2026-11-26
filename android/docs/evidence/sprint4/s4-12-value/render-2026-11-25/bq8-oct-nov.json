@@ -1,0 +1,18 @@
+{
+  "from": "2026-10-01",
+  "to": "2026-11-25",
+  "results": [
+    {
+      "explanationType": "BUDGET_PRIORITY",
+      "impressions": 51,
+      "selections": 25,
+      "selectionRate": 0.4902
+    },
+    {
+      "explanationType": "CONTEXT_COMPATIBILITY",
+      "impressions": 13,
+      "selections": 2,
+      "selectionRate": 0.1538
+    }
+  ]
+}
