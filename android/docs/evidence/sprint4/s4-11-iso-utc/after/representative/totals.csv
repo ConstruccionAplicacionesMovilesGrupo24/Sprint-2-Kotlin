@@ -1,0 +1,11 @@
+file,burst_ms,enqueue_count,enqueue_sum_ms,isoutc_count,isoutc_sum_ms,isoutc_share_of_enqueue
+run-01.perfetto-trace,758.556,20,743.850,20,55.366,0.0744
+run-02.perfetto-trace,636.394,20,581.191,20,0.906,0.0016
+run-03.perfetto-trace,266.952,20,263.127,20,0.686,0.0026
+run-04.perfetto-trace,356.228,20,291.344,20,0.862,0.0030
+run-05.perfetto-trace,1152.620,20,908.046,20,1.244,0.0014
+run-06.perfetto-trace,301.506,20,268.382,20,14.877,0.0554
+run-07.perfetto-trace,563.767,20,514.169,20,0.476,0.0009
+run-08.perfetto-trace,736.401,20,730.928,20,0.974,0.0013
+run-09.perfetto-trace,366.618,20,346.929,20,16.331,0.0471
+run-10.perfetto-trace,120.602,20,40.536,20,0.720,0.0178

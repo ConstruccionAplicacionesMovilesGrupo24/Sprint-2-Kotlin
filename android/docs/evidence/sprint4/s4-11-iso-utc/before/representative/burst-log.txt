@@ -1,0 +1,10 @@
+run-01 S4-11 burst mode=representative events=20 admitted=20 wallMs=412.270 earliest=2026-12-31T23:59:50Z latest=2027-01-01T00:00:09Z payloadSha256=17370343d15fafc29e565cb9d26315aa2f15bd11fa92d2452a199c6d1c5be644
+run-02 S4-11 burst mode=representative events=20 admitted=20 wallMs=368.351 earliest=2026-12-31T23:59:50Z latest=2027-01-01T00:00:09Z payloadSha256=17370343d15fafc29e565cb9d26315aa2f15bd11fa92d2452a199c6d1c5be644
+run-03 S4-11 burst mode=representative events=20 admitted=20 wallMs=104.224 earliest=2026-12-31T23:59:50Z latest=2027-01-01T00:00:09Z payloadSha256=17370343d15fafc29e565cb9d26315aa2f15bd11fa92d2452a199c6d1c5be644
+run-04 S4-11 burst mode=representative events=20 admitted=20 wallMs=507.937 earliest=2026-12-31T23:59:50Z latest=2027-01-01T00:00:09Z payloadSha256=17370343d15fafc29e565cb9d26315aa2f15bd11fa92d2452a199c6d1c5be644
+run-05 S4-11 burst mode=representative events=20 admitted=20 wallMs=101.347 earliest=2026-12-31T23:59:50Z latest=2027-01-01T00:00:09Z payloadSha256=17370343d15fafc29e565cb9d26315aa2f15bd11fa92d2452a199c6d1c5be644
+run-06 S4-11 burst mode=representative events=20 admitted=20 wallMs=345.969 earliest=2026-12-31T23:59:50Z latest=2027-01-01T00:00:09Z payloadSha256=17370343d15fafc29e565cb9d26315aa2f15bd11fa92d2452a199c6d1c5be644
+run-07 S4-11 burst mode=representative events=20 admitted=20 wallMs=50.991 earliest=2026-12-31T23:59:50Z latest=2027-01-01T00:00:09Z payloadSha256=17370343d15fafc29e565cb9d26315aa2f15bd11fa92d2452a199c6d1c5be644
+run-08 S4-11 burst mode=representative events=20 admitted=20 wallMs=486.111 earliest=2026-12-31T23:59:50Z latest=2027-01-01T00:00:09Z payloadSha256=17370343d15fafc29e565cb9d26315aa2f15bd11fa92d2452a199c6d1c5be644
+run-09 S4-11 burst mode=representative events=20 admitted=20 wallMs=122.516 earliest=2026-12-31T23:59:50Z latest=2027-01-01T00:00:09Z payloadSha256=17370343d15fafc29e565cb9d26315aa2f15bd11fa92d2452a199c6d1c5be644
+run-10 S4-11 burst mode=representative events=20 admitted=20 wallMs=51.541 earliest=2026-12-31T23:59:50Z latest=2027-01-01T00:00:09Z payloadSha256=17370343d15fafc29e565cb9d26315aa2f15bd11fa92d2452a199c6d1c5be644

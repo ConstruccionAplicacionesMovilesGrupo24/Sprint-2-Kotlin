@@ -1,0 +1,8 @@
+docs/evidence/sprint4/s4-11-iso-utc/before/representative/sections.csv cm.outbox.isoUtc: 200 evaluations in 10 runs
+  all evaluations  median 0.137 ms  min 0.036  max 32.599
+  per-run medians  run-01=0.176  run-02=0.115  run-03=0.150  run-04=0.219  run-05=0.108  run-06=0.127  run-07=0.145  run-08=0.244  run-09=0.110  run-10=0.092
+  median of runs   0.136 ms  range 0.092–0.244  (spread 111.589 % of median)
+docs/evidence/sprint4/s4-11-iso-utc/before/representative/sections.csv cm.outbox.enqueue: 200 evaluations in 10 runs
+  all evaluations  median 1.878 ms  min 0.302  max 270.333
+  per-run medians  run-01=1.595  run-02=1.519  run-03=2.306  run-04=5.264  run-05=1.583  run-06=1.807  run-07=1.573  run-08=6.059  run-09=1.116  run-10=1.417
+  median of runs   1.589 ms  range 1.116–6.059  (spread 311.141 % of median)

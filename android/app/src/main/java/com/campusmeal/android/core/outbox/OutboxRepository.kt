@@ -20,10 +20,6 @@ import com.campusmeal.android.feature.reviews.data.CreateReviewRequestDto
 import com.campusmeal.android.feature.reviews.data.ReviewApi
 import com.campusmeal.android.feature.reviews.data.ReviewOutboxPayload
 import androidx.room.withTransaction
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.TimeZone
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.flow.Flow
@@ -394,11 +390,7 @@ class OutboxRepository(
     }
 
     private fun isoUtc(epochMillis: Long): String =
-        traceSection(TraceSections.OUTBOX_ISO_UTC) {
-            SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US)
-                .apply { timeZone = TimeZone.getTimeZone("UTC") }
-                .format(Date(epochMillis))
-        }
+        traceSection(TraceSections.OUTBOX_ISO_UTC) { UtcTimestamps.format(epochMillis) }
 
     companion object {
         const val UNREADABLE_PAYLOAD = "unreadable payload"
