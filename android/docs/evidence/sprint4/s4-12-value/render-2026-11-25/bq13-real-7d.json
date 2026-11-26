@@ -1,0 +1,200 @@
+{
+  "contractVersion": 1,
+  "from": "2026-11-19",
+  "to": "2026-11-25",
+  "cutoff": "2026-11-26T02:05:08.185Z",
+  "freshnessWindow": {
+    "days": 7,
+    "from": "2026-11-19",
+    "to": "2026-11-25"
+  },
+  "generatedAt": "2026-11-26T02:05:08.312Z",
+  "includeSynthetic": false,
+  "includesSyntheticData": false,
+  "revisionHistoryStartsAt": null,
+  "minDistinctUsers": 5,
+  "restaurants": [
+    {
+      "restaurantId": "55e29107-5b56-4edc-abf4-ca29d26dace2",
+      "name": "Andean Flavor",
+      "category": "Business lunches",
+      "menuStatus": "UNKNOWN",
+      "lastRevisionAt": null,
+      "lastRevisionDate": null,
+      "daysSinceRevision": null,
+      "revisionsInRange": 0,
+      "recommendations": {
+        "exposures": 0,
+        "selections": 0,
+        "selectionRate": null,
+        "distinctUsers": 0,
+        "suppressed": false
+      },
+      "reviews": {
+        "reviewCount": null,
+        "distinctReviewers": null,
+        "meanOverall": null,
+        "suppressed": true
+      },
+      "synthetic": false
+    },
+    {
+      "restaurantId": "abc20922-1179-4399-8ab1-2b5c3ff4d27f",
+      "name": "Green Bowl",
+      "category": "Healthy",
+      "menuStatus": "UNKNOWN",
+      "lastRevisionAt": null,
+      "lastRevisionDate": null,
+      "daysSinceRevision": null,
+      "revisionsInRange": 0,
+      "recommendations": {
+        "exposures": 0,
+        "selections": 0,
+        "selectionRate": null,
+        "distinctUsers": 0,
+        "suppressed": false
+      },
+      "reviews": {
+        "reviewCount": 7,
+        "distinctReviewers": 7,
+        "meanOverall": 4.14,
+        "suppressed": false
+      },
+      "synthetic": false
+    },
+    {
+      "restaurantId": "15971230-4d53-4c8f-a120-e3f7d3d8042b",
+      "name": "Quinoa Corner",
+      "category": "Healthy",
+      "menuStatus": "UNKNOWN",
+      "lastRevisionAt": null,
+      "lastRevisionDate": null,
+      "daysSinceRevision": null,
+      "revisionsInRange": 0,
+      "recommendations": {
+        "exposures": 0,
+        "selections": 0,
+        "selectionRate": null,
+        "distinctUsers": 0,
+        "suppressed": false
+      },
+      "reviews": {
+        "reviewCount": 6,
+        "distinctReviewers": 6,
+        "meanOverall": 3.83,
+        "suppressed": false
+      },
+      "synthetic": false
+    },
+    {
+      "restaurantId": "d8e67864-3570-457d-b3a2-7801078e68a6",
+      "name": "Sushi Rápido",
+      "category": "Japanese",
+      "menuStatus": "UNKNOWN",
+      "lastRevisionAt": null,
+      "lastRevisionDate": null,
+      "daysSinceRevision": null,
+      "revisionsInRange": 0,
+      "recommendations": {
+        "exposures": 0,
+        "selections": 0,
+        "selectionRate": null,
+        "distinctUsers": 0,
+        "suppressed": false
+      },
+      "reviews": {
+        "reviewCount": null,
+        "distinctReviewers": null,
+        "meanOverall": null,
+        "suppressed": true
+      },
+      "synthetic": false
+    },
+    {
+      "restaurantId": "4ae6f2a7-5fe9-40fa-bede-f9d1d57f093e",
+      "name": "The Garden",
+      "category": "Home-style",
+      "menuStatus": "UNKNOWN",
+      "lastRevisionAt": null,
+      "lastRevisionDate": null,
+      "daysSinceRevision": null,
+      "revisionsInRange": 0,
+      "recommendations": {
+        "exposures": 0,
+        "selections": 0,
+        "selectionRate": null,
+        "distinctUsers": 0,
+        "suppressed": false
+      },
+      "reviews": {
+        "reviewCount": null,
+        "distinctReviewers": null,
+        "meanOverall": null,
+        "suppressed": true
+      },
+      "synthetic": false
+    }
+  ],
+  "cohorts": [
+    {
+      "menuStatus": "FRESH",
+      "restaurants": 0,
+      "restaurantsWithSuppressedBehavior": 0,
+      "exposures": 0,
+      "selections": 0,
+      "selectionRate": null,
+      "restaurantsWithSuppressedReviews": 0,
+      "reviewCount": 0,
+      "meanOverall": null
+    },
+    {
+      "menuStatus": "STALE",
+      "restaurants": 0,
+      "restaurantsWithSuppressedBehavior": 0,
+      "exposures": 0,
+      "selections": 0,
+      "selectionRate": null,
+      "restaurantsWithSuppressedReviews": 0,
+      "reviewCount": 0,
+      "meanOverall": null
+    },
+    {
+      "menuStatus": "UNKNOWN",
+      "restaurants": 5,
+      "restaurantsWithSuppressedBehavior": 0,
+      "exposures": 0,
+      "selections": 0,
+      "selectionRate": null,
+      "restaurantsWithSuppressedReviews": 3,
+      "reviewCount": 13,
+      "meanOverall": 4
+    }
+  ],
+  "associations": [
+    {
+      "x": "revisionsInRange",
+      "y": "selectionRate",
+      "method": "SPEARMAN",
+      "sampleSize": 0,
+      "status": "INSUFFICIENT_DATA",
+      "coefficient": null,
+      "reason": "needs at least 5 restaurants with published values"
+    },
+    {
+      "x": "revisionsInRange",
+      "y": "meanOverall",
+      "method": "SPEARMAN",
+      "sampleSize": 2,
+      "status": "INSUFFICIENT_DATA",
+      "coefficient": null,
+      "reason": "needs at least 5 restaurants with published values"
+    }
+  ],
+  "limitations": [
+    "Observational, cross-sectional association: it does not show that menu updates cause more selections or better reviews.",
+    "Menu history only exists from the first recorded revision; restaurants without revisions are UNKNOWN, not stale.",
+    "Reviews are self-reported by students and do not prove a purchase. The catalog averageRating is not used.",
+    "A selection is an in-app choice of a recommended alternative, not a verified visit or order.",
+    "Cells with 1-4 distinct users are suppressed and excluded from cohort totals."
+  ]
+}

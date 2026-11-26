@@ -1,0 +1,335 @@
+{
+  "contractVersion": 1,
+  "from": "2026-10-01",
+  "to": "2026-11-25",
+  "timezone": "America/Bogota",
+  "generatedAt": "2026-11-26T02:05:07.651Z",
+  "minDistinctUsersPerCell": 5,
+  "containsSyntheticData": true,
+  "interpretation": "INTEREST_INDICATORS_NOT_VERIFIED_PURCHASES",
+  "suppressedCells": 18,
+  "zones": [
+    {
+      "zone": "bogota-centro",
+      "totals": {
+        "searches": 72,
+        "detailOpenings": 30,
+        "selections": 15,
+        "distinctUsers": 15,
+        "suppressed": false
+      },
+      "categories": [
+        {
+          "category": "BOWLS",
+          "selections": 5,
+          "distinctUsers": 5,
+          "suppressed": false
+        },
+        {
+          "category": "SALADS",
+          "selections": null,
+          "distinctUsers": null,
+          "suppressed": true
+        },
+        {
+          "category": "SOUPS",
+          "selections": null,
+          "distinctUsers": null,
+          "suppressed": true
+        },
+        {
+          "category": "SUSHI",
+          "selections": 5,
+          "distinctUsers": 5,
+          "suppressed": false
+        }
+      ],
+      "searchedBudgetRanges": [
+        {
+          "range": "HIGH",
+          "searches": 20,
+          "distinctUsers": 8,
+          "suppressed": false
+        },
+        {
+          "range": "LOW",
+          "searches": 6,
+          "distinctUsers": 6,
+          "suppressed": false
+        },
+        {
+          "range": "MEDIUM",
+          "searches": 46,
+          "distinctUsers": 12,
+          "suppressed": false
+        }
+      ],
+      "interactionPriceRanges": [
+        {
+          "range": "HIGH",
+          "detailOpenings": 18,
+          "selections": 4,
+          "distinctUsers": 7,
+          "suppressed": false
+        },
+        {
+          "range": "LOW",
+          "detailOpenings": 6,
+          "selections": 5,
+          "distinctUsers": 6,
+          "suppressed": false
+        },
+        {
+          "range": "MEDIUM",
+          "detailOpenings": 6,
+          "selections": 6,
+          "distinctUsers": 7,
+          "suppressed": false
+        }
+      ],
+      "hours": [
+        {
+          "hour": 9,
+          "searches": null,
+          "detailOpenings": null,
+          "selections": null,
+          "distinctUsers": null,
+          "suppressed": true
+        },
+        {
+          "hour": 12,
+          "searches": 40,
+          "detailOpenings": 6,
+          "selections": 5,
+          "distinctUsers": 11,
+          "suppressed": false
+        },
+        {
+          "hour": 13,
+          "searches": 13,
+          "detailOpenings": 13,
+          "selections": 5,
+          "distinctUsers": 8,
+          "suppressed": false
+        },
+        {
+          "hour": 18,
+          "searches": null,
+          "detailOpenings": null,
+          "selections": null,
+          "distinctUsers": null,
+          "suppressed": true
+        },
+        {
+          "hour": 20,
+          "searches": null,
+          "detailOpenings": null,
+          "selections": null,
+          "distinctUsers": null,
+          "suppressed": true
+        },
+        {
+          "hour": 22,
+          "searches": null,
+          "detailOpenings": null,
+          "selections": null,
+          "distinctUsers": null,
+          "suppressed": true
+        }
+      ]
+    },
+    {
+      "zone": "bogota-chapinero",
+      "totals": {
+        "searches": 20,
+        "detailOpenings": 14,
+        "selections": 14,
+        "distinctUsers": 11,
+        "suppressed": false
+      },
+      "categories": [
+        {
+          "category": "BOWLS",
+          "selections": 5,
+          "distinctUsers": 5,
+          "suppressed": false
+        },
+        {
+          "category": "SALADS",
+          "selections": null,
+          "distinctUsers": null,
+          "suppressed": true
+        },
+        {
+          "category": "SUSHI",
+          "selections": 5,
+          "distinctUsers": 5,
+          "suppressed": false
+        }
+      ],
+      "searchedBudgetRanges": [
+        {
+          "range": "HIGH",
+          "searches": null,
+          "distinctUsers": null,
+          "suppressed": true
+        },
+        {
+          "range": "LOW",
+          "searches": 5,
+          "distinctUsers": 5,
+          "suppressed": false
+        },
+        {
+          "range": "MEDIUM",
+          "searches": 11,
+          "distinctUsers": 11,
+          "suppressed": false
+        }
+      ],
+      "interactionPriceRanges": [
+        {
+          "range": "HIGH",
+          "detailOpenings": null,
+          "selections": null,
+          "distinctUsers": null,
+          "suppressed": true
+        },
+        {
+          "range": "LOW",
+          "detailOpenings": 5,
+          "selections": 5,
+          "distinctUsers": 5,
+          "suppressed": false
+        },
+        {
+          "range": "MEDIUM",
+          "detailOpenings": 5,
+          "selections": 5,
+          "distinctUsers": 5,
+          "suppressed": false
+        }
+      ],
+      "hours": [
+        {
+          "hour": 12,
+          "searches": 10,
+          "detailOpenings": 5,
+          "selections": 5,
+          "distinctUsers": 10,
+          "suppressed": false
+        },
+        {
+          "hour": 13,
+          "searches": 5,
+          "detailOpenings": 5,
+          "selections": 5,
+          "distinctUsers": 5,
+          "suppressed": false
+        },
+        {
+          "hour": 18,
+          "searches": null,
+          "detailOpenings": null,
+          "selections": null,
+          "distinctUsers": null,
+          "suppressed": true
+        },
+        {
+          "hour": 22,
+          "searches": null,
+          "detailOpenings": null,
+          "selections": null,
+          "distinctUsers": null,
+          "suppressed": true
+        }
+      ]
+    },
+    {
+      "zone": "unknown",
+      "totals": {
+        "searches": 0,
+        "detailOpenings": 0,
+        "selections": 18,
+        "distinctUsers": 8,
+        "suppressed": false
+      },
+      "categories": [
+        {
+          "category": "BOWLS",
+          "selections": 7,
+          "distinctUsers": 6,
+          "suppressed": false
+        },
+        {
+          "category": "HOME_STYLE",
+          "selections": null,
+          "distinctUsers": null,
+          "suppressed": true
+        },
+        {
+          "category": "SOUPS",
+          "selections": null,
+          "distinctUsers": null,
+          "suppressed": true
+        },
+        {
+          "category": "SUSHI",
+          "selections": null,
+          "distinctUsers": null,
+          "suppressed": true
+        },
+        {
+          "category": "unknown",
+          "selections": null,
+          "distinctUsers": null,
+          "suppressed": true
+        }
+      ],
+      "searchedBudgetRanges": [],
+      "interactionPriceRanges": [
+        {
+          "range": "MEDIUM",
+          "detailOpenings": 0,
+          "selections": 18,
+          "distinctUsers": 8,
+          "suppressed": false
+        }
+      ],
+      "hours": [
+        {
+          "hour": 8,
+          "searches": null,
+          "detailOpenings": null,
+          "selections": null,
+          "distinctUsers": null,
+          "suppressed": true
+        },
+        {
+          "hour": 12,
+          "searches": 0,
+          "detailOpenings": 0,
+          "selections": 13,
+          "distinctUsers": 6,
+          "suppressed": false
+        },
+        {
+          "hour": 15,
+          "searches": null,
+          "detailOpenings": null,
+          "selections": null,
+          "distinctUsers": null,
+          "suppressed": true
+        },
+        {
+          "hour": 16,
+          "searches": null,
+          "detailOpenings": null,
+          "selections": null,
+          "distinctUsers": null,
+          "suppressed": true
+        }
+      ]
+    }
+  ]
+}

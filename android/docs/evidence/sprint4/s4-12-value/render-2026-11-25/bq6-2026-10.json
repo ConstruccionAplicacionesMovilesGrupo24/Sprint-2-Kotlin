@@ -1,0 +1,43 @@
+{
+  "month": "2026-10",
+  "status": "OK",
+  "monthlyActiveUsers": 8,
+  "threshold": 0.8,
+  "lowUseBelowUses": 2,
+  "partialMonth": false,
+  "eventsReceived": 119,
+  "includesSyntheticData": true,
+  "generatedAt": "2026-11-26T02:05:07.215Z",
+  "results": [
+    {
+      "feature": "INVENTORY",
+      "lowUseUsers": 8,
+      "lowUseRate": 1,
+      "flagged": true
+    },
+    {
+      "feature": "RECIPES",
+      "lowUseUsers": 7,
+      "lowUseRate": 0.875,
+      "flagged": true
+    },
+    {
+      "feature": "MEAL_COMPARISON",
+      "lowUseUsers": 6,
+      "lowUseRate": 0.75,
+      "flagged": false
+    },
+    {
+      "feature": "RESTAURANT_DETAIL",
+      "lowUseUsers": 2,
+      "lowUseRate": 0.25,
+      "flagged": false
+    },
+    {
+      "feature": "RESTAURANT_SEARCH",
+      "lowUseUsers": 2,
+      "lowUseRate": 0.25,
+      "flagged": false
+    }
+  ]
+}
