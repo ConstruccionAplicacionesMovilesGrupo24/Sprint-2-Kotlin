@@ -1,5 +1,7 @@
 package com.campusmeal.android.app
 
+import com.campusmeal.android.feature.bq10.Bq10Api
+import com.campusmeal.android.feature.bq10.Bq10Repository
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
@@ -118,6 +120,8 @@ interface AppContainer {
     val partnerHealthRepository: PartnerHealthRepository
 
     /** S4-10: BQ1 performance report for ANALYST accounts. */
+    val bq10Repository: Bq10Repository
+
     val performanceHealthRepository: PerformanceHealthRepository
 
     /** S4-10: app sessions, fatal crashes and comparison loads (BQ1). */
@@ -213,6 +217,7 @@ class DefaultAppContainer(context: Context) : AppContainer {
                             zoneDemandRepository,
                             reviewRepository,
                             partnerHealthRepository,
+                            bq10Repository,
                             performanceHealthRepository,
                         ),
                     ),
@@ -334,6 +339,16 @@ class DefaultAppContainer(context: Context) : AppContainer {
             database = database,
             preferences = preferences,
             cachePolicy = cachePolicy,
+        )
+    }
+
+    override val bq10Repository: Bq10Repository by lazy {
+        Bq10Repository(
+            api = retrofit.create(Bq10Api::class.java),
+            authorization = authorizationHeaderProvider,
+            coordinator = sessionCoordinator,
+            database = database,
+            preferences = preferences,
         )
     }
 

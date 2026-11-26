@@ -1,5 +1,7 @@
 package com.campusmeal.android.core.database
 
+import com.campusmeal.android.feature.bq10.Bq10Snapshot
+import com.campusmeal.android.feature.bq10.Bq10SnapshotDao
 import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
@@ -63,9 +65,10 @@ import com.campusmeal.android.feature.reviews.data.ReviewSummaryCacheEntity
         ReviewSubmissionEntity::class,
         ReviewSummaryCacheEntity::class,
         PartnerHealthReportEntity::class,
+        Bq10Snapshot::class,
         PerformanceReportEntity::class,
     ],
-    version = 11,
+    version = 12,
     exportSchema = true,
 )
 abstract class CampusMealDatabase : RoomDatabase() {
@@ -97,6 +100,8 @@ abstract class CampusMealDatabase : RoomDatabase() {
     abstract fun reviewDao(): ReviewDao
 
     abstract fun partnerHealthReportDao(): PartnerHealthReportDao
+
+    abstract fun bq10SnapshotDao(): Bq10SnapshotDao
 
     abstract fun performanceReportDao(): PerformanceReportDao
 

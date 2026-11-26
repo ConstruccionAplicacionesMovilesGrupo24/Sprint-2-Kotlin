@@ -1,5 +1,9 @@
 package com.campusmeal.android.navigation
 
+import com.campusmeal.android.feature.bq10.AlternativeMealsRoute
+import com.campusmeal.android.feature.bq10.AlternativeMealsViewModel
+import com.campusmeal.android.feature.bq10.SupplyGapReportRoute
+import com.campusmeal.android.feature.bq10.SupplyGapViewModel
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
@@ -345,6 +349,7 @@ fun CampusMealNavHost(
                         selectedRoute = resultsViewModel.routeFor(restaurantId)
                         navController.navigate(CampusMealRoute.RestaurantDetail(restaurantId = restaurantId))
                     },
+                    onFindAlternatives = { navController.navigate(CampusMealRoute.AlternativeMeals) },
                     onCompareOptions = { openTab(TopLevel.DECIDE) },
                 )
             }
@@ -440,6 +445,7 @@ fun CampusMealNavHost(
                     onOpenAnalystReport = { navController.navigate(CampusMealRoute.AnalystReport) },
                     onOpenZoneDemandReport = { navController.navigate(CampusMealRoute.ZoneDemandReport)},
                     onOpenPartnerHealthReport = { navController.navigate(CampusMealRoute.PartnerHealthReport) },
+                    onOpenSupplyGapReport = { navController.navigate(CampusMealRoute.SupplyGapReport) },
                     onOpenPerformanceReport = { navController.navigate(CampusMealRoute.PerformanceReport) },
                     onOpenSyncCenter = { navController.navigate(CampusMealRoute.SyncCenter) },
                     onLogout = onLogout,
@@ -466,6 +472,28 @@ fun CampusMealNavHost(
                     onBack = {
                         navController.popBackStack()
                     },
+                )
+            }
+
+            composable<CampusMealRoute.AlternativeMeals> {
+                AlternativeMealsRoute(
+                    viewModel = viewModel(factory = AlternativeMealsViewModel.factory(container, sessionScope)),
+                    request = currentContext,
+                    online = online,
+                    onBack = { navController.popBackStack() },
+                    onChangeContext = { navController.navigate(CampusMealRoute.Context) },
+                    onOpenRestaurant = { id ->
+                        selectedRoute = null
+                        navController.navigate(CampusMealRoute.RestaurantDetail(id))
+                    },
+                )
+            }
+
+            composable<CampusMealRoute.SupplyGapReport> {
+                SupplyGapReportRoute(
+                    viewModel = viewModel(factory = SupplyGapViewModel.factory(container, sessionScope)),
+                    online = online,
+                    onBack = { navController.popBackStack() },
                 )
             }
 

@@ -2,3 +2,4 @@
 /gradlew text eol=lf
 *.bat text eol=crlf
 *.jar binary
+/app/src/test/resources/bq3/*.txt text eol=lf
