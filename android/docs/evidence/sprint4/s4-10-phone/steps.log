@@ -1,0 +1,30 @@
+[21:24:27Z] generate events: 20 Home->Inventory visits online (analyst)
+[21:28:04Z] lost ack: SENT rows set to PENDING (unfixed build)
+[21:28:32Z] sync center open offline; airplane off
+[21:30:14Z] unfixed attempt 1: result 0 (1 = crash)
+[21:30:57Z] unfixed attempt 2: result 0 (1 = crash)
+[21:31:39Z] unfixed attempt 3: result 0 (1 = crash)
+[21:32:20Z] unfixed attempt 4: result 0 (1 = crash)
+[21:33:02Z] unfixed attempt 5: result 0 (1 = crash)
+[21:33:44Z] unfixed attempt 6: result 0 (1 = crash)
+[21:36:26Z] installed fixed build 6493eeb4
+[21:37:08Z] fixed attempt 1 (2 resent): result 0 (0 = no crash, app in front)
+[21:37:50Z] fixed attempt 2 (2 resent): result 0 (0 = no crash, app in front)
+[21:38:32Z] fixed attempt 3 (2 resent): result 0 (0 = no crash, app in front)
+[21:39:14Z] fixed attempt 4 (2 resent): result 0 (0 = no crash, app in front)
+[21:39:56Z] fixed attempt 5 (2 resent): result 0 (0 = no crash, app in front)
+[21:40:39Z] fixed attempt (30 resent): result 0
+[21:41:32Z] crash: offline, tap Inject a crash (analyst)
+[21:41:45Z] reopen offline
+[21:42:19Z] airplane off (sync center open)
+[21:43:42Z] test account signed in (online)
+[21:44:11Z] test account: offline, inject crash
+[21:44:16Z] reopen offline as test account
+[21:45:17Z] (aborted: the previous database copy had stopped the app; the in-front guard skipped every step, nothing changed)
+[21:45:46Z] test account logged out (offline)
+[21:46:14Z] analyst signed in online
+[21:46:59Z] checked after 40 s as analyst
+[21:48:09Z] test account signed in again (online)
+[21:48:59Z] one never-sent USAGE event set to FAILED HTTP 503 (test account)
+[21:49:37Z] double tap Retry
+[21:51:36Z] BQ1 include demo data on

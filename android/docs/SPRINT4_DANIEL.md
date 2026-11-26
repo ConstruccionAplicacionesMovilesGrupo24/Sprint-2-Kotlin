@@ -70,7 +70,7 @@ A timeout of an account that has history is drawn as history and counts as `OFFL
 
 ## 5. Evidence
 
-Run on 2026-11-25 on an **emulator** (API 37, debug build) against a **disposable local backend** (CampusMealBack `main` with `seed:bq1`). Screenshots in `docs/evidence/sprint4/s4-10-emulator/`. **The acceptance asks for a physical device: §5.1 is still pending.**
+Run on 2026-11-25 on an **emulator** (API 37, debug build) against a **disposable local backend** (CampusMealBack `main` with `seed:bq1`). Screenshots in `docs/evidence/sprint4/s4-10-emulator/`. The physical-device rows are in §5.1 (four done, the upgrade blocked by the release key).
 
 | Case | Observed |
 |---|---|
@@ -88,15 +88,44 @@ Run on 2026-11-25 on an **emulator** (API 37, debug build) against a **disposabl
 
 `assembleDebug`, `assembleProfile` and `lintDebug` succeed.
 
-### 5.1 Physical device (pending)
+### 5.1 Physical device
+
+Executed by Juan Pablo on 2026-11-26 (times UTC; Daniel has no Android phone) on a Samsung SM-S948U1, Android 17
+(API 37), against Render + Neon. Build: **debug** of branch `sprint4/s4-10-device-evidence-sync-fix` (`main`
+`07a61d9` + the fix of §5.2), built with `-Pcampusmeal.debugApplicationIdSuffix=.devicecheck` so it installs as
+`com.campusmeal.android.devicecheck` next to the distributed app, which was not touched. A debug build is needed for
+the crash-injection button. APK SHA-256 `6493eeb4f474e2a9e0309786396fc6634d69cbdc3035c9b241750a7184554f6f`
+(the lost-acknowledgement row before the fix: `1797ccb154648ed10e55e286279f8c85a971918b5f91a1faecb4f43a483bbdd3`,
+same code without §5.2). Accounts: analyst and the test account `s4-evidence-4d88ca@campusmeal.local`. Local state
+read with `run-as`; the "lost acknowledgement" and "failed" states were written into a copy of the app's Room
+database with the app stopped. Server side: only read-only analyst reports (BQ1 `coverage`, BQ6 `eventsReceived`).
+Screenshots and the step log: `docs/evidence/sprint4/s4-10-phone/`.
 
 | Case | Device / Android / APK SHA | Observed | Status |
 |---|---|---|---|
-| Upgrade from the distributed 0.4.0 keeping draft and pending events | | | Pending |
-| Crash → reopen → delivered once (Render) | | | Pending |
-| Account switch with a pending crash | | | Pending |
-| Lost acknowledgement / double retry | | | Pending |
-| BQ1 fixtures on Render | | | Pending |
+| Upgrade from the distributed 0.4.0 keeping draft and pending events | SM-S948U1 / 17 | **Not executable here:** the installed 0.4.0 is release-signed and the release key is not on this machine, so no build can update it in place (same limit as `SPRINT4_JUAN_PABLO.md` §5). Emulator v9 → v11 passed (§5). Owner of the release key: run it with the S4-14 APK | Blocked |
+| Crash → reopen → delivered once (Render) | SM-S948U1 / 17 / `6493eeb4…` | Analyst, airplane on, *Inject a crash* (21:41:32Z): process ended with `InjectedCrashException`, 1 marker file. Reopened offline: marker deleted, outbox has `FATAL_CRASH` (`injected`) and its session start, "7 waiting". Reconnected: crash row `SENT` after **1 attempt**; BQ1 `excludedInjectedSessions` **1 → 2**, `coverage.events` 46 → 49 (crash + 2 session starts); real crash count of this build 0 | Done |
+| Account switch with a pending crash | SM-S948U1 / 17 / `6493eeb4…` | Test account: offline crash, reopened offline → pending `FATAL_CRASH` owned by it; logged out offline. Analyst signed in online 21:46:14Z: after 45 s its center shows "0 waiting", the crash row is still `PENDING` with 0 attempts, `excludedInjectedSessions` still **2**. Test account signed in again 21:48:09Z → **3** | Done |
+| Lost acknowledgement / double retry | SM-S948U1 / 17 / `1797ccb1…` (lost ack), `6493eeb4…` (retry) | **Lost ack:** 22 delivered events set back to pending, reconnected: all resent, BQ6 `eventsReceived` 201 → 203 and BQ1 `events` 32 → 34, i.e. only the 2 + 2 events created by that launch. **Double retry:** a never-sent usage event set to `FAILED` "HTTP 503" (*Needs attention*, Retry offered); two taps sent in one `adb shell` command (a fraction of a second apart): the row was sent once (`attempts` 1), "0 need attention"; BQ6 225 → 227 = that event + one new usage event of the same launch (21:49:12Z) | Done |
+| BQ1 fixtures on Render | SM-S948U1 / 17 / `6493eeb4…` | Analyst, Profile → Analytics → BQ1, 2026-10-28…11-26, *Include demo data*: Demo A 1.00 % (not flagged) / p95 2500 ms above limit; Demo B 2.00 % above limit / 2000 ms not flagged; Demo D 33.33 % and 5000 ms flagged with small-sample labels; Demo C no data; Demo E 0.00 % / 1000 ms. Matches the S4-09 fixtures and the API | Done |
+
+### 5.2 Fix: duplicate key in the synchronization center
+
+Found through BQ1 (`SPRINT4_VALUE_PROPOSITION.md` §3.1): on 2026-11-25 the `profile` build crashed with
+`IllegalArgumentException: Key "…" was already used` while a review was delivered with the center open. Cause:
+`SynchronizationCenterViewModel` combined two independent Room flows (`observeOpen`, `observeSent`); when an event
+changed from pending to sent, one emission could contain it in both lists, and both rows had the key
+`clientEventId`.
+
+Fix: `OutboxDao.observeActivity` reads both bounded groups in **one** query (`UNION ALL` of the same two
+`LIMIT`ed selects), and `OutboxActivity.of` splits the snapshot by status and restores each order. Each row has one
+status, so an event is in exactly one group in every emission. The two old queries were removed (no other caller).
+Unit test `OutboxActivityTest`; `testDebugUnitTest` (8 tests), `lintDebug` and `assembleProfile` succeed.
+
+On the phone the race did not reproduce on demand: 7 deliveries with the old build and the center open, none
+crashed (the window is a few milliseconds and both copies must be on screen). With the fix: 5 deliveries of 2
+events and one of 30 with the center open, no crash, groups and order correct (`fixed-few-before.png`,
+`fixed-many-after.png`). The evidence of the fix is therefore the single-snapshot query, not a reproduced crash.
 
 ## 6. Differences from the frozen scope
 

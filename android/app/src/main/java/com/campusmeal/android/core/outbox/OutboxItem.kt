@@ -25,3 +25,22 @@ data class OutboxItem(
 }
 
 data class OutboxStatusCount(val status: String, val total: Int)
+
+/** The synchronization center's two groups, taken from one snapshot of `outbox_events`. */
+data class OutboxActivity(val open: List<OutboxItem>, val sent: List<OutboxItem>) {
+    companion object {
+        /**
+         * Splits the rows of [OutboxDao.observeActivity] by status and restores each group's order (`UNION ALL`
+         * does not guarantee it). Each row has one status, so no event can be in both groups; ids are
+         * de-duplicated anyway because they are the list keys.
+         */
+        fun of(rows: List<OutboxItem>): OutboxActivity {
+            val unique = rows.distinctBy { it.clientEventId }
+            val (sent, open) = unique.partition { it.status == OutboxStatus.SENT }
+            return OutboxActivity(
+                open = open.sortedByDescending { it.createdAtEpochMillis },
+                sent = sent.sortedByDescending { it.closedAtEpochMillis ?: it.createdAtEpochMillis },
+            )
+        }
+    }
+}

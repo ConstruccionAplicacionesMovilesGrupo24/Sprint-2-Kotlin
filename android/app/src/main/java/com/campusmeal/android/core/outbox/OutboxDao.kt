@@ -52,23 +52,25 @@ interface OutboxDao {
     )
     suspend fun requeueOwned(accountId: String, id: String): Int
 
-    /** Open work (or work that needs attention) of one account, newest first, without payloads. */
+    /**
+     * Open work (or work that needs attention, newest [openLimit]) and recently delivered events (newest
+     * [sentLimit]) of one account, without payloads. One query, so every emission is one snapshot: an event
+     * that changes from pending to sent is in exactly one of the two groups. Two separate flows could emit it
+     * in both, which crashed the synchronization center (duplicate `LazyColumn` key). Split with
+     * [OutboxActivity.of].
+     */
     @Query(
-        "SELECT clientEventId, kind, status, attempts, lastError, occurredAtEpochMillis, createdAtEpochMillis, " +
-            "lastAttemptAtEpochMillis, closedAtEpochMillis FROM outbox_events " +
+        "SELECT * FROM (SELECT clientEventId, kind, status, attempts, lastError, occurredAtEpochMillis, " +
+            "createdAtEpochMillis, lastAttemptAtEpochMillis, closedAtEpochMillis FROM outbox_events " +
             "WHERE accountId = :accountId AND status IN ('PENDING', 'SENDING', 'FAILED', 'EXPIRED') " +
-            "ORDER BY createdAtEpochMillis DESC LIMIT :limit",
-    )
-    fun observeOpen(accountId: String, limit: Int): Flow<List<OutboxItem>>
-
-    /** Recently delivered events of one account, without payloads. */
-    @Query(
-        "SELECT clientEventId, kind, status, attempts, lastError, occurredAtEpochMillis, createdAtEpochMillis, " +
-            "lastAttemptAtEpochMillis, closedAtEpochMillis FROM outbox_events " +
+            "ORDER BY createdAtEpochMillis DESC LIMIT :openLimit) " +
+            "UNION ALL " +
+            "SELECT * FROM (SELECT clientEventId, kind, status, attempts, lastError, occurredAtEpochMillis, " +
+            "createdAtEpochMillis, lastAttemptAtEpochMillis, closedAtEpochMillis FROM outbox_events " +
             "WHERE accountId = :accountId AND status = 'SENT' " +
-            "ORDER BY COALESCE(closedAtEpochMillis, createdAtEpochMillis) DESC LIMIT :limit",
+            "ORDER BY COALESCE(closedAtEpochMillis, createdAtEpochMillis) DESC LIMIT :sentLimit)",
     )
-    fun observeSent(accountId: String, limit: Int): Flow<List<OutboxItem>>
+    fun observeActivity(accountId: String, openLimit: Int, sentLimit: Int): Flow<List<OutboxItem>>
 
     @Query("SELECT status, COUNT(*) AS total FROM outbox_events WHERE accountId = :accountId GROUP BY status")
     fun observeCounts(accountId: String): Flow<List<OutboxStatusCount>>

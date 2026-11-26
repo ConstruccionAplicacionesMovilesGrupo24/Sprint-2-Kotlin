@@ -1,0 +1,154 @@
+{
+  "contractVersion": 1,
+  "from": "2026-11-01",
+  "to": "2026-11-26",
+  "generatedAt": "2026-11-26T21:52:18.957Z",
+  "includeSynthetic": false,
+  "includesSyntheticData": false,
+  "thresholds": {
+    "crashRate": 0.01,
+    "p95Ms": 2000,
+    "comparison": "STRICTLY_ABOVE"
+  },
+  "samplePolicy": {
+    "minSessions": 100,
+    "minFreshLoads": 20
+  },
+  "combinations": [
+    {
+      "platform": "ANDROID",
+      "deviceModel": "Verify e0d6c978",
+      "osVersion": "Android 16",
+      "appVersion": "0.5.0",
+      "flagged": true,
+      "sessions": {
+        "started": 3,
+        "crashed": 1,
+        "distinctUsers": 1,
+        "crashRate": 0.3333,
+        "confidence": "INSUFFICIENT",
+        "flagged": true
+      },
+      "loading": {
+        "freshNetwork": 1,
+        "p95Ms": 2001,
+        "confidence": "INSUFFICIENT",
+        "flagged": true,
+        "cachedRestore": 0,
+        "offlineHistory": 0,
+        "errors": 0,
+        "timeouts": 0,
+        "cancelled": 1,
+        "failureRate": 0
+      },
+      "synthetic": false
+    },
+    {
+      "platform": "ANDROID",
+      "deviceModel": "samsung SM-S948U1",
+      "osVersion": "Android 17 (API 37)",
+      "appVersion": "0.4.0-profile",
+      "flagged": true,
+      "sessions": {
+        "started": 17,
+        "crashed": 1,
+        "distinctUsers": 2,
+        "crashRate": 0.0588,
+        "confidence": "INSUFFICIENT",
+        "flagged": true
+      },
+      "loading": {
+        "freshNetwork": 0,
+        "p95Ms": null,
+        "confidence": "NO_DATA",
+        "flagged": false,
+        "cachedRestore": 0,
+        "offlineHistory": 0,
+        "errors": 0,
+        "timeouts": 0,
+        "cancelled": 0,
+        "failureRate": null
+      },
+      "synthetic": false
+    },
+    {
+      "platform": "ANDROID",
+      "deviceModel": "samsung SM-A336M",
+      "osVersion": "Android 16 (API 36)",
+      "appVersion": "0.4.0",
+      "flagged": false,
+      "sessions": {
+        "started": 5,
+        "crashed": 0,
+        "distinctUsers": 2,
+        "crashRate": 0,
+        "confidence": "INSUFFICIENT",
+        "flagged": false
+      },
+      "loading": {
+        "freshNetwork": 1,
+        "p95Ms": 377,
+        "confidence": "INSUFFICIENT",
+        "flagged": false,
+        "cachedRestore": 0,
+        "offlineHistory": 0,
+        "errors": 0,
+        "timeouts": 0,
+        "cancelled": 0,
+        "failureRate": 0
+      },
+      "synthetic": false
+    },
+    {
+      "platform": "ANDROID",
+      "deviceModel": "samsung SM-S948U1",
+      "osVersion": "Android 17 (API 37)",
+      "appVersion": "0.4.0",
+      "flagged": false,
+      "sessions": {
+        "started": 27,
+        "crashed": 0,
+        "distinctUsers": 2,
+        "crashRate": 0,
+        "confidence": "INSUFFICIENT",
+        "flagged": false
+      },
+      "loading": {
+        "freshNetwork": 0,
+        "p95Ms": null,
+        "confidence": "NO_DATA",
+        "flagged": false,
+        "cachedRestore": 0,
+        "offlineHistory": 0,
+        "errors": 0,
+        "timeouts": 0,
+        "cancelled": 0,
+        "failureRate": null
+      },
+      "synthetic": false
+    }
+  ],
+  "coverage": {
+    "events": 60,
+    "platforms": [
+      {
+        "platform": "ANDROID",
+        "events": 60
+      }
+    ],
+    "crashesWithoutSession": 0,
+    "lateEvents": 1,
+    "excludedInjectedSessions": 3,
+    "firstOccurredAt": "2026-11-22T14:28:57.000Z",
+    "lastOccurredAt": "2026-11-26T21:50:48.000Z",
+    "lastReceivedAt": "2026-11-26T21:50:49.201Z",
+    "lateSyncPossibleUntil": "2027-02-24"
+  },
+  "limitations": [
+    "Monitored crash rate: only fatal JVM exceptions captured by the app and delivered later. Native crashes, ANRs, force-stops and system kills are not included.",
+    "A crash is delivered when the app is opened again: devices that never reopen it are missing from the numerator.",
+    "p95 covers successful fresh-network loads only. Errors, timeouts, cached restores, offline history and cancellations are reported separately.",
+    "INSUFFICIENT means fewer than 100 sessions or fewer than 20 fresh loads: the value describes those records, not the whole population.",
+    "Only platforms that send performance events appear (see coverage.platforms)."
+  ]
+}

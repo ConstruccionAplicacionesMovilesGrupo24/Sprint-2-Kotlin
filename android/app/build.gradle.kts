@@ -28,6 +28,7 @@ fun buildSetting(propertyKey: String, envKey: String): String? =
 val emulatorApiBaseUrl = "http://10.0.2.2:3000/api/v1/"
 val debugApiBaseUrl = buildSetting("campusmeal.apiBaseUrl", "CAMPUSMEAL_API_BASE_URL") ?: emulatorApiBaseUrl
 val releaseApiBaseUrl = buildSetting("campusmeal.releaseApiBaseUrl", "CAMPUSMEAL_RELEASE_API_BASE_URL")
+val debugApplicationIdSuffix = buildSetting("campusmeal.debugApplicationIdSuffix", "CAMPUSMEAL_DEBUG_APPLICATION_ID_SUFFIX")
 
 // Release signing (S3-13). The keystore lives outside the repository; only its path and passwords are configured.
 val releaseStoreFile = buildSetting("campusmeal.release.storeFile", "CAMPUSMEAL_RELEASE_STORE_FILE")
@@ -63,6 +64,9 @@ android {
     buildTypes {
         getByName("debug") {
             buildConfigField("String", "API_BASE_URL", "\"$debugApiBaseUrl\"")
+            // Opt-in (unset by default): lets a debug build, with its crash-injection tools, install next to
+            // the distributed app on a physical phone without replacing it or reading its data.
+            debugApplicationIdSuffix?.let { applicationIdSuffix = it }
         }
         getByName("release") {
             isMinifyEnabled = false
