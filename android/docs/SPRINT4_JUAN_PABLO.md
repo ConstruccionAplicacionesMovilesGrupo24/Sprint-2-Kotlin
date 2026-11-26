@@ -18,7 +18,7 @@ No local or tunnelled backend was used.
 | S4-04 | Sprint-2-Kotlin | #54 (`sprint4/s4-04-reviews-partner-health`) | Merged (`b5dceee`) |
 | S4-05 | Sprint-2-Kotlin | #57 (`sprint4/s4-05-bq3-lookup`: harness `df0a40e`, optimization `97eed47`) | Merged (`c141c3c`) — evidence in `SPRINT4_MICROOPT_JP.md` |
 | S4-01, S4-04 | Sprint-2-Kotlin | #58 (physical-device evidence) | Merged (`390f17c`) |
-| S4-12 | Sprint-2-Kotlin | `sprint4/s4-12-value-proposition` | Open — `SPRINT4_VALUE_PROPOSITION.md`; Natalia's S4-07 rows pending |
+| S4-12 | Sprint-2-Kotlin | #60 (`SPRINT4_VALUE_PROPOSITION.md`), then `sprint4/s4-12-natalia-daniel-evidence` (S4-07/S4-11 evidence) | #60 merged (`b09aa7b`); reviewer reproduction pending |
 
 ## 2. S4-04 — what was built
 

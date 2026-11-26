@@ -1,0 +1,87 @@
+{
+  "contractVersion": 1,
+  "policyVersion": 1,
+  "generatedAt": "2026-11-26T15:58:23.860Z",
+  "asOf": "2026-11-26T15:58:23.853Z",
+  "zone": "bogota-centro",
+  "from": "2026-10-27",
+  "to": "2026-11-26",
+  "synthetic": false,
+  "rows": [
+    {
+      "category": "BOWLS",
+      "searchIntents": null,
+      "distinctSearchers": null,
+      "demandShare": null,
+      "highDemand": null,
+      "availableRestaurants": 1,
+      "lowSupply": true,
+      "suppressed": false,
+      "status": "NO_OBSERVATIONS"
+    },
+    {
+      "category": "HOME_STYLE",
+      "searchIntents": null,
+      "distinctSearchers": null,
+      "demandShare": null,
+      "highDemand": null,
+      "availableRestaurants": 0,
+      "lowSupply": true,
+      "suppressed": false,
+      "status": "NO_OBSERVATIONS"
+    },
+    {
+      "category": "SOUPS",
+      "searchIntents": null,
+      "distinctSearchers": null,
+      "demandShare": null,
+      "highDemand": null,
+      "availableRestaurants": 0,
+      "lowSupply": true,
+      "suppressed": false,
+      "status": "NO_OBSERVATIONS"
+    },
+    {
+      "category": "RICE_DISHES",
+      "searchIntents": null,
+      "distinctSearchers": null,
+      "demandShare": null,
+      "highDemand": null,
+      "availableRestaurants": 0,
+      "lowSupply": true,
+      "suppressed": false,
+      "status": "NO_OBSERVATIONS"
+    },
+    {
+      "category": "SUSHI",
+      "searchIntents": null,
+      "distinctSearchers": null,
+      "demandShare": null,
+      "highDemand": null,
+      "availableRestaurants": 0,
+      "lowSupply": true,
+      "suppressed": false,
+      "status": "NO_OBSERVATIONS"
+    },
+    {
+      "category": "SALADS",
+      "searchIntents": null,
+      "distinctSearchers": null,
+      "demandShare": null,
+      "highDemand": null,
+      "availableRestaurants": 1,
+      "lowSupply": true,
+      "suppressed": false,
+      "status": "NO_OBSERVATIONS"
+    }
+  ],
+  "mappedRestaurants": 5,
+  "demandSuppressed": false,
+  "categorizedSearchIntents": null,
+  "limitations": [
+    "Demand uses recorded categorized search intents, not purchases or all students.",
+    "Supply is a current catalog snapshot, not historical availability or live inventory; the catalog is shared by both demand datasets.",
+    "Unknown catalog coverage prevents exact supply counts; no observations do not imply no demand.",
+    "Complementary suppression protects a single response; overlapping date windows may still permit differencing. Restricted analyst access is not a formal anonymity guarantee."
+  ]
+}
