@@ -11,6 +11,10 @@
             android:name="com.campusmeal.android.profiling.OutboxBurstActivity"
             android:exported="true"
             android:theme="@android:style/Theme.DeviceDefault.Light.NoActionBar" />
+        <activity
+            android:name="com.campusmeal.android.profiling.RestaurantCacheCheckActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.DeviceDefault.Light.NoActionBar" />
     </application>
 
 </manifest>

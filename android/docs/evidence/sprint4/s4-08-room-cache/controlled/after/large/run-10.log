@@ -1,0 +1,2 @@
+--------- beginning of main
+11-26 22:12:07.479 10622 10622 I CampusMealCacheCheck: DONE mode=large count=200 n=100 searchBytes=31997 detailBytes=11191 searchSha=19307bac2f06d80aeff217406555717a1fd2ee3450dd37926556ee0884909f9b detailSha=e3f701f07bf01d4fb0ecd08772cb23cb4d7dcff293f503b3e62e1415b91fa079 searchMs=199.283808 detailMs=98.987115 apiCalls=0 PASS
