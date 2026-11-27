@@ -117,7 +117,7 @@ tasks.configureEach {
         doFirst {
             check(!url.isNullOrBlank() && url.startsWith("https://") && url.endsWith("/")) {
                 "Release builds require campusmeal.releaseApiBaseUrl (or CAMPUSMEAL_RELEASE_API_BASE_URL) " +
-                    "set to an https:// URL ending in '/'. See android/README.md."
+                    "set to an https:// URL ending in '/'. See README.md at the repository root."
             }
             check(signed) {
                 "Release builds require campusmeal.release.storeFile, storePassword, keyAlias and keyPassword " +

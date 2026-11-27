@@ -1,7 +1,7 @@
 package com.campusmeal.android.core.network
 
 /**
- * Network settings supplied by the build (see android/README.md). Business logic must not
+ * Network settings supplied by the build (see the repository root README.md). Business logic must not
  * hardcode backend URLs. The app only talks to the CampusMeal API; external providers such as
  * route services are reached exclusively through that API.
  *
@@ -21,7 +21,7 @@ data class NetworkConfig(
     val callTimeoutSeconds: Long = 120,
 ) {
     init {
-        require(baseUrl.isNotBlank()) { "CampusMeal API base URL is not configured. See android/README.md." }
+        require(baseUrl.isNotBlank()) { "CampusMeal API base URL is not configured. See README.md at the repository root." }
         require(baseUrl.endsWith("/")) { "CampusMeal API base URL must end with '/'." }
         require(callTimeoutSeconds >= readTimeoutSeconds) { "The call timeout must cover the read timeout." }
     }

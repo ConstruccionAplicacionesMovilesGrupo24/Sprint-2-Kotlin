@@ -7,9 +7,9 @@ Baseline: Android `main` `fc7a442`, CampusMealBack `main` `1910b13`, backend on 
 [Sprint 1 wiki §1.2–1.4, revision `1a0c6ab`](https://github.com/ConstruccionAplicacionesMovilesGrupo24/Sprint1/wiki/SPRINT-1/1a0c6ab3e54ad5b96d6eca7c86399a04c42acaa1).
 
 **Status (2026-11-26).** Evidence from the three members is consolidated: Juan Pablo (S4-01, S4-03 to S4-05),
-Daniel (S4-10, S4-11) and Natalia (S4-06, S4-07, [SPRINT4_NATALIA.md](SPRINT4_NATALIA.md)). Still open: the
-reviewer's reproduction (§8) and, from the owners' own documents, the in-place upgrade from the release-signed
-0.4.0, which needs the release key (S4-14). A positive alternative was observed on a device (Natalia A09–A10).
+Daniel (S4-10, S4-11) and Natalia (S4-06, S4-07, [SPRINT4_NATALIA.md](SPRINT4_NATALIA.md)). The reviewer
+reproduced the representative claims (§9). Still open in the owners' own documents: the in-place upgrade from the
+release-signed 0.4.0, which needs the release key (S4-14). A positive alternative was observed on a device (Natalia A09–A10).
 **No pilot with students was run**: no consenting participants were available. Every interaction below was made
 by team members, demo accounts or the disposable test account, so it is **functional validation**, not evidence of
 student behavior.
@@ -140,4 +140,12 @@ participants it would describe those participants only; no rate could be general
 - [x] Billing, partner self-service and revenue are not claimed (§5).
 - [x] All three members supply attributable evidence (§7). Each owner's own open items stay recorded in their
   documents and in §3.
-- [ ] Reviewer reproduces representative claims (§8).
+- [x] Reviewer reproduces representative claims (§8). Natalia, 2026-11-26,
+  [#42 comment](https://github.com/ConstruccionAplicacionesMovilesGrupo24/Sprint-2-Kotlin/issues/42#issuecomment-7206744381):
+  - Steps 1–2: she ran them herself. The equivalence test passes, and the four medians match (2.043 → 2.014 ms and
+    28.412 → 17.669 ms).
+  - Step 3: she sent the 13 analyst requests to Render herself. The labels are unchanged and the counts changed as
+    expected.
+  - Steps 4–5: she reviewed captures taken on the owner's SM-S948U1 at 19:23–19:26 Bogotá, attached to the comment,
+    and checked them against API responses she fetched herself. These two steps were assisted, not repeated on her
+    device; the owner accepts this because her device run of BQ10 is already recorded (Natalia B02).

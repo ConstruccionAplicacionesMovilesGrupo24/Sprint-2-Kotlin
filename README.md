@@ -37,7 +37,7 @@ If the API 37 platform is missing and the SDK licenses have been accepted, AGP d
 | compileSdk / targetSdk / minSdk | 37 / 36 / 24 |
 | Java source / target, Kotlin JVM target | 17 |
 
-All versions are declared in [`gradle/libs.versions.toml`](gradle/libs.versions.toml).
+All versions are declared in [`gradle/libs.versions.toml`](android/gradle/libs.versions.toml).
 
 ## Project structure
 
@@ -71,9 +71,9 @@ android/
         └── debug/res/xml/      Debug-only network security config (local cleartext)
 ```
 
-Contribution notes for individual issues live in [`docs/`](docs/).
+Contribution notes for individual issues live in [`docs/`](android/docs/).
 
-Sprint 3 notes: [S3-01 plan](docs/SPRINT3_PLAN.md) · [S3-02 session](docs/SPRINT3_SESSION.md) · [S3-03 complete inventory and drafts](docs/SPRINT3_INVENTORY.md) · [S3-03 bug fixes: timeout, inventory, route continuity](docs/S3_03_BUGFIX_VALIDATION.md) · [S3-05 BQ3 recipes](docs/SPRINT3_BQ3.md).
+Sprint 3 notes: [S3-01 plan](android/docs/SPRINT3_PLAN.md) · [S3-02 session](android/docs/SPRINT3_SESSION.md) · [S3-03 complete inventory and drafts](android/docs/SPRINT3_INVENTORY.md) · [S3-03 bug fixes: timeout, inventory, route continuity](android/docs/S3_03_BUGFIX_VALIDATION.md) · [S3-05 BQ3 recipes](android/docs/SPRINT3_BQ3.md).
 
 Feature packages (`feature/auth`, `feature/inventory`, `feature/context`, `feature/restaurants`, `feature/decision`, `feature/profile`) are created along with their first real source files. Empty placeholder packages are not kept.
 
