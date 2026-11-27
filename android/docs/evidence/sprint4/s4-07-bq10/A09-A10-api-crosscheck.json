@@ -1,0 +1,202 @@
+[
+  {
+    "endpoint": "POST /api/v1/restaurants/alternatives",
+    "httpStatus": 200,
+    "request": {
+      "location": {
+        "latitude": 4.6025,
+        "longitude": -74.0653
+      },
+      "campusId": "campus-001",
+      "availableMinutes": 90,
+      "maximumBudget": 40000,
+      "dietaryPreferences": [],
+      "includeDelivery": false,
+      "requestedAt": "2026-11-27T00:04:53.512Z",
+      "foodCategory": "SUSHI"
+    },
+    "response": {
+      "contractVersion": 1,
+      "generatedAt": "2026-11-27T00:04:54.212Z",
+      "asOf": "2026-11-27T00:04:53.899Z",
+      "requestedCategory": "SUSHI",
+      "routeProviderStatus": "AVAILABLE",
+      "status": "FOUND",
+      "alternatives": [
+        {
+          "restaurant": {
+            "id": "abc20922-1179-4399-8ab1-2b5c3ff4d27f",
+            "name": "Green Bowl",
+            "category": "Healthy",
+            "openingStatus": "OPEN",
+            "walkingMinutes": 3,
+            "estimatedTotalMinutes": 21,
+            "minimumMealPrice": 17000,
+            "dietaryTags": [
+              "VEGETARIAN"
+            ],
+            "averageRating": 4.6,
+            "recommendationReason": "Fits the available time and budget."
+          },
+          "meal": {
+            "id": "ce1f0525-c963-4b22-909f-f6de02482cbb",
+            "name": "Vegetarian bowl",
+            "price": 17000,
+            "dietaryTags": [
+              "VEGETARIAN"
+            ],
+            "mealCategory": "BOWLS"
+          },
+          "substituteCategory": "BOWLS",
+          "explanation": "Instead of SUSHI, this BOWLS option matches the requested budget, dietary preferences and estimated walking/dining time.",
+          "budgetCompatible": true,
+          "dietCompatible": true,
+          "timeCompatible": true
+        },
+        {
+          "restaurant": {
+            "id": "abc20922-1179-4399-8ab1-2b5c3ff4d27f",
+            "name": "Green Bowl",
+            "category": "Healthy",
+            "openingStatus": "OPEN",
+            "walkingMinutes": 3,
+            "estimatedTotalMinutes": 21,
+            "minimumMealPrice": 19000,
+            "dietaryTags": [
+              "GLUTEN_FREE",
+              "VEGAN"
+            ],
+            "averageRating": 4.6,
+            "recommendationReason": "Fits the available time and budget."
+          },
+          "meal": {
+            "id": "2b4fcebc-49e5-416d-a88e-af16f75561ce",
+            "name": "Vegan power bowl",
+            "price": 19000,
+            "dietaryTags": [
+              "GLUTEN_FREE",
+              "VEGAN"
+            ],
+            "mealCategory": "BOWLS"
+          },
+          "substituteCategory": "BOWLS",
+          "explanation": "Instead of SUSHI, this BOWLS option matches the requested budget, dietary preferences and estimated walking/dining time.",
+          "budgetCompatible": true,
+          "dietCompatible": true,
+          "timeCompatible": true
+        },
+        {
+          "restaurant": {
+            "id": "55e29107-5b56-4edc-abf4-ca29d26dace2",
+            "name": "Andean Flavor",
+            "category": "Business lunches",
+            "openingStatus": "OPEN",
+            "walkingMinutes": 4,
+            "estimatedTotalMinutes": 23,
+            "minimumMealPrice": 16000,
+            "dietaryTags": [],
+            "averageRating": 4.2,
+            "recommendationReason": "Fits the available time and budget."
+          },
+          "meal": {
+            "id": "f39368a7-9f3f-40ea-b70f-9d02a7677f04",
+            "name": "Ajiaco santafereño",
+            "price": 16000,
+            "dietaryTags": [],
+            "mealCategory": "SOUPS"
+          },
+          "substituteCategory": "SOUPS",
+          "explanation": "Instead of SUSHI, this SOUPS option matches the requested budget, dietary preferences and estimated walking/dining time.",
+          "budgetCompatible": true,
+          "dietCompatible": true,
+          "timeCompatible": true
+        },
+        {
+          "restaurant": {
+            "id": "55e29107-5b56-4edc-abf4-ca29d26dace2",
+            "name": "Andean Flavor",
+            "category": "Business lunches",
+            "openingStatus": "OPEN",
+            "walkingMinutes": 4,
+            "estimatedTotalMinutes": 23,
+            "minimumMealPrice": 18000,
+            "dietaryTags": [],
+            "averageRating": 4.2,
+            "recommendationReason": "Fits the available time and budget."
+          },
+          "meal": {
+            "id": "3a834330-695f-4f5b-8665-1dcaf21ee002",
+            "name": "Bandeja paisa",
+            "price": 18000,
+            "dietaryTags": [],
+            "mealCategory": "RICE_DISHES"
+          },
+          "substituteCategory": "RICE_DISHES",
+          "explanation": "Instead of SUSHI, this RICE_DISHES option matches the requested budget, dietary preferences and estimated walking/dining time.",
+          "budgetCompatible": true,
+          "dietCompatible": true,
+          "timeCompatible": true
+        }
+      ]
+    }
+  },
+  {
+    "endpoint": "POST /api/v1/restaurants/alternatives",
+    "httpStatus": 200,
+    "request": {
+      "location": {
+        "latitude": 4.6025,
+        "longitude": -74.0653
+      },
+      "campusId": "campus-001",
+      "availableMinutes": 90,
+      "maximumBudget": 40000,
+      "dietaryPreferences": [
+        "VEGETARIAN"
+      ],
+      "includeDelivery": false,
+      "requestedAt": "2026-11-27T00:04:53.961Z",
+      "foodCategory": "SUSHI"
+    },
+    "response": {
+      "contractVersion": 1,
+      "generatedAt": "2026-11-27T00:04:54.451Z",
+      "asOf": "2026-11-27T00:04:54.342Z",
+      "requestedCategory": "SUSHI",
+      "routeProviderStatus": "AVAILABLE",
+      "status": "FOUND",
+      "alternatives": [
+        {
+          "restaurant": {
+            "id": "abc20922-1179-4399-8ab1-2b5c3ff4d27f",
+            "name": "Green Bowl",
+            "category": "Healthy",
+            "openingStatus": "OPEN",
+            "walkingMinutes": 3,
+            "estimatedTotalMinutes": 21,
+            "minimumMealPrice": 17000,
+            "dietaryTags": [
+              "VEGETARIAN"
+            ],
+            "averageRating": 4.6,
+            "recommendationReason": "Fits the available time, budget and dietary preferences."
+          },
+          "meal": {
+            "id": "ce1f0525-c963-4b22-909f-f6de02482cbb",
+            "name": "Vegetarian bowl",
+            "price": 17000,
+            "dietaryTags": [
+              "VEGETARIAN"
+            ],
+            "mealCategory": "BOWLS"
+          },
+          "substituteCategory": "BOWLS",
+          "explanation": "Instead of SUSHI, this BOWLS option matches the requested budget, dietary preferences and estimated walking/dining time.",
+          "budgetCompatible": true,
+          "dietCompatible": true,
+          "timeCompatible": true
+        }
+      ]
+    }
+  }
+]
