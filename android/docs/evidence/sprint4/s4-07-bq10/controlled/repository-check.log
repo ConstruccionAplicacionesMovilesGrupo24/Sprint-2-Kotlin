@@ -1,0 +1,44 @@
+﻿--------- beginning of main
+11-26 22:43:26.448 25145 25169 I CampusMealBq10Check: PASS alternative initial network result
+11-26 22:43:26.460 25145 25169 I CampusMealBq10Check: PASS report initial network result
+11-26 22:43:26.466 25145 25169 I CampusMealBq10Check: PASS alternative TTL 299999ms fresh
+11-26 22:43:26.469 25145 25169 I CampusMealBq10Check: PASS alternative TTL 300000ms expired and 503 historical fallback
+11-26 22:43:26.479 25145 25169 I CampusMealBq10Check: PASS alternative reconnect refresh
+11-26 22:43:26.480 25145 25169 I CampusMealBq10Check: PASS report TTL 899999ms fresh
+11-26 22:43:26.486 25145 25169 I CampusMealBq10Check: PASS report TTL 900000ms expired and 503 historical fallback
+11-26 22:43:26.495 25145 25169 I CampusMealBq10Check: PASS report reconnect refresh
+11-26 22:43:26.496 25145 25169 I CampusMealBq10Check: PASS budget change offline miss
+11-26 22:43:26.497 25145 25169 I CampusMealBq10Check: PASS time change offline miss
+11-26 22:43:26.498 25145 25169 I CampusMealBq10Check: PASS dataset change offline miss
+11-26 22:43:26.499 25145 25169 I CampusMealBq10Check: PASS date change offline miss
+11-26 22:43:26.499 25145 25169 I CampusMealBq10Check: PASS noncanonical coordinates cannot reuse campus snapshot
+11-26 22:43:26.500 25145 25169 I CampusMealBq10Check: PASS noncanonical request online works without storing snapshot
+11-26 22:43:26.500 25145 25169 I CampusMealBq10Check: PASS noncanonical request still offline miss
+11-26 22:43:26.500 25145 25169 I CampusMealBq10Check: PASS no campus offline miss
+11-26 22:43:26.529 25145 25186 I CampusMealBq10Check: PASS nonprecise category filter saved
+11-26 22:43:26.530 25145 25186 I CampusMealBq10Check: PASS saved BQ10 filter values contain no device coordinates
+11-26 22:43:26.562 25145 25206 I CampusMealBq10Check: PASS report filters persisted
+11-26 22:43:26.815 25145 25169 I CampusMealBq10Check: PASS alternative retention exactly 20
+11-26 22:43:26.816 25145 25169 I CampusMealBq10Check: PASS report retention exactly 20
+11-26 22:43:26.819 25145 25169 I CampusMealBq10Check: PASS oldest alternative evicted
+11-26 22:43:26.821 25145 25169 I CampusMealBq10Check: PASS newest alternative retained
+11-26 22:43:26.824 25145 25169 I CampusMealBq10Check: PASS oldest report evicted
+11-26 22:43:26.828 25145 25169 I CampusMealBq10Check: PASS newest report retained
+11-26 22:43:26.844 25145 25169 I CampusMealBq10Check: PASS 403 denies report and clears all account report rows
+11-26 22:43:26.845 25145 25169 I CampusMealBq10Check: PASS 403 does not clear alternative kind
+11-26 22:43:26.845 25145 25169 I CampusMealBq10Check: PASS offline after 403 cannot recover deleted report
+11-26 22:43:26.849 25145 25169 I CampusMealBq10Check: PASS IOException on forced refresh keeps historical report
+11-26 22:43:26.860 25145 25186 I CampusMealBq10Check: PASS in-flight response from previous session denied
+11-26 22:43:26.860 25145 25186 I CampusMealBq10Check: PASS previous session cannot fetch
+11-26 22:43:26.861 25145 25186 I CampusMealBq10Check: PASS new account cannot reuse old report
+11-26 22:43:26.863 25145 25186 I CampusMealBq10Check: PASS new account cannot reuse old alternative
+11-26 22:43:26.864 25145 25169 I CampusMealBq10Check: PASS new account does not inherit report filters
+11-26 22:43:26.876 25145 25169 I CampusMealBq10Check: PASS account cleanup removes A but retains B
+11-26 22:43:26.881 25145 25169 I CampusMealBq10Check: PASS cancelled in-flight request does not persist result
+11-26 22:43:27.014 25145 25169 I CampusMealBq10Check: PASS exported v11 schema migrates and Room validates v12
+11-26 22:43:27.015 25145 25169 I CampusMealBq10Check: PASS migration preserves inventory row
+11-26 22:43:27.015 25145 25169 I CampusMealBq10Check: PASS migration preserves restaurant cache timestamp
+11-26 22:43:27.015 25145 25169 I CampusMealBq10Check: PASS migration preserves review draft
+11-26 22:43:27.015 25145 25169 I CampusMealBq10Check: PASS migration preserves pending outbox
+11-26 22:43:27.043 25145 25169 I CampusMealBq10Check: PASS new BQ10 table writable
+11-26 22:43:27.050 25145 25145 I CampusMealBq10Check: DONE PASS assertions=42

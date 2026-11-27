@@ -100,3 +100,49 @@ Demand measures recorded searches, not purchases or all students. Supply is a ti
 ## 8. Evidence provenance and privacy
 
 Original phone captures: `1000326738.jpg`, `1000326740.jpg`, `1000326742.jpg`, `1000326744.jpg`, `1000326746.jpg` (renamed without content changes). The remaining PNGs are extracted frames from the original screen recordings: B01/B05/B09 from `1000326751.mp4`, B10 from `1000326752.mp4`, B03/C01 from `1000326753.mp4`, B02 category cards from `1000326755.mp4`, D01/D02/D03 from `1000326756.mp4`. C02 is the in-app recording `1000326755.mp4`, re-encoded at smaller resolution and with audio removed. Original recordings containing keyboard clipboard contents, personal apps or account entry are intentionally not included. Student JPGs and supplementary analyst JPGs are renamed from the WhatsApp ZIP of November 25, 2026, 23:19. Student PNGs are extracted from its 108-second video at approximately 24s (A04), 30s (A05), 54s (A06), 69s and 78s (A07), 99s and 105s (A08). No original notification-shade footage is included. A long suppression screenshot with a duplicated SALADS card at a scroll-stitch boundary was not included; the report card evidence from the earlier recording is retained. No credentials or raw login recordings are intentionally included.
+
+## 9. Supplemental validation — November 26, 2026
+
+This section supersedes the outstanding-test status in sections 2 and 6 where the new evidence applies. The original evidence and its provenance remain unchanged.
+
+### 9.1 Controlled physical-device checks
+
+The profile-only `Bq10CheckActivity` exercises the production BQ10 repository with a disposable Room database and DataStore, synthetic account scopes, an injected clock, and a fake API. It does not change the live backend, permissions, or user data. The profile build and installation succeeded; on November 26 at 22:43 Bogotá time the device log recorded **42/42 PASS assertions** and `DONE PASS assertions=42`. See [repository-check.log](evidence/sprint4/s4-07-bq10/controlled/repository-check.log).
+
+| Area | Executed outcome |
+|---|---|
+| Alternative TTL | 299,999 ms is fresh; 300,000 ms expires; simulated 503 returns historical data; reconnect refreshes. |
+| Report TTL | 899,999 ms is fresh; 900,000 ms expires; simulated 503 returns historical data; reconnect refreshes. |
+| Exact context | Budget, time, dataset and date changes cause offline misses. Noncanonical coordinates and absent campus do not reuse a campus snapshot; noncanonical online request succeeds without increasing the snapshot count and remains an offline miss. |
+| Filter privacy | Nonprecise category and report filters persist; saved BQ10 filter values do not contain the synthetic device coordinates. |
+| Retention | After inserting distinct queries, exactly 20 snapshots remain per tested kind; oldest evicted, newest retained. |
+| Authorization | Simulated HTTP 403 denies report access, removes all report rows for the account, preserves alternatives, and prevents offline recovery of the deleted report. |
+| Connectivity | Simulated IOException during forced refresh preserves historical report content. |
+| Session and cancellation | Delayed response from a previous session denied; old scope cannot fetch; new account cannot reuse old reports/alternatives or filters; account cleanup preserves the other account; cancelled in-flight request does not persist a result. |
+| Migration | Exported v11 schema upgraded to v12 and validated by Room; synthetic inventory row, restaurant cache timestamp, review draft and pending outbox row preserved; new BQ10 table writable. |
+
+Harness: `app/src/profile/java/com/campusmeal/android/profiling/Bq10CheckActivity.kt`; v11 schema asset: `app/src/profile/assets/s4-07-room-v11.json`. Build with `:app:assembleProfile`, install the profile APK, launch `com.campusmeal.android.profile/com.campusmeal.android.profiling.Bq10CheckActivity` and collect `adb logcat -d -s CampusMealBq10Check`.
+
+Limitations: the fake API verifies repository responses to controlled failures, not a live mobile 403 or all Compose races. The v11 migration is a disposable schema-based test, not an installed signed release upgrade. No heap benchmark is claimed. Exact APK hashes were not captured for this supplemental run.
+
+### 9.2 Inherited-feature smoke checks and BQ10 navigation
+
+Natalia assembled and installed the debug build successfully and recorded two physical-device walkthroughs on November 26, approximately 22:48–22:54 Bogotá time. The first launch command used the wrong package; the subsequent videos demonstrate app navigation. Original recordings contain authentication screens and are retained locally; only selected in-app frames are included below. The observed scope is a smoke check, not exhaustive regression of every inherited mutation and failure path.
+
+| Scenario | Observed outcome and evidence |
+|---|---|
+| Student authentication and inventory | Student sign-in followed by inventory with expiration labels; [inventory](evidence/sprint4/s4-07-bq10/controlled/E01-inventory.jpg). |
+| Recipes | Filters and refresh exercised; no matching recipes for the current inventory; [recipes](evidence/sprint4/s4-07-bq10/controlled/E02-recipes.jpg). |
+| Context and restaurant search | Manual Uniandes, 60 minutes, COP 50,000, no diet; delivery toggled off; valid empty result, not proof of a positive search; [campus](evidence/sprint4/s4-07-bq10/controlled/E03-campus.jpg), [budget/time](evidence/sprint4/s4-07-bq10/controlled/E03-budget-time.jpg), [search](evidence/sprint4/s4-07-bq10/controlled/E04-restaurant-search.jpg). |
+| Alternatives | BOWLS then HOME_STYLE online responses, no compatible alternatives in these nighttime snapshots; [BOWLS](evidence/sprint4/s4-07-bq10/controlled/E05-alternatives-bowls.jpg). |
+| Restaurant detail | Reuse Juan Pablo's positive physical-device checks A09–A10, not an independent Natalia run on the latest debug APK: [A09 detail](evidence/sprint4/s4-07-bq10/A09-restaurant-details.png), [A10 detail](evidence/sprint4/s4-07-bq10/A10-restaurant-details.png). See section 5 for device, build and API cross-check. The ordinary search-to-detail route was not independently repeated in the nighttime walkthrough. |
+| Cook / Walk / Order | Comparison reached a cooking recommendation and the home plan showed Cook with Rice; [saved plan](evidence/sprint4/s4-07-bq10/controlled/E06-saved-plan.jpg). Previous-comparison retrieval not demonstrated in this recording. |
+| Analyst authentication and BQ6 | Analyst login and report/month navigation observed; [BQ6](evidence/sprint4/s4-07-bq10/controlled/E07-bq6.jpg). |
+| BQ9 | Date/zone selection and results with suppression; [BQ9](evidence/sprint4/s4-07-bq10/controlled/E08-bq9.jpg). |
+| BQ10 rapid zone changes | Loading and cached responses across Centro, Chapinero and Teusaquillo; final Centro synthetic report returns 25 categorized searches, BOWLS 15/5/60%, SOUPS 5/5/20%. [Loading](evidence/sprint4/s4-07-bq10/controlled/E09-zone-loading.jpg), [Centro](evidence/sprint4/s4-07-bq10/controlled/E09-centro.jpg), [Teusaquillo](evidence/sprint4/s4-07-bq10/controlled/E09-teusaquillo.jpg), [final Centro](evidence/sprint4/s4-07-bq10/controlled/E09-final-centro.jpg). No mismatched final result observed; HTTP completion order was not instrumented. |
+
+Frame provenance: analyst recording `WhatsApp Video 2026-11-26 at 10.55.45 PM.mp4` (9, 39, 90, 96, 102 and 114 s); student recording `WhatsApp Video 2026-11-26 at 10.56.53 PM.mp4` (27, 51, 63, 84, 90, 99 and 141 s). No login frames included.
+
+### 9.3 Acceptance status
+
+Both new destinations, backend cross-checks, offline exact-context handling, filter persistence, repository failure paths, bounded storage and migration now have recorded evidence. The prior partial concurrency evidence is supplemented by controlled cancellation/session checks and a manual zone-switch walkthrough. The inherited smoke checks above are not a full regression suite; previous-comparison recovery, ordinary search-to-detail on the latest build, full installed release upgrade, and direct live mobile 403 remain unverified in this supplemental run. Keep #44 open until Daniel reviews and accepts the evidence and the validation PR is merged. Do not interpret this as a claim that every inherited feature/failure combination was tested.
