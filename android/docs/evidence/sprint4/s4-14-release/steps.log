@@ -29,3 +29,4 @@ USER GET /analytics/partner-health 403
 [04:22:47Z] logout student -> login analyst
 [04:24:08Z] analyst: BQ6, BQ9, BQ13 load (BQ13 Nov 21-27 Green Bowl 5 reviews mean 4.00, others suppressed; matches API)
 [04:25:02Z] BQ10 opened as analyst; logout analyst -> login student again: student profile, no analytics
+[04:59:56Z] Neon: opening_hours of 5 restaurants restored from backup (identical)

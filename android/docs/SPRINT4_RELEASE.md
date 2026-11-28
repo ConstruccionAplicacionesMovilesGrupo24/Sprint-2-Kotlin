@@ -112,8 +112,10 @@ BQ6 before the run: 642.
 closes by 22:00. With the owner's approval, a temporary opening period (Friday 22:00 → 04:00) was **added** to the five
 active restaurants; their normal periods were not changed. The previous `opening_hours` values are saved in
 [`restaurants-opening-hours-before-2026-11-27.json`](evidence/sprint4/s4-14-release/restaurants-opening-hours-before-2026-11-27.json)
-and are restored exactly after the session (*pending: restore time*). Availability-dependent results between 23:12 and
-the restore reflect this fixture, not real opening hours. No menu, price or meal was changed.
+and were restored at 2026-11-27 23:59 Bogotá (04:59:54Z). The script compared every row with the backup before
+committing, and they were all identical. Afterwards the alternatives endpoint again returns `NO_COMPATIBLE_ALTERNATIVE`
+at that hour. Availability-dependent results between 23:12 and 23:59 reflect this fixture, not real opening hours. No
+menu, price or meal was changed.
 
 Daniel has no Android phone: his rows are run on a team member's phone or on the emulator, stating which and who ran them.
 
