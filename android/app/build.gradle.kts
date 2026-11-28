@@ -46,8 +46,9 @@ android {
         applicationId = "com.campusmeal.android"
         minSdk = 24
         targetSdk = 36
-        versionCode = 4
-        versionName = "0.4.0"
+        // Sprint 4 release (S4-14, docs/SPRINT4_RELEASE.md). Must stay above the distributed 0.4.0 (code 4).
+        versionCode = 5
+        versionName = "0.5.0"
     }
 
     signingConfigs {
