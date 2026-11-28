@@ -4,7 +4,8 @@ Issue: [S4-14 / #51](https://github.com/ConstruccionAplicacionesMovilesGrupo24/S
 Owner: Daniel (@dvargasl2). Reviewer: Juan Pablo (@bedoya0611). Release build and signing: Natalia (@NataliaEspitia),
 who holds the key of the distributed 0.4.0.
 
-**Status: draft.** Every value marked *Pending* is filled only after it actually happens. Nothing below claims a
+**Status: released and distributed (2026-11-27).** Still open: Natalia's BQ10 validation row (§4.2) and restoring the
+opening-hours test fixture in Neon (§4.2). Every value marked *Pending* is filled only after it actually happens. Nothing below claims a
 build, an installation or a distribution that has not been recorded.
 
 ## 1. Version
@@ -13,7 +14,7 @@ build, an installation or a distribution that has not been recorded.
 |---|---|---|
 | `versionCode` / `versionName` | 4 / `0.4.0` (commit [`a3fb056`](https://github.com/ConstruccionAplicacionesMovilesGrupo24/Sprint-2-Kotlin/commit/a3fb056), 2026-10-31, built and distributed by Natalia) | **5 / `0.5.0`** |
 | Room schema | 9 | **12** |
-| Android source commit | `a3fb056` | *Pending: Natalia's `git rev-parse HEAD`.* The APK contains `ResultSource.FRESH_CACHE`, so it includes #68 (`main` `a816687`) |
+| Android source commit | `a3fb056` | [`a816687`](https://github.com/ConstruccionAplicacionesMovilesGrupo24/Sprint-2-Kotlin/commit/a816687) (`main` after #68 and #70), as reported by Natalia; consistent with the APK, which contains `ResultSource.FRESH_CACHE` (#68) |
 | APK SHA-256 | `d23869cc8f65e7b272d1479f588dfc62a4032d462f514cd59773da6190f28a04`. Copy of the installed distributed 0.4.0, pulled from the SM-S948U1 on 2026-11-27 | `0337fb3b1b5b5213506c860069be884b099182d3ef89c10ec8b1515f243243d0` (Natalia's signed APK) |
 | Signing certificate SHA-256 | `1e1a1c28e65a44b2cda258571034c83439fc388e6e78608aeb5d8474526d12ed` (`CN=Natalia Espitia, OU=campusmeal`, v2 scheme) | `1e1a1c28e65a44b2cda258571034c83439fc388e6e78608aeb5d8474526d12ed`: **identical** (`apksigner verify --print-certs`, build-tools 36.0.0) |
 
@@ -104,7 +105,7 @@ BQ6 before the run: 642.
 | BQ6 and BQ9 reports | ANALYST | Juan Pablo | SM-S948U1, 23:22–23:23 | Both load and are labeled "Includes synthetic demo data" | Done |
 | Reviews offline → delivered once; BQ13 | USER / ANALYST | Juan Pablo | SM-S948U1, 23:14–23:23 | The Garden review submitted offline → "Review saved on this device". Force-stop and relaunch offline → still pending in the sync center. Reconnect → server summary 6 → **7 reviews from 7 students**, still 7 after 45 s. BQ13 (Nov 21–27) loads: Green Bowl 5 reviews, mean 4.00, the other four suppressed under 5 reviewers. Same values from the API | Done |
 | Alternatives; BQ10 | USER / ANALYST | Natalia | | | Pending |
-| Synchronization center; BQ1 | USER / ANALYST | Daniel | | | Pending |
+| Synchronization center; BQ1 | USER / ANALYST | Daniel | API 37 emulator (Daniel has no Android phone), the distributed APK `0337fb3b…` installed with `adb install`, Render, 2026-11-27 23:46–23:53 | **USER:** after sign-in the center shows 0 waiting and the session events sent with 1 attempt. Online comparison 23:49 (#1 WALK, The Garden, 19 min, COP 14,500); airplane mode, "Choose WALK" → center "2 waiting": App usage and Recommendation seen or chosen, *Pending · Not attempted yet*, with the offline notice. Reconnected 23:50:40 → "0 waiting" within ~3 s, both *Sent · 1 attempt(s)*, still dated 23:49. **ANALYST:** BQ1 (2026-10-29…11-27, real data) lists this emulator as `Google sdk_gphone64_arm64 · Android 17 · app 0.5.0`: 0 of 2 sessions crashed, 1 network load 715 ms (the comparison above), so 0.5.0 telemetry reaches the report end to end. *Include demo data*: Demo A 1.00 % not flagged / 2500 ms above limit; Demo B 2.00 % above limit / 2000 ms not flagged; Demo C no data; Demo D 33.33 % and 5000 ms flagged with small-sample labels; Demo E 0.00 % / 1000 ms (S4-09 fixtures). Offline: "Saved Nov 27, 23:52". Screenshots `40`–`47-daniel-*` | Done |
 | Role check: analytics as USER | USER | Juan Pablo | SM-S948U1 and API, 23:21 | The student profile has no Analytics section. `GET` feature-adoption, performance and partner-health with the student token → **403** each | Done |
 | Network lost during a new flow | USER | Juan Pablo | SM-S948U1, 23:20–23:21 | Alternative meals: SUSHI online (`FOUND`, 23:20:32), then airplane mode. BOWLS → "Offline. No matching saved result". SUSHI → "Offline. Showing historical data · Historical snapshot — not current availability". Reconnect + Refresh → new server response 23:21:24. No crash | Done |
 
@@ -125,9 +126,14 @@ paired measurements stay in each optimization report): `OutboxBurstActivity` (`c
 
 | Harness | Commit / device | Result | Status |
 |---|---|---|---|
-| S4-11 outbox `check` | | | Pending |
-| S4-08 restaurant cache `check` | | | Pending |
-| S4-07 BQ10 check | | | Pending |
+| S4-11 outbox `check` | `a816687`, API 37 emulator | `MATCH`: 500 events by 1 and by 8 concurrent callers store the same payloads (`46bee4e0…`, as in the S4-11 pair) | Done |
+| S4-08 restaurant cache `check` | `a816687`, API 37 emulator | `DONE mode=check PASS` (16 assertions, including fresh-cache `FRESH_CACHE` vs offline `CACHE`) | Done |
+| S4-07 BQ10 check | `a816687`, API 37 emulator | `DONE PASS assertions=42` | Done |
+
+Run by Daniel on 2026-11-28 with the `profile` build of `a816687` (`versionCode 5`, `0.5.0-profile`), the commit the
+0.5.0 APK contains (§1); `66b1953` only adds documentation and evidence. The same commit also passes
+`testDebugUnitTest` (8 tests), `lintDebug` (warnings only) and `assembleDebug`. These harnesses use disposable data and
+no backend: they show the integrated build keeps the optimized paths correct, not new timings.
 
 ## 5. Backend
 
@@ -136,7 +142,7 @@ paired measurements stay in each optimization report): `OutboxBurstActivity` (`c
 | CampusMealBack `main` | [`1910b13`](https://github.com/ConstruccionAplicacionesMovilesGrupo24/CampusMealBack/commit/1910b13) (BQ10 code in `cd1947e`; later commits are documentation) |
 | Local checks of `1910b13` (2026-11-27) | `npm run build`, `tsc --noEmit` and `eslint src` pass; 12 migrations compiled |
 | Neon | All 12 migrations applied (`docs/SPRINT4_BQ10.md` in CampusMealBack, run by Natalia on 2026-11-25) |
-| Render | `GET /health` → `status ok`, `database up` (2026-11-28T02:41Z). *Pending: deployed commit, confirmed in the Render dashboard (`cd1947e` or later)* |
+| Render | `GET /health` → `status ok`, `database up` (2026-11-28T02:41Z). The running service answers the BQ10 alternatives and BQ1/BQ13 endpoints used in §4.2, so it contains `cd1947e`; the later backend commits (`b0ca4d3`, `1910b13`) only change documentation, so the running code is that of `1910b13`. The exact deployed commit was not read from the Render dashboard |
 
 All backend changes of Sprint 4 are additive (new tables and endpoints); the Swift client does not use them and keeps
 working against the same API.
@@ -147,10 +153,10 @@ Firebase App Distribution, as in `SPRINT3_RELEASE.md` §Distribution, to the off
 
 | Item | Value |
 |---|---|
-| Uploaded by / date | *Pending* |
-| Release notes | §2.2 |
-| Recipients | *Pending (official addresses only)* |
-| Installation confirmed by | *Pending: only after it actually happens* |
+| Uploaded by / date | Daniel, 2026-11-27 22:55:05 (UTC-5), release `0.5.0 (5)` in the CampusMeal Firebase project; the APK is Natalia's signed build `0337fb3b…` (§1), verified by Daniel before upload (version 5 / 0.5.0, Render URL, certificate `1e1a1c28…`) |
+| Release notes | "CampusMeal 0.5.0 (Sprint 4)", the text of §2.2 |
+| Recipients | 6 invited: the three team members and three further recipients (addresses kept in the Firebase console, not in the repository) |
+| Installation confirmed by | Natalia and Juan Pablo installed 0.5.0 from the Firebase invitation and reported it working (2026-11-28). Earlier, the console showed 6 invited, 1 accepted, 0 downloaded; Juan Pablo's §4.1 run had installed the same APK with `adb install -r` |
 
 ## 7. Known limitations
 
