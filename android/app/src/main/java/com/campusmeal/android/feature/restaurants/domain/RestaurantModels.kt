@@ -19,7 +19,19 @@ enum class RouteProviderStatus {
     UNAVAILABLE,
 }
 
-enum class ResultSource { NETWORK, CACHE }
+enum class ResultSource {
+    /** Answered by the backend for this search. */
+    NETWORK,
+
+    /**
+     * A saved copy still inside its freshness window (`CachePolicy.restaurantSearch`): the backend was not
+     * asked. It is as current as a network answer for the UI, never an offline state.
+     */
+    FRESH_CACHE,
+
+    /** The last saved copy, returned because the backend was unreachable: an offline fallback. */
+    CACHE,
+}
 
 /**
  * One BQ4 result. Walking and total times are null when the route provider could not estimate this
@@ -62,7 +74,8 @@ sealed interface RestaurantSearchResult {
 
     /**
      * An empty [RestaurantResults.restaurants] is a valid "no results" answer. A [ResultSource.CACHE]
-     * source means the backend was unreachable and this is the last successful search.
+     * source means the backend was unreachable and this is the last successful search;
+     * [ResultSource.FRESH_CACHE] means a saved copy was still fresh, so the backend was not asked.
      */
     data class Success(val results: RestaurantResults) : RestaurantSearchResult
 

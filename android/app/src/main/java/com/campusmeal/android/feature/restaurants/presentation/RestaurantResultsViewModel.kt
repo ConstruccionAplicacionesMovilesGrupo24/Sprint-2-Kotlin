@@ -176,6 +176,7 @@ class RestaurantResultsViewModel(
                     _uiState.value =
                         when {
 
+                            // Only the offline fallback. A FRESH_CACHE copy is current and shown as content.
                             results.source ==
                                     ResultSource.CACHE -> {
 

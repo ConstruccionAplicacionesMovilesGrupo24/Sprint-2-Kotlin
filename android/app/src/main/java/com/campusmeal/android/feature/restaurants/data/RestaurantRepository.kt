@@ -271,9 +271,14 @@ class NetworkRestaurantRepository(
         return decodeCachedSearch(scope, entity)
     }
 
+    /**
+     * Decodes a saved search labelled with [source]: [ResultSource.CACHE] for the offline fallback,
+     * [ResultSource.FRESH_CACHE] when [freshCachedSearch] serves it inside the TTL.
+     */
     private fun decodeCachedSearch(
         scope: AccountSessionScope,
         entity: RestaurantSearchCacheEntity,
+        source: ResultSource = ResultSource.CACHE,
     ): RestaurantSearchResult.Success? {
         if (!coordinator.isCurrent(scope)) return null
 
@@ -289,7 +294,7 @@ class NetworkRestaurantRepository(
             val results =
                 response.toResultsOrNull(
                     fallbackTimeMillis = entity.fetchedAtEpochMillis,
-                    source = ResultSource.CACHE,
+                    source = source,
                 ) ?: return null
 
             RestaurantSearchResult.Success(results)
@@ -321,7 +326,8 @@ class NetworkRestaurantRepository(
             return null
         }
 
-        return decodeCachedSearch(scope, entity)
+        // Fresh copy while the backend was not even asked: not an offline answer.
+        return decodeCachedSearch(scope, entity, ResultSource.FRESH_CACHE)
     }
     private suspend fun cachedDetail(
         scope: AccountSessionScope,
