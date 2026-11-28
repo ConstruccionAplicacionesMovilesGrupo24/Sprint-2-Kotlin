@@ -13,9 +13,9 @@ build, an installation or a distribution that has not been recorded.
 |---|---|---|
 | `versionCode` / `versionName` | 4 / `0.4.0` (commit [`a3fb056`](https://github.com/ConstruccionAplicacionesMovilesGrupo24/Sprint-2-Kotlin/commit/a3fb056), 2026-10-31, built and distributed by Natalia) | **5 / `0.5.0`** |
 | Room schema | 9 | **12** |
-| Android source commit | `a3fb056` | *Pending: the `main` commit Natalia builds* |
-| APK SHA-256 | *Pending: from the 0.4.0 APK in Firebase, if available* | *Pending* |
-| Signing certificate SHA-256 | *Pending* | *Pending: must equal the 0.4.0 one* |
+| Android source commit | `a3fb056` | *Pending: Natalia's `git rev-parse HEAD`.* The APK contains `ResultSource.FRESH_CACHE`, so it includes #68 (`main` `a816687`) |
+| APK SHA-256 | `d23869cc8f65e7b272d1479f588dfc62a4032d462f514cd59773da6190f28a04`. Copy of the installed distributed 0.4.0, pulled from the SM-S948U1 on 2026-11-27 | `0337fb3b1b5b5213506c860069be884b099182d3ef89c10ec8b1515f243243d0` (Natalia's signed APK) |
+| Signing certificate SHA-256 | `1e1a1c28e65a44b2cda258571034c83439fc388e6e78608aeb5d8474526d12ed` (`CN=Natalia Espitia, OU=campusmeal`, v2 scheme) | `1e1a1c28e65a44b2cda258571034c83439fc388e6e78608aeb5d8474526d12ed`: **identical** (`apksigner verify --print-certs`, build-tools 36.0.0) |
 
 `minSdk` 24, `targetSdk` 36, release minification off, `applicationId` `com.campusmeal.android`. The release URL is
 `https://campusmeal-api.onrender.com/api/v1/` (`campusmeal.releaseApiBaseUrl`; the build refuses a non-HTTPS URL).
@@ -52,7 +52,7 @@ Micro-optimizations (measured before/after, `SPRINT4_MICROOPT_*.md`): BQ3 ingred
 one Room read per fresh restaurant cache lookup (Natalia), a per-thread UTC formatter in event admission (Daniel).
 
 Fixes: duplicate list key in the synchronization center (`SPRINT4_DANIEL.md` §5.2); false "You're offline" banner on
-a still-fresh restaurant search (PR #68, if merged before the build).
+a still-fresh restaurant search (PR #68, merged as `a816687`; present in the 0.5.0 APK).
 
 ## 3. Build and signing (Natalia)
 
@@ -81,25 +81,39 @@ pending events offline; then install 0.5.0 over it (Firebase invitation or `adb 
 
 | Check | Expected | Device / time | Observed | Status |
 |---|---|---|---|---|
-| Install over 0.4.0 | Accepted (same signature), no data reset | | | Pending |
-| Session | Still signed in, or a normal re-login; no crash | | | Pending |
-| Draft and pending events | Kept; pending events delivered once after reconnecting | | | Pending |
-| Room schema | 12 | | | Pending |
+| Install over 0.4.0 | Accepted (same signature), no data reset | SM-S948U1 / Android 17, 2026-11-27 23:04:58 | `adb install -r` → `Success`. `versionCode` 4 → 5. `firstInstallTime` stays 23:01:32, so this is an update, not a new install | Done |
+| Session | Still signed in, or a normal re-login; no crash | 23:05, offline | Opens still signed in (test student account) with the 0.4.0 context (Uniandes, 60 min, $40,000). Empty `logcat -b crash` | Done |
+| Draft and pending events | Kept; pending events delivered once after reconnecting | 23:05–23:08 | Offline, the sync center lists the 0.4.0 draft ("New item: Upgrade draft tomatoes", 23:04, never submitted) and **4 waiting**. Two App usage events from 23:04 were created offline by 0.4.0; one App usage and one App performance event were created by 0.5.0 at launch. The 3 events 0.4.0 had already sent stay as Sent. On reconnecting: "0 waiting". BQ6 `eventsReceived` 645 → **648** (+3 usage events), still 648 after 60 s. The draft, submitted online, gives one inventory item | Done |
+| Room schema | 12 | 23:05–23:08 | Not readable directly (release build, no `run-as`). Room validates the v12 schema identity when it opens the database and fails on a missing migration. The app opens it, and the screens backed by the v11 columns (sync center) work. The 3 sent and 2 pending outbox rows written under v9 remain, plus the inventory draft | Done (indirect) |
+
+The original 0.4.0, installed 2026-11-19, was removed by mistake before this session: the 0.5.0 was first installed from
+scratch at 22:55, `firstInstallTime` = `lastUpdateTime`. The test therefore reinstalled the **same distributed 0.4.0
+binary** (`d23869cc…`, pulled from the phone on 2026-11-26) at 23:01. Its data was created tonight: sign-in, cached
+recipes and 3 events sent online at 23:02–23:03; then, offline, the draft and 2 pending events. Run and recorded by
+Juan Pablo; screenshots and the step log are in [`evidence/sprint4/s4-14-release/`](evidence/sprint4/s4-14-release/).
+BQ6 before the run: 642.
 
 ### 4.2 Features and inherited flows (each member, same APK)
 
 | Flow | Role | Owner validating | Device | Observed | Status |
 |---|---|---|---|---|---|
-| Login, refresh, logout, account switch | USER | | | | Pending |
-| Inventory and recipes (BQ3) | USER | | | | Pending |
-| Restaurant search filters and detail | USER | | | | Pending |
-| Meal comparison and pending selection offline | USER | | | | Pending |
-| BQ6 and BQ9 reports | ANALYST | | | | Pending |
-| Reviews offline → delivered once; BQ13 | USER / ANALYST | Juan Pablo | | | Pending |
+| Login, refresh, logout, account switch | USER | Juan Pablo | SM-S948U1, 23:01–23:25 | The student signed in at 23:02 under 0.4.0 and was still making online requests at 23:21 without logging in again. The access token lasts 15 min, so it was refreshed, across the upgrade. Then student → logout → analyst → logout → student: each profile shows only its own role | Done |
+| Inventory and recipes (BQ3) | USER | Juan Pablo | SM-S948U1, 23:18 | Inventory refresh: 1 item (the migrated draft). Recipes evaluate the 6 catalog recipes and explain the misses (ingredient, diet, time) | Done |
+| Restaurant search filters and detail | USER | Juan Pablo | SM-S948U1, 23:13 | Uniandes, 60 min, COP 40,000, vegetarian: 3 restaurants, each "Fits the available time, budget and dietary preferences", no false offline banner (#68). The Garden detail: walk 2 min, total 19 min, review summary | Done |
+| Meal comparison and pending selection offline | USER | Juan Pablo | SM-S948U1, 23:16–23:19 | Online comparison: #1 WALK, The Garden, 19 min, COP 14,500. "Choose WALK" offline → sync center "Recommendation seen or chosen · Pending". Reconnect → sent, "0 waiting". Home shows "Your plan: Walk to The Garden" | Done |
+| BQ6 and BQ9 reports | ANALYST | Juan Pablo | SM-S948U1, 23:22–23:23 | Both load and are labeled "Includes synthetic demo data" | Done |
+| Reviews offline → delivered once; BQ13 | USER / ANALYST | Juan Pablo | SM-S948U1, 23:14–23:23 | The Garden review submitted offline → "Review saved on this device". Force-stop and relaunch offline → still pending in the sync center. Reconnect → server summary 6 → **7 reviews from 7 students**, still 7 after 45 s. BQ13 (Nov 21–27) loads: Green Bowl 5 reviews, mean 4.00, the other four suppressed under 5 reviewers. Same values from the API | Done |
 | Alternatives; BQ10 | USER / ANALYST | Natalia | | | Pending |
 | Synchronization center; BQ1 | USER / ANALYST | Daniel | | | Pending |
-| Role check: analytics as USER | USER | | | 403 / no entry | Pending |
-| Network lost during a new flow | USER | | | | Pending |
+| Role check: analytics as USER | USER | Juan Pablo | SM-S948U1 and API, 23:21 | The student profile has no Analytics section. `GET` feature-adoption, performance and partner-health with the student token → **403** each | Done |
+| Network lost during a new flow | USER | Juan Pablo | SM-S948U1, 23:20–23:21 | Alternative meals: SUSHI online (`FOUND`, 23:20:32), then airplane mode. BOWLS → "Offline. No matching saved result". SUSHI → "Offline. Showing historical data · Historical snapshot — not current availability". Reconnect + Refresh → new server response 23:21:24. No crash | Done |
+
+**Test fixture for §4.2 (Neon, 2026-11-27).** The release had to be validated the same night, and every restaurant
+closes by 22:00. With the owner's approval, a temporary opening period (Friday 22:00 → 04:00) was **added** to the five
+active restaurants; their normal periods were not changed. The previous `opening_hours` values are saved in
+[`restaurants-opening-hours-before-2026-11-27.json`](evidence/sprint4/s4-14-release/restaurants-opening-hours-before-2026-11-27.json)
+and are restored exactly after the session (*pending: restore time*). Availability-dependent results between 23:12 and
+the restore reflect this fixture, not real opening hours. No menu, price or meal was changed.
 
 Daniel has no Android phone: his rows are run on a team member's phone or on the emulator, stating which and who ran them.
 

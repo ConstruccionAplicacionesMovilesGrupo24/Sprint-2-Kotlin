@@ -1,0 +1,31 @@
+[04:01:30Z] BQ6 eventsReceived before = 642
+[04:01:30Z] uninstall 0.5.0 fresh install of 22:55 (approved)
+    versionCode=4 minSdk=24 targetSdk=36
+    versionName=0.4.0
+      firstInstallTime=2026-11-27 23:01:32
+[04:03:43Z] 0.4.0 signed in (test account), recipes cached online; airplane ON
+[04:04:56Z] 0.4.0 offline: inventory draft 'Upgrade draft tomatoes' (not submitted), recipes opened offline, comparison unavailable offline
+    versionCode=5 minSdk=24 targetSdk=36
+    versionName=0.5.0
+    lastUpdateTime=2026-11-27 23:04:58
+      firstInstallTime=2026-11-27 23:01:32
+[04:04:58Z] adb install -r 0.5.0 (0337fb3b) over 0.4.0, airplane still ON
+[04:05:53Z] 0.5.0 offline after upgrade: no crash, session+context kept; sync center '4 waiting · 0 need attention · 1 to review'; draft listed; 3 earlier sent rows kept
+[04:06:01Z] airplane OFF
+[04:07:44Z] online: sync center 0 waiting, draft still listed; BQ6 645 -> 648 (3 usage), 648 after 60 s
+[04:08:18Z] inventory draft submitted online from 0.5.0
+[04:12:15Z] Neon: temporary period Fri 22:00-04:00 added to 5 active restaurants (backup taken), approved by Juan Pablo
+[04:13:44Z] reviews row: The Garden server summary 6 reviews / 6 reviewers; airplane ON
+[04:14:53Z] review The Garden submitted offline (4/4/5/4/4, 15 min) -> 'Review saved on this device'; force-stop + relaunch offline
+[04:15:17Z] after restart offline: sync center 3 waiting incl. 'Restaurant review' pending; airplane OFF
+[04:16:38Z] review delivered: server 6 -> 7 reviews/reviewers, still 7 after 45 s
+[04:17:48Z] comparison online (WALK The Garden, score 55); offline 'Choose WALK' -> sync center 'Recommendation seen or chosen' Pending; airplane OFF
+[04:18:24Z] selection delivered after reconnect (0 waiting); BQ6 653 -> 654
+[04:20:45Z] alternatives SUSHI online FOUND (The Garden HOME_STYLE); airplane ON mid-flow
+[04:21:40Z] offline mid-flow: BOWLS 'No matching saved result'; SUSHI 'Historical snapshot' 23:20:32; reconnect + refresh 23:21:24
+USER GET /analytics/feature-adoption 403
+USER GET /analytics/performance 403
+USER GET /analytics/partner-health 403
+[04:22:47Z] logout student -> login analyst
+[04:24:08Z] analyst: BQ6, BQ9, BQ13 load (BQ13 Nov 21-27 Green Bowl 5 reviews mean 4.00, others suppressed; matches API)
+[04:25:02Z] BQ10 opened as analyst; logout analyst -> login student again: student profile, no analytics

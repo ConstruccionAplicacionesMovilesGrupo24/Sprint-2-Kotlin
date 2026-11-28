@@ -1,0 +1,195 @@
+{
+  "takenAt": "2026-11-28T04:12:05.191Z",
+  "rows": [
+    {
+      "id": "55e29107-5b56-4edc-abf4-ca29d26dace2",
+      "name": "Andean Flavor",
+      "active": true,
+      "analytics_zone": "bogota-centro",
+      "opening_hours": [
+        {
+          "opensAt": "17:00",
+          "closesAt": "22:00",
+          "dayOfWeek": 0
+        },
+        {
+          "opensAt": "17:00",
+          "closesAt": "22:00",
+          "dayOfWeek": 1
+        },
+        {
+          "opensAt": "17:00",
+          "closesAt": "22:00",
+          "dayOfWeek": 2
+        },
+        {
+          "opensAt": "17:00",
+          "closesAt": "22:00",
+          "dayOfWeek": 3
+        },
+        {
+          "opensAt": "17:00",
+          "closesAt": "22:00",
+          "dayOfWeek": 4
+        },
+        {
+          "opensAt": "17:00",
+          "closesAt": "22:00",
+          "dayOfWeek": 5
+        },
+        {
+          "opensAt": "17:00",
+          "closesAt": "22:00",
+          "dayOfWeek": 6
+        }
+      ],
+      "updated_at": "2026-10-27T15:07:25.277Z"
+    },
+    {
+      "id": "abc20922-1179-4399-8ab1-2b5c3ff4d27f",
+      "name": "Green Bowl",
+      "active": true,
+      "analytics_zone": "bogota-centro",
+      "opening_hours": [
+        {
+          "opensAt": "07:00",
+          "closesAt": "20:00",
+          "dayOfWeek": 1
+        },
+        {
+          "opensAt": "07:00",
+          "closesAt": "20:00",
+          "dayOfWeek": 2
+        },
+        {
+          "opensAt": "07:00",
+          "closesAt": "20:00",
+          "dayOfWeek": 3
+        },
+        {
+          "opensAt": "07:00",
+          "closesAt": "20:00",
+          "dayOfWeek": 4
+        },
+        {
+          "opensAt": "07:00",
+          "closesAt": "20:00",
+          "dayOfWeek": 5
+        }
+      ],
+      "updated_at": "2026-10-27T15:07:23.568Z"
+    },
+    {
+      "id": "15971230-4d53-4c8f-a120-e3f7d3d8042b",
+      "name": "Quinoa Corner",
+      "active": true,
+      "analytics_zone": "bogota-centro",
+      "opening_hours": [
+        {
+          "opensAt": "08:00",
+          "closesAt": "16:00",
+          "dayOfWeek": 1
+        },
+        {
+          "opensAt": "08:00",
+          "closesAt": "16:00",
+          "dayOfWeek": 2
+        },
+        {
+          "opensAt": "08:00",
+          "closesAt": "16:00",
+          "dayOfWeek": 3
+        },
+        {
+          "opensAt": "08:00",
+          "closesAt": "16:00",
+          "dayOfWeek": 4
+        },
+        {
+          "opensAt": "08:00",
+          "closesAt": "16:00",
+          "dayOfWeek": 5
+        }
+      ],
+      "updated_at": "2026-10-27T15:07:26.950Z"
+    },
+    {
+      "id": "d8e67864-3570-457d-b3a2-7801078e68a6",
+      "name": "Sushi Rápido",
+      "active": true,
+      "analytics_zone": "bogota-centro",
+      "opening_hours": [
+        {
+          "opensAt": "11:30",
+          "closesAt": "21:00",
+          "dayOfWeek": 0
+        },
+        {
+          "opensAt": "11:30",
+          "closesAt": "21:00",
+          "dayOfWeek": 1
+        },
+        {
+          "opensAt": "11:30",
+          "closesAt": "21:00",
+          "dayOfWeek": 2
+        },
+        {
+          "opensAt": "11:30",
+          "closesAt": "21:00",
+          "dayOfWeek": 3
+        },
+        {
+          "opensAt": "11:30",
+          "closesAt": "21:00",
+          "dayOfWeek": 4
+        },
+        {
+          "opensAt": "11:30",
+          "closesAt": "21:00",
+          "dayOfWeek": 5
+        },
+        {
+          "opensAt": "11:30",
+          "closesAt": "21:00",
+          "dayOfWeek": 6
+        }
+      ],
+      "updated_at": "2026-10-27T15:07:26.127Z"
+    },
+    {
+      "id": "4ae6f2a7-5fe9-40fa-bede-f9d1d57f093e",
+      "name": "The Garden",
+      "active": true,
+      "analytics_zone": "bogota-centro",
+      "opening_hours": [
+        {
+          "opensAt": "11:00",
+          "closesAt": "15:30",
+          "dayOfWeek": 1
+        },
+        {
+          "opensAt": "11:00",
+          "closesAt": "15:30",
+          "dayOfWeek": 2
+        },
+        {
+          "opensAt": "11:00",
+          "closesAt": "15:30",
+          "dayOfWeek": 3
+        },
+        {
+          "opensAt": "11:00",
+          "closesAt": "15:30",
+          "dayOfWeek": 4
+        },
+        {
+          "opensAt": "11:00",
+          "closesAt": "15:30",
+          "dayOfWeek": 5
+        }
+      ],
+      "updated_at": "2026-10-27T15:07:24.413Z"
+    }
+  ]
+}
