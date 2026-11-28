@@ -83,7 +83,7 @@ class RestaurantCacheCheckActivity : ComponentActivity() {
                 now = fetched + 300000L
                 val hits = api.calls
                 val s1 = search() as? RestaurantSearchResult.Success
-                expect("search TTL exactly 5min fresh", s1?.results?.source == ResultSource.CACHE && api.calls == hits && s1.results.lastUpdatedAtEpochMillis == fetched)
+                expect("search TTL exactly 5min fresh", s1?.results?.source == ResultSource.FRESH_CACHE && api.calls == hits && s1.results.lastUpdatedAtEpochMillis == fetched)
                 now++
                 val s2 = search() as? RestaurantSearchResult.Success
                 expect("search TTL +1ms stale offline", s2?.results?.source == ResultSource.CACHE && api.calls == hits + 1 && s2.results.lastUpdatedAtEpochMillis == fetched)
@@ -97,7 +97,7 @@ class RestaurantCacheCheckActivity : ComponentActivity() {
                 now = fetched
                 seed(0)
                 val empty = search() as? RestaurantSearchResult.Success
-                expect("empty search distinct from missing", empty?.results?.restaurants?.isEmpty() == true && empty.results.source == ResultSource.CACHE)
+                expect("empty search distinct from missing", empty?.results?.restaurants?.isEmpty() == true && empty.results.source == ResultSource.FRESH_CACHE)
                 expect("missing context offline", repo.search(scope, req.copy(maximumBudget = 40001L)) is RestaurantSearchResult.Failure)
                 dao.upsertSearch(RestaurantSearchCacheEntity(scope.accountId, key, "{broken", fetched))
                 dao.upsertDetail(RestaurantDetailCacheEntity(scope.accountId, "r0", "{broken", fetched))
@@ -129,7 +129,7 @@ class RestaurantCacheCheckActivity : ComponentActivity() {
             api.offline = true
             val searchPayload = checkNotNull(dao.getSearch(scope.accountId, key)).responseJson
             val detailPayload = checkNotNull(dao.getDetail(scope.accountId, "r0")).responseJson
-            val expectedS = checkNotNull(api.searchDto.toResultsOrNull(fetched, ResultSource.CACHE))
+            val expectedS = checkNotNull(api.searchDto.toResultsOrNull(fetched, ResultSource.FRESH_CACHE))
             val expectedD = checkNotNull(api.detailDto.toDetailOrNull(fetched))
             val expectedSearch = RestaurantSearchResult.Success(expectedS)
             val expectedDetail = RestaurantDetailResult.Success(expectedD)
