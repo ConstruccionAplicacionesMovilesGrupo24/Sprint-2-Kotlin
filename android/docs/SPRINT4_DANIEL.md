@@ -70,7 +70,7 @@ A timeout of an account that has history is drawn as history and counts as `OFFL
 
 ## 5. Evidence
 
-Run on 2026-11-25 on an **emulator** (API 37, debug build) against a **disposable local backend** (CampusMealBack `main` with `seed:bq1`). Screenshots in `docs/evidence/sprint4/s4-10-emulator/`. The physical-device rows are in §5.1 (four done, the upgrade blocked by the release key).
+Run on 2026-11-25 on an **emulator** (API 37, debug build) against a **disposable local backend** (CampusMealBack `main` with `seed:bq1`). Screenshots in `docs/evidence/sprint4/s4-10-emulator/`. The physical-device rows are in §5.1 (four done, the upgrade blocked by the release key, moved to S4-14) and the pending-review replay in §5.3.
 
 | Case | Observed |
 |---|---|
@@ -126,6 +126,26 @@ On the phone the race did not reproduce on demand: 7 deliveries with the old bui
 crashed (the window is a few milliseconds and both copies must be on screen). With the fix: 5 deliveries of 2
 events and one of 30 with the center open, no crash, groups and order correct (`fixed-few-before.png`,
 `fixed-many-after.png`). The evidence of the fix is therefore the single-snapshot query, not a reproduced crash.
+
+### 5.3 Pending review: process death and single effective replay
+
+The rows above cover telemetry; this one covers the other kind the acceptance names, a pending **review**. Run by
+Daniel on 2026-11-25 (19:00–19:02 Bogotá; 2026-11-26 00:00–00:02 UTC) on the API 37 emulator, debug build of
+`9c32176` (APK SHA-256 prefix `79913ff69ab247d2`; the full hash was not kept) built with
+`CAMPUSMEAL_API_BASE_URL=http://10.0.2.2:3000/api/v1/`, against a disposable local backend (CampusMealBack `62e5a5b`,
+local Docker Postgres, `seed:auth` + `seed:restaurants`). Account: the local demo user. Local state was read from a
+copy of the app's Room database; the server side with `psql` on the local database only.
+
+| Step | Observed |
+|---|---|
+| Airplane mode, review of Green Bowl (4/5/4/5/3, 12 min wait), *Submit* | "Review saved on this device…"; outbox: one `REVIEW` row `PENDING`, 0 attempts (`review-offline-saved.png`) |
+| Home, then `am kill` (process death while offline) | No process; row still `PENDING`, 0 attempts; server: 0 reviews with that `clientReviewId` |
+| Airplane off, reopen | `POST /restaurants/{id}/reviews` **201**; row `SENT`, 1 attempt, no error; server: **1** review with the same ratings, wait and `occurred_at` 00:00:43Z (the offline submission time, not the delivery time) |
+| Lost acknowledgement: app stopped, the row set back to `PENDING` in a copy of the database, reopen | Resent: `POST` **200** (same receipt); row `SENT`, 2 attempts; server still **1** review, original `created_at` |
+| Synchronization center and detail | "Restaurant review · Sent · 2 attempt(s)" (`review-replay-sync-center.png`); detail shows the review, scores hidden below 5 reviewers (`review-delivered-detail.png`) |
+
+Each kind therefore reaches only its own endpoint (`/reviews` here, `analytics/*` for telemetry in §5 and §5.1) and
+a replay after a lost acknowledgement is answered by the backend's deduplication, not stored twice.
 
 ## 6. Differences from the frozen scope
 

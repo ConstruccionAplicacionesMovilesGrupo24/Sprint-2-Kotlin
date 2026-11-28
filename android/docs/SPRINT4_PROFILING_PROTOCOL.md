@@ -111,7 +111,7 @@ was demonstrated.
 | Pair | Owner | "Before" capture | Status |
 |---|---|---|---|
 | S4-05 | Juan Pablo | `df0a40e`, 2026-11-25, SM-S948U1 (API 37): representative 2.043 ms (1.861–2.299, 10 runs), stress 28.412 ms (26.497–29.484, 5 runs). `docs/evidence/sprint4/s4-05-bq3/before/` | Captured |
-| S4-08 | Natalia | | Pending |
+| S4-08 | Natalia | `db1fe82`, 2026-11-26, Samsung Galaxy A33 SM-A336M (Android 16, API 36): representative fresh-cache detail 15.765 ms (13.134–16.398, 10 runs), search 4.279 ms (3.275–9.312, 10 runs), plus a controlled small/large pair. `docs/evidence/sprint4/s4-08-room-cache/before/` and `controlled/`; details in `SPRINT4_MICROOPT_NATALIA.md` | Captured |
 | S4-11 | Daniel | `dad0a47`, 2026-11-25, API 37 emulator (4 vCPU, 4 GB; no Android phone available): `cm.outbox.isoUtc` representative 0.136 ms (0.092–0.244, 10 runs), stress 0.073 ms (0.016–0.099, 10 runs). `docs/evidence/sprint4/s4-11-iso-utc/before/` | Captured |
 
 ## 6. References
