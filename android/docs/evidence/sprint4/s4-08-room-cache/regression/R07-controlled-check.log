@@ -1,0 +1,18 @@
+﻿--------- beginning of main
+11-26 21:54:26.357 32235 32266 I CampusMealCacheCheck: PASS search TTL exactly 5min fresh
+11-26 21:54:26.362 32235 32266 I CampusMealCacheCheck: PASS search TTL +1ms stale offline
+11-26 21:54:26.363 32235 32266 I CampusMealCacheCheck: PASS detail TTL exactly 30min fresh
+11-26 21:54:26.365 32235 32266 I CampusMealCacheCheck: PASS detail TTL +1ms stale offline
+11-26 21:54:26.369 32235 32266 I CampusMealCacheCheck: PASS empty search distinct from missing
+11-26 21:54:26.370 32235 32266 I CampusMealCacheCheck: PASS missing context offline
+11-26 21:54:26.375 32235 32266 I CampusMealCacheCheck: PASS corrupt search offline handled
+11-26 21:54:26.376 32235 32266 I CampusMealCacheCheck: PASS corrupt detail offline handled
+11-26 21:54:26.378 32235 32266 I CampusMealCacheCheck: PASS corrupt search online recovery
+11-26 21:54:26.381 32235 32266 I CampusMealCacheCheck: PASS corrupt detail online recovery
+11-26 21:54:26.386 32235 32266 I CampusMealCacheCheck: PASS explicit search force refresh
+11-26 21:54:26.388 32235 32266 I CampusMealCacheCheck: PASS explicit detail force refresh
+11-26 21:54:26.418 32235 32281 I CampusMealCacheCheck: PASS account B cannot read account A search
+11-26 21:54:26.425 32235 32265 I CampusMealCacheCheck: PASS account B cannot read account A detail
+11-26 21:54:26.425 32235 32265 I CampusMealCacheCheck: PASS old session cannot read search
+11-26 21:54:26.425 32235 32265 I CampusMealCacheCheck: PASS old session cannot read detail
+11-26 21:54:26.452 32235 32235 I CampusMealCacheCheck: DONE mode=check PASS

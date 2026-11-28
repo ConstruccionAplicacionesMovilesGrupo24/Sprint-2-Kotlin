@@ -268,6 +268,15 @@ class NetworkRestaurantRepository(
                 )
             } ?: return null
 
+        return decodeCachedSearch(scope, entity)
+    }
+
+    private fun decodeCachedSearch(
+        scope: AccountSessionScope,
+        entity: RestaurantSearchCacheEntity,
+    ): RestaurantSearchResult.Success? {
+        if (!coordinator.isCurrent(scope)) return null
+
         return try {
             val response =
                 traceSection(TraceSections.RESTAURANT_CACHE_DECODE) {
@@ -292,6 +301,8 @@ class NetworkRestaurantRepository(
         scope: AccountSessionScope,
         contextKey: String,
     ): RestaurantSearchResult.Success? {
+        if (!coordinator.isCurrent(scope)) return null
+
         val entity =
             traceAsyncSection(TraceSections.RESTAURANT_CACHE_READ) {
                 cacheDao.getSearch(
@@ -310,7 +321,7 @@ class NetworkRestaurantRepository(
             return null
         }
 
-        return cachedSearch(scope, contextKey)
+        return decodeCachedSearch(scope, entity)
     }
     private suspend fun cachedDetail(
         scope: AccountSessionScope,
@@ -325,6 +336,15 @@ class NetworkRestaurantRepository(
                     restaurantId = restaurantId,
                 )
             } ?: return null
+
+        return decodeCachedDetail(scope, entity)
+    }
+
+    private fun decodeCachedDetail(
+        scope: AccountSessionScope,
+        entity: RestaurantDetailCacheEntity,
+    ): RestaurantDetailResult.Success? {
+        if (!coordinator.isCurrent(scope)) return null
 
         return try {
             val response =
@@ -350,6 +370,8 @@ class NetworkRestaurantRepository(
         scope: AccountSessionScope,
         restaurantId: String,
     ): RestaurantDetailResult.Success? {
+        if (!coordinator.isCurrent(scope)) return null
+
         val entity =
             traceAsyncSection(TraceSections.RESTAURANT_CACHE_READ) {
                 cacheDao.getDetail(
@@ -368,7 +390,7 @@ class NetworkRestaurantRepository(
             return null
         }
 
-        return cachedDetail(scope, restaurantId)
+        return decodeCachedDetail(scope, entity)
     }
 
     private fun failure(error: RestaurantError) = RestaurantSearchResult.Failure(error)
